@@ -156,14 +156,18 @@ const orderFormSchema = [
       },
     ],
   },
-  `<section id="pricing-summary-box">
-    <h2>Ringkasan Biaya Perjalanan</h2>
-    <ul>
-      <li>Total Peserta: <span id="summary-pax">4</span> Orang</li>
-      <li>Biaya Per Pax Estimasi: <span id="summary-per-pax">Rp 0</span></li>
-    </ul>
-    <h3>Total Pembayaran: <span id="summary-total-price">Rp 0</span></h3>
-    <button class="button primary" type="submit" id="button-submit-order">Pesan Paket Trip & Bayar Via QRIS</button>
+  `<section id="pricing-summary-box" class="section row card" style="background: var(--page-bg)!important;">
+    <div class="column half">    
+      <h2>Ringkasan Biaya Perjalanan</h2>
+      <ul class="unstyled-list">
+        <li>Total Peserta: <span id="summary-pax">4</span> Orang</li>
+        <li>Biaya Per Pax Estimasi: <span id="summary-per-pax">Rp 0</span></li>
+      </ul>
+      <h3>Total Pembayaran: <span id="summary-total-price">Rp 0</span></h3>
+    </div>
+    <div class="column half">    
+      <button class="button primary" type="submit" id="button-submit-order">Pesan Paket Trip & Bayar Via QRIS</button>
+    </div>
   </section>`,
 ];
 

@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  base: "./",
   css: {
     lightningcss: {
       targets: {
@@ -11,6 +12,6 @@ export default defineConfig({
     }
   },
   build: {
-    cssMinify: false
+    cssMinify: false,
   }
 });

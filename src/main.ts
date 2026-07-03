@@ -111,17 +111,6 @@ if (app) {
       },
     },
     {
-      name: 'Pertanyaan yang sering ditanyakan sebelum memesan.',
-      content: AccordionBuilder.create({
-        id: 'faq-section',
-        items: [
-          { title: 'Apakah ada batas minimal peserta untuk booking?', description: 'Tidak. Kami siap membantu rombongan kecil maupun besar, dan kami akan menyesuaikan paket sesuai kebutuhan Kakak.' },
-          { title: 'Apakah bisa reschedule jika cuaca buruk?', description: 'Ya. Jika operasional dibatalkan karena faktor cuaca atau otoritas pelabuhan, kami akan membantu penjadwalan ulang dengan transparan.' },
-          { title: 'Apakah pembayaran bisa melalui QRIS?', description: 'Ya. Kami mendukung pembayaran QRIS dan akan langsung mengonfirmasi status transaksi setelah pembayaran berhasil.' },
-        ]
-      })
-    },
-    {
       name: "Trust",
       header: {
         eyebrow: 'Keamanan & Kepercayaan',
@@ -135,10 +124,22 @@ if (app) {
       },
     },
     {
+      name: 'Pertanyaan yang sering ditanyakan sebelum memesan.',
+      content: AccordionBuilder.create({
+        id: 'faq-section',
+        items: [
+          { title: 'Apakah ada batas minimal peserta untuk booking?', description: 'Tidak. Kami siap membantu rombongan kecil maupun besar, dan kami akan menyesuaikan paket sesuai kebutuhan Kakak.' },
+          { title: 'Apakah bisa reschedule jika cuaca buruk?', description: 'Ya. Jika operasional dibatalkan karena faktor cuaca atau otoritas pelabuhan, kami akan membantu penjadwalan ulang dengan transparan.' },
+          { title: 'Apakah pembayaran bisa melalui QRIS?', description: 'Ya. Kami mendukung pembayaran QRIS dan akan langsung mengonfirmasi status transaksi setelah pembayaran berhasil.' },
+        ]
+      })
+    },
+
+    {
       name: "Footer",
       content: ContactBuilder.create({
         id: "contact",
-        title: "Agen Wisata Pulau Seribu Private Automation",
+        title: "Agen Wisata SeribuTrip",
         description: "Operator lokal resmi yang mengedepankan kenyamanan dan ketepatan.",
         items: [
           { label: "email", data: "halo@pulauseributrip.id", },
