@@ -1,0 +1,439 @@
+/* ==========================================================================
+   1. Form & Global Resets
+   ========================================================================== */
+.native.form,
+.ui.form {
+  margin: 0 auto;
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
+/* ==========================================================================
+   2. Input Wrapper & Display Layouts
+   ========================================================================== */
+.input-wrapper {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 1em;
+  text-align: left;
+}
+
+.input-wrapper[data-display="block"] {
+  /* Inherits display: block and width: 100% from base */
+  margin-bottom: 1em;
+}
+
+.input-wrapper[data-display="inline"] {
+  display: inline-grid;
+  width: auto;
+  margin-right: 1em;
+  margin-bottom: 0;
+  vertical-align: top;
+}
+
+/* --- Block Groups --- */
+.input-wrapper.group[data-display="block"] {
+  display: grid;
+  grid-template-columns: 1fr;
+  row-gap: 0.25em;
+  height: max-content;
+}
+
+.input-wrapper.group[data-display="block"] > label {
+  margin-bottom: 0;
+}
+
+.input-wrapper.group[data-display="block"] > input:not(:last-of-type) {
+  margin-bottom: 0.75em;
+}
+
+/* --- Inline Groups --- */
+.input-wrapper.group[data-display="inline"] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25em 1em;
+  width: 100%;
+  margin-right: 0;
+}
+
+.input-wrapper.group[data-display="inline"] > label:nth-of-type(1),
+.input-wrapper.group[data-display="inline"] > input:nth-of-type(1),
+.input-wrapper.group[data-display="inline"] > span.spinner:nth-of-type(1) {
+  grid-column: 1;
+}
+
+.input-wrapper.group[data-display="inline"] > label:nth-of-type(2),
+.input-wrapper.group[data-display="inline"] > input:nth-of-type(2),
+.input-wrapper.group[data-display="inline"] > span.spinner:nth-of-type(2) {
+  grid-column: 2;
+}
+
+.input-wrapper.group[data-display="inline"] > label {
+  grid-row: 1;
+}
+
+.input-wrapper.group[data-display="inline"] > input,
+.input-wrapper.group[data-display="inline"] > span.spinner {
+  grid-row: 2;
+}
+
+/* ==========================================================================
+   3. Labels & Base Form Controls
+   ========================================================================== */
+.input-wrapper label {
+  display: block;
+  margin-bottom: 0.25em;
+  color: var(--primary-text-color);
+  font-size: 0.75em;
+  font-weight: 600;
+}
+
+.input-wrapper select,
+.input-wrapper ::picker(select) {
+  appearance: base-select;
+  cursor: pointer;
+}
+
+/* Shared Core Input Inputs styles */
+.input-wrapper input:not([type="checkbox"]),
+.input-wrapper select,
+.input-wrapper textarea {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-height: var(--input-min-height);
+  line-height: calc(var(--input-min-height) - (0.57em * 2), 1.6);
+  padding: 0.4em 1em;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--input-border-radius) !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: 200ms;
+  background-color: var(--primary-background-color);
+}
+
+.input-wrapper input:not([type="checkbox"]),
+.input-wrapper select {
+  max-height: var(--input-min-height);
+}
+
+.input-wrapper textarea {
+  min-height: calc(var(--input-min-height) * 2.5);
+  resize: vertical;
+  white-space: normal;
+}
+
+/* --- Form Fields Base Interactive States --- */
+.input-wrapper input:not([type="checkbox"]):hover,
+.input-wrapper input:not([type="checkbox"]):focus,
+.input-wrapper input:not([type="checkbox"]):active,
+.input-wrapper input:not([type="checkbox"]):focus-visible,
+.input-wrapper textarea:hover,
+.input-wrapper textarea:focus,
+.input-wrapper textarea:active,
+.input-wrapper textarea:focus-visible,
+.input-wrapper select:hover,
+.input-wrapper select:active,
+.input-wrapper select:focus-visible,
+.input-wrapper select:open,
+.input-wrapper ::picker(select):popover-open,
+.input-wrapper:has(select:active) ::picker(select):popover-open,
+.input-wrapper:has(select:focus) ::picker(select):popover-open {
+  border: 1px solid var(--primary-border-color);
+  background-color: var(--gsheets-accent-color);
+}
+
+/* Open Select Special Rounding Layer Override */
+.input-wrapper select:open,
+.input-wrapper:has(select:open) select,
+.input-wrapper:has(select:open) select:hover,
+.input-wrapper:has(select:open) select:active {
+  transition: 200ms;
+  border-radius: var(--input-border-radius) var(--input-border-radius) 0 0 !important;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* ==========================================================================
+   4. Native Fieldset & Structural Legends
+   ========================================================================== */
+.native.form fieldset {
+  display: grid;
+  gap: 1em;
+  margin-bottom: 1em;
+  padding: 1.2em 1.5em 1.5em 1.5em;
+  border: 1px solid var(--light-border-color);
+  border-radius: calc(var(--input-border-radius) / 2);
+  /* background-color: var(--primary-background-color); */
+}
+
+.native.form fieldset legend {
+  padding: 0 0.5em;
+  color: var(--primary-color);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.native.form fieldset .input-wrapper:last-child {
+  margin-bottom: 1em;
+}
+
+/* ==========================================================================
+   5. Select Options & Elements Content Parts
+   ========================================================================== */
+.input-wrapper select option {
+  color: var(--primary-hover-color);
+  transition: all 100ms;
+}
+
+.input-wrapper select option,
+.input-wrapper select::part(selectedcontent) {
+  display: block;
+  position: relative;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5em;
+  padding: 0.5em 0.5em;
+}
+
+.input-wrapper select option::checkmark {
+  margin-right: 0.25em;
+}
+
+.input-wrapper select option:hover,
+.input-wrapper select option:focus {
+  color: var(--default-text-color);
+  background-color: var(--light-border-color);
+}
+
+.input-wrapper select::part(selectedcontent),
+.input-wrapper select option:checked {
+  background-color: var(--primary-light-color);
+  color: var(--primary-text-color);
+}
+
+/* --- Placeholder Colors vs Active Content Colors --- */
+.input-wrapper input:not([type="checkbox"])::placeholder,
+.input-wrapper select,
+.input-wrapper select:has(> option.placeholder:checked) {
+  color: var(--placeholder-color);
+}
+
+.input-wrapper input:not([type="checkbox"]),
+.input-wrapper select:has(> option[selected]) {
+  color: var(--primary-text-color);
+}
+
+/* ==========================================================================
+   6. Custom Picker Popovers [::picker(select)]
+   ========================================================================== */
+.input-wrapper ::picker(select) {
+  box-sizing: border-box;
+  max-height: var(--input-picker-height);
+  max-width: calc(95% - var(--scrollbar-width));
+  top: anchor(bottom);
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform-origin: top;
+  transform: translateY(-4px) scaleY(0%) scaleX(99.7%);
+  transition: all 150ms ease;
+  transition-behavior: allow-discrete;
+  transition-delay: var(--dropdown-transition-delay);
+  border-radius: var(--input-border-radius);
+  background-color: var(--gsheets-accent-color);
+  color: transparent;
+}
+
+.input-wrapper ::picker(select):popover-open {
+  opacity: 1;
+  transition-delay: var(--dropdown-transition-delay);
+  transform: translateY(0) scaleY(1) scaleX(1);
+  scrollbar-color: var(--primary-color) rgba(255, 229, 238, 0.562);
+  scrollbar-width: thin;
+  border-radius: 0 0 var(--input-border-radius) var(--input-border-radius) !important;
+  box-shadow: 0 2px 3px 0 var(--border-color);
+}
+
+/* Unified Flattened Borders on Active Popovers */
+.input-wrapper:has(select:active) ::picker(select):popover-open,
+.input-wrapper:has(select:focus) ::picker(select):popover-open,
+.input-wrapper ::picker(select),
+.input-wrapper ::picker(select):popover-open {
+  border-top: none;
+}
+
+@starting-style {
+  .input-wrapper ::picker(select):popover-open {
+    display: block;
+    opacity: 0;
+    transform: translateY(-4px) scaleY(0%) scaleX(99.7%);
+  }
+}
+
+/* ==========================================================================
+   7. Spinner Icons & Dynamic Indicators
+   ========================================================================== */
+.input-wrapper select::picker-icon,
+.input-wrapper span.spinner {
+  box-sizing: border-box;
+  justify-self: right;
+  z-index: 99;
+}
+
+.input-wrapper select.loading::picker-icon,
+.input-wrapper span.spinner {
+  content: var(--spinner-content);
+}
+
+.input-wrapper select:not(.loading)::picker-icon {
+  content: var(--dropdown-arrow-content);
+  color: var(--primary-border-color);
+  transform: scale(85%) translateY(-21px);
+  transition: rotate 200ms;
+  transform-origin: center -35%;
+}
+
+.input-wrapper select:not(.loading):open::picker-icon {
+  rotate: 90deg;
+}
+
+.input-wrapper select.loading::picker-icon {
+  transform: translateY(-19.5px);
+}
+
+.input-wrapper span.spinner {
+  display: block;
+  position: relative;
+  transform: translateX(-19.5px) translateY(-29.5px);
+}
+
+.input-wrapper input:not([type="checkbox"]) ~ span.spinner {
+  visibility: hidden;
+}
+
+.input-wrapper input:not([type="checkbox"]).loading ~ span.spinner {
+  visibility: visible;
+}
+
+/* ==========================================================================
+   8. Toggle Switch Components
+   ========================================================================== */
+.input-wrapper.toggle-switch {
+  display: inline-grid;
+  align-items: center;
+  justify-content: start;
+  gap: 0.5em 0.75em;
+  width: max-content;
+  height: auto;
+}
+
+.input-wrapper.toggle-switch:has(> label[data-position="top"]) {
+  grid-template-areas: "label" "control";
+}
+.input-wrapper.toggle-switch:has(> label[data-position="left"]) {
+  grid-template-areas: "label control";
+}
+.input-wrapper.toggle-switch:has(> label[data-position="right"]) {
+  grid-template-areas: "control label";
+}
+.input-wrapper.toggle-switch:has(> label[data-position="bottom"]) {
+  grid-template-areas: "control" "label";
+}
+.input-wrapper.toggle-switch > label {
+  grid-area: label;
+  margin-bottom: 0;
+  color: var(--primary-text-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+.input-wrapper.toggle-switch > .control {
+  position: relative;
+  grid-area: control;
+  display: inline-block;
+}
+
+.input-wrapper.toggle-switch > .control > input[type="checkbox"],
+.input-wrapper.toggle-switch > .control > input[type="checkbox"],
+.input-wrapper.toggle-switch > .control {
+  width: 44px;
+  height: 26px;
+}
+
+.input-wrapper.toggle-switch > .control > input[type="checkbox"] {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.input-wrapper.toggle-switch > .control > .slider {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background-color: rgb(208, 208, 214);
+  transition: 0.4s;
+}
+.input-wrapper.toggle-switch > .control > .slider[data-shape="round"] {
+  border-radius: 25px;
+}
+.input-wrapper.toggle-switch > .control > .slider[data-shape="square"] {
+  border-radius: 4px;
+}
+.input-wrapper.toggle-switch > .control > .slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.4s;
+}
+.input-wrapper.toggle-switch > .control > .slider[data-shape="round"]:before {
+  border-radius: 50%;
+}
+.input-wrapper.toggle-switch > .control > .slider[data-shape="square"]:before {
+  border-radius: 2px;
+}
+.input-wrapper.toggle-switch > .control > input[type="checkbox"]:checked ~ .slider {
+  background-color: var(--primary-color);
+}
+.input-wrapper.toggle-switch > .control > input[type="checkbox"]:focus-visible ~ .slider {
+  box-shadow: 0 0 1px #2196f3;
+}
+.input-wrapper.toggle-switch > .control > input[type="checkbox"]:checked ~ .slider:before {
+  transform: translateX(18px);
+} /* ==========================================================================9. Validation Error States========================================================================== */
+.input-wrapper input.error,
+.input-wrapper select.error,
+.input-wrapper:has(select.error:open) ::picker(select):popover-open {
+  background-color: #fff6f6;
+  border: 1px solid #fd5b5b;
+}
+.input-wrapper:has(select.error:open) ::picker(select):popover-open {
+  border-top: none;
+}
+.input-wrapper input.error,
+.input-wrapper select.error,
+.input-wrapper:has(select.error:open) ::picker(select):popover-open,
+.input-wrapper input.error::placeholder,
+.input-wrapper select.error:has(> option:first-child:checked) {
+  color: #ff93ae;
+}
+.input-wrapper:has(> input.error) label,
+.input-wrapper:has(> select.error) label {
+  color: #ff114d;
+}

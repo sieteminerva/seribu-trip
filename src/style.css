@@ -1,0 +1,605 @@
+/* ==========================================================================
+   1. DESIGN ENGINE TOKENS (Merged Design Tokens & Themes)
+   ========================================================================== */
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Global Color Overrides */
+  --gsheets-accent-color: #f0f4f9;
+  --primary-color: rgba(91, 63, 134, 0.65);
+  --primary-color-solid: rgba(143, 126, 174, 1);
+  --primary-text-color: var(--primary-color);
+  --primary-background-color: rgb(240 244 249 / 70%);
+  --primary-light-color: rgba(235, 233, 251, 0.8);
+  --primary-hover-color: rgba(91, 63, 134, 0.8);
+  --secondary-text-color: rgb(94, 48, 110);
+  --default-text-color: rgba(255, 255, 255, 0.8);
+  --default-inverted-text-color: rgba(255, 255, 255, 0.9);
+
+  --light-border-color: rgba(183, 164, 216, 0.85);
+  --primary-border-color: rgba(144, 116, 186, 0.85);
+  --placeholder-color: rgba(201, 201, 201, 0.85);
+  --border-color: rgba(34, 36, 38, 0.15);
+
+  /* Shared Asset & Interface Parameters */
+  --input-min-height: 37px;
+  --input-border-radius: 0.75em;
+  --input-picker-height: calc(3 * var(--input-min-height, 37px));
+  --dropdown-transition-delay: 30ms;
+  --dropdown-arrow-content: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'><path fill-rule='evenodd' clip-rule='evenodd' d='M12.707 14.707a1 1 0 0 1-1.414 0l-5-5a1 1 0 0 1 1.414-1.414L12 12.586l4.293-4.293a1 1 0 1 1 1.414 1.414l-5 5Z' fill='rgba(91, 63, 134, 0.65)'/></svg>");
+  --spinner-content: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><circle cx='10' cy='10' r='8' fill='none' stroke='rgba(138,138,178,0.3)' stroke-width='4'/><circle cx='10' cy='10' r='8' fill='none' stroke='rgba(91, 63, 134, 0.65)' stroke-width='3' stroke-linecap='round' stroke-dasharray='45'><animateTransform attributeName='transform' attributeType='XML' type='rotate' from='0 10 10' to='360 10 10' dur='0.6s' repeatCount='indefinite'/><animate attributeName='stroke-dashoffset' values='0;90;180' dur='3s' repeatCount='indefinite'/></circle></svg>");
+  --scrollbar-width: 11px;
+
+  /* Spacing Hierarchy Engine */
+  --padding-layout: 2rem; /* Applied to columns for layout gutters */
+  --margin-layout: 1rem; /* Applied between macro layout sections */
+
+  --padding-component: calc(var(--padding-layout) / 3); /* 1/3 of column padding */
+  --margin-component: 1rem; /* Applied between inline items/buttons */
+
+  --gap: var(--padding-layout); /* Sync layout gap with layout padding */
+  --radius-component: 0.5em;
+  --radius-image: 18px;
+
+  /* Theme: Light Modes */
+  --page-bg: linear-gradient(135deg, #fff8f2 0%, #f7f1ff 45%, #eef6ff 100%);
+  --surface-bg: rgba(255, 255, 255, 0.84);
+  --surface-strong: rgba(255, 255, 255, 0.95);
+  --surface-muted: rgba(255, 255, 255, 0.72);
+  --text-main: #2f243d;
+  --text-muted: #55486a;
+  --text-heading: #3c2554;
+  --border-soft: rgba(183, 164, 216, 0.35);
+  --shadow-soft: 0 18px 40px rgba(92, 63, 134, 0.12);
+  --accent: rgba(91, 63, 134, 0.95);
+  --accent-strong: rgba(143, 126, 174, 1);
+}
+
+:root[data-theme="dark"] {
+  /* Theme: Dark Modes */
+  --page-bg: linear-gradient(135deg, #07111f 0%, #142641 45%, #1c2340 100%);
+  --surface-bg: rgba(17, 24, 39, 0.88);
+  --surface-strong: rgba(24, 33, 54, 0.95);
+  --surface-muted: rgba(24, 33, 54, 0.8);
+  --text-main: #f5edff;
+  --text-muted: #c3b6dd;
+  --text-heading: #ffffff;
+  --border-soft: rgba(145, 126, 190, 0.28);
+  --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.35);
+  --accent: #b498ff;
+  --accent-strong: #8d70ff;
+}
+
+/* ==========================================================================
+   2. BASE SYSTEM ENGINE & GLOBAL SCROLLBARS
+   ========================================================================== */
+html {
+  scrollbar-color: var(--primary-light-color) transparent;
+  scrollbar-width: thin;
+  scroll-behavior: smooth;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--page-bg);
+  color: var(--text-main);
+  transition:
+    background-color 220ms ease,
+    color 220ms ease;
+}
+
+/* ==========================================================================
+   3. CLEAN STRUCTURAL GRID & COMPOSABLE LAYOUT
+   ========================================================================== */
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: clamp(5.5rem, 7vw, 7.5rem) clamp(1rem, 2.5vw, 2rem) 2rem;
+  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.section {
+  margin-bottom: var(--margin-layout);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem;
+  margin-left: calc(var(--padding-layout) * -0);
+  margin-right: calc(var(--padding-layout) * -0);
+}
+
+.column {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-left: calc(var(--padding-layout) * 0.5);
+  padding-right: calc(var(--padding-layout) * 0.5);
+  padding-top: calc(var(--padding-layout) * 0.5);
+  padding-bottom: calc(var(--padding-layout) * 0.5);
+}
+
+/* Atomic Row/Column Modifiers (Max 2 variations stacked) */
+.column.half {
+  flex: 0 0 calc(50% - 0.75rem);
+}
+.column.full {
+  flex: 0 0 100%;
+  width: 100%;
+}
+.row.align-mid {
+  align-items: center;
+}
+.txt-center {
+  text-align: center;
+  justify-content: center;
+}
+
+/* ==========================================================================
+   4. NAVIGATION SPECIFICATION (.nav Framework)
+   ========================================================================== */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.95rem 1.2rem;
+
+  background: var(--surface-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-soft);
+  border-radius: 0 0 var(--radius-component) var(--radius-component);
+}
+
+.nav .brand a {
+  color: var(--text-heading);
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.nav .items {
+  display: flex;
+  gap: 0.85rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav .items a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.nav .actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Footer Engine Components */
+.footer {
+  margin-top: auto;
+  padding: 1rem 2em 0 2em;
+}
+
+.footer .column:first-child {
+  text-align: right;
+}
+.footer .row.bottom {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--border-soft);
+  color: var(--text-muted);
+  text-align: center;
+  p {
+    width: 100%;
+  }
+}
+.unstyled-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+.unstyled-list a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* ==========================================================================
+   5. DECORATIVE & CONTAINER COMPONENTS
+   ========================================================================== */
+.card {
+  background: var(--surface-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-soft);
+  border-radius: var(--radius-component);
+  padding: var(--padding-component);
+  height: 100%; /* Ensures nesting components match column heights */
+}
+
+.row.card {
+  margin-bottom: calc(var(--margin-component) * 2);
+}
+
+.column.card,
+.section.card {
+  /* Gutter background inherits cleanly */
+  background-clip: padding-box;
+  margin-bottom: calc(var(--margin-component) * 2);
+  padding: calc(var(--padding-component) * 2);
+}
+
+/* Section Typographies */
+.eyebrow {
+  display: inline-flex;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--secondary-text-color);
+  margin: 0 0 0.5rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.title {
+  font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+  line-height: 1.1;
+  margin: 0.25rem 0 0.8rem;
+  color: var(--text-heading);
+}
+
+.desc {
+  margin: 0 0 1rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+.img-fluid {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: var(--radius-image);
+}
+
+/* Elements inside actions/buttons use component margins */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--margin-component);
+}
+
+/* Composable Buttons & Anchors */
+.button {
+  border: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.8rem 1.15rem;
+  text-decoration: none;
+  font-weight: 700;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.button.small {
+  font-weight: 500;
+  font-size: 0.9rem;
+  border-radius: 1.5em;
+  line-height: 1.6;
+  vertical-align: middle;
+  padding: 0.4rem 0.8rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: #fff;
+  box-shadow: 0 14px 28px rgba(91, 63, 134, 0.2);
+}
+
+.button.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: #fff;
+  box-shadow: 0 14px 28px rgba(91, 63, 134, 0.2);
+}
+
+.button.large {
+  padding: 1rem 2.5rem;
+  font-size: 1.1rem;
+}
+
+.link.secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.8rem 1.15rem;
+  text-decoration: none;
+  font-weight: 700;
+  background: rgba(91, 63, 134, 0.1);
+  color: var(--secondary-text-color);
+  transition: transform 180ms ease;
+}
+
+.button:hover,
+.link.secondary:hover {
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   6. DOM SPECIFIC COMPONENT OVERRIDES
+   ========================================================================== */
+/* Stats Modifier Layout */
+.column.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--text-muted);
+}
+.column.stat strong {
+  font-size: 1.5rem;
+  color: var(--text-heading);
+}
+.column.full.compact {
+  padding: 0;
+}
+.section.row.card:has(.column.full.compact) {
+  row-gap: 0;
+}
+
+/* Banner Component Modifier */
+.banner {
+  background: var(--surface-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-soft);
+  border-radius: var(--radius-component);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+}
+.banner h2 {
+  margin: 0;
+  color: var(--text-heading);
+  font-size: clamp(1.1rem, 2.4vw, 1.4rem);
+}
+
+/* Theme Switch Toggle Layout styles */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--surface-strong);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.theme-toggle-track {
+  width: 2.5rem;
+  height: 1.3rem;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-soft);
+}
+
+.theme-toggle-thumb {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  background: var(--accent);
+  transform: translateX(0.15rem);
+  transition: transform 180ms ease;
+}
+
+.theme-toggle-btn.is-dark .theme-toggle-thumb {
+  transform: translateX(1.2rem);
+}
+
+/* ==========================================================================
+   COMPONENT
+   ========================================================================== */
+
+/* Dialog */
+.dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--padding-layout);
+
+  background: rgba(31, 20, 49, 0.85);
+  /* backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px); */
+
+  /* Smooth state fade transition */
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 180ms ease,
+    visibility 180ms ease;
+}
+
+/* The structural layout wrapper inside the fixed view */
+.dialog .modal {
+  width: min(92vw, 900px);
+  max-height: 90vh;
+  overflow-y: auto;
+
+  padding: calc(var(--padding-component) * 2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-component);
+  background: var(--page-bg);
+  box-shadow: var(--shadow-soft);
+
+  scrollbar-color: var(--primary-light-color) transparent;
+  scrollbar-width: thin;
+}
+
+/* The Atomic Hidden Utility Class */
+.dialog.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none; /* Stops any invisible unselectable selections */
+}
+
+/* Shallow utility component rules */
+.modal .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.modal .title {
+  margin: 0;
+  color: var(--text-heading);
+  font-size: 1.2rem;
+}
+
+.modal .close {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 999px;
+  background: rgba(91, 63, 134, 0.1);
+  color: red;
+  font-size: 1.3rem;
+  border: none;
+  cursor: pointer;
+}
+
+.order.form fieldset {
+  border: 1px solid rgba(183, 164, 216, 0.45);
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.order.form fieldset .input-wrapper {
+  width: 100%;
+}
+
+.order.form legend {
+  padding: 0 0.35rem;
+  color: var(--secondary-text-color);
+  font-weight: 700;
+}
+
+/* Accordion Component */
+.accordion details {
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  background: var(--surface-strong);
+  margin-bottom: 0.75rem;
+}
+.accordion summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text-heading);
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+}
+.accordion summary::-webkit-details-marker {
+  display: none;
+}
+.accordion summary::after {
+  content: var(--dropdown-arrow-content);
+  transition: transform 180ms ease;
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+}
+.accordion details[open] summary::after {
+  transform: rotate(180deg);
+}
+.accordion .content {
+  padding-top: 0.55rem;
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   7. RESPONSIVE LAYER QUERIES (The Mobile Stack Engine)
+   ========================================================================== */
+@media (max-width: 900px) {
+  /* Break standard and stacked rows into vertical configurations */
+  .row,
+  .row.stackable {
+    flex-direction: column;
+  }
+
+  /* Reset column restrictions so they break out to full width on mobile */
+  .column,
+  .column.half,
+  .column.full {
+    flex: 0 0 100%;
+    width: 100%;
+  }
+
+  /* Allow cards to size naturally based on content height when stacked */
+  .card {
+    height: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .nav .items {
+    display: none;
+  } /* Drops simple anchor list down on small phones */
+  .banner,
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  .button,
+  .link.secondary {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --padding-layout: 1.25rem;
+    --margin-layout: 2rem;
+  }
+}
