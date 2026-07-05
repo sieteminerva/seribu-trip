@@ -1,10 +1,14 @@
 import { SectionBuilder } from "./Builders/Section";
-import type { iLandingPageBuilderConfig, iLandingPageNode, iSectionHeader } from "./interface";
+import type { iLandingPageBuilderConfig, iLandingPageNode, iSectionBlock, iSectionHeader } from "./interface";
 
 export class LandingPageBuilder {
   private container: HTMLElement;
+  private shell: HTMLElement | null = null;
   private nodes: iLandingPageNode[] = [];
-  private config: iLandingPageBuilderConfig;
+  private menuElement: HTMLElement | null = null;
+  private footerElement: HTMLElement | null = null;
+  private useMenu: boolean;
+  private useFooter: boolean;
 
   constructor(content: iLandingPageNode[], config: iLandingPageBuilderConfig) {
     const resolved = typeof config.container === 'string' ? document.querySelector(config.container) : config.container;
@@ -12,43 +16,12 @@ export class LandingPageBuilder {
       throw new Error("Target container not found.");
     }
     this.container = resolved;
-    this.config = { theme: 'light', allowCustomClasses: true, ...config };
-    this.nodes = Array.isArray(content) ? [...content] : [];
-
-    window.addEventListener('landing-page-theme-change', this._handleThemeChange);
-    this._applyTheme(this.config.theme);
-  }
-
-  public setTheme(theme?: string | null): void {
-    const resolvedTheme = this._normalizeTheme(theme);
-    this.config.theme = resolvedTheme;
-    this._applyTheme(resolvedTheme);
-  }
-
-  public getTheme(): string {
-    return this.config.theme || 'light';
-  }
-
-  private _normalizeTheme(theme?: string | null): string {
-    return theme?.toLowerCase() === 'dark' ? 'dark' : 'light';
-  }
-
-  private _applyTheme(theme: string | undefined): void {
-    const resolvedTheme = this._normalizeTheme(theme);
-    document.documentElement.setAttribute('data-theme', resolvedTheme);
-    document.body.setAttribute('data-theme', resolvedTheme);
-    this.container.setAttribute('data-theme', resolvedTheme);
-    this.container.classList.toggle('theme-dark', resolvedTheme === 'dark');
-  }
-
-  private _handleThemeChange = (event: Event): void => {
-    const customEvent = event as CustomEvent<{ theme?: string }>;
-    if (customEvent.detail?.theme) {
-      this.setTheme(customEvent.detail.theme);
-    }
+    this.useMenu = config.useMenu ?? true;
+    this.useFooter = config.useFooter ?? true;
+    this.menuElement = config.menu ?? null;
+    this.footerElement = config.footer ?? null;
+    this.nodes = this.normalizeNodes(Array.isArray(content) ? [...content] : []);
   };
-
-
 
   /**
    * Internal Method: Standardizes header elements consistently across all sections
@@ -63,6 +36,38 @@ export class LandingPageBuilder {
       ${headerData.description ? `<p class="description">${headerData.description}</p>` : ''}
     `;
     return headerEl;
+  }
+
+  private isMenuNode(node: iLandingPageNode): boolean {
+    return node.name.trim().toLowerCase() === "menu";
+  }
+
+  private isFooterNode(node: iLandingPageNode): boolean {
+    return node.name.trim().toLowerCase() === "footer";
+  }
+
+  private normalizeNodes(nodes: iLandingPageNode[]): iLandingPageNode[] {
+    const pageNodes: iLandingPageNode[] = [];
+
+    for (const node of nodes) {
+      if (this.useMenu && this.isMenuNode(node)) {
+        if (!this.menuElement && ((node as iSectionBlock).content) instanceof HTMLElement) {
+          this.menuElement = (node as iSectionBlock).content as HTMLElement;
+        }
+        continue;
+      }
+
+      if (this.useFooter && this.isFooterNode(node)) {
+        if (!this.footerElement && (node as iSectionBlock).content instanceof HTMLElement) {
+          this.footerElement = (node as iSectionBlock).content as HTMLElement;
+        }
+        continue;
+      }
+
+      pageNodes.push(node);
+    }
+
+    return pageNodes;
   }
 
   // private mountContent(payload: any, mountPoint: HTMLElement): void {
@@ -87,53 +92,64 @@ export class LandingPageBuilder {
 
 
   private buildNode(node: iLandingPageNode, tagName = "section"): HTMLElement {
-    let element: HTMLElement | null = null;
-    // 1. Check If it's a group node, recursively build its children and wrap them in a container
     if ('group' in node) {
-      // console.log("1 called to buiid:", node.name)
-      element = document.createElement('section');
+      const element = document.createElement('section');
       element.id = node.id || '';
       element.className = node.className || "section row stackable";
+      if (node.header) {
+        element.append(this.buildSectionHeader(node.header));
+      }
       for (const subNode of node.group) {
-        // console.log('Building subNode:', subNode);
-        element.appendChild(this.buildNode(subNode, "div"))
+        element.appendChild(this.buildNode(subNode, "div"));
       }
-
-    }
-    else {
-      // 2. If it's not a group node and has a section flag and its false, which indicates it should not be wrapped in a <section> element
-      if ("isSection" in node && !node.isSection && node.content instanceof HTMLElement) {
-        element = node.content;
-        // console.log("2 called to buiid:", node.name)
-      }
-      else {
-        // console.log({ element, node })
-        if (node.content instanceof HTMLElement) {
-          element = node.content;
-          // console.log("3 called to buiid:", node.name)
-        } else if (typeof node.content === 'object') {
-          element = SectionBuilder.create(node.content as any, { tagName });
-          // console.log("4 called to buiid:", node.name)
-        }
-        if (node.header) {
-          if (!element) element = document.createElement('section');
-          element.prepend(this.buildSectionHeader(node.header));
-          // console.log("5 called to buiid:", node.name)
-        }
-      }
+      return element;
     }
 
-    return element as HTMLElement;
+    if (node.content instanceof HTMLElement) {
+      if (node.header) {
+        const wrapper = document.createElement('section');
+        if (node.id) wrapper.id = node.id;
+        if (node.className) wrapper.className = node.className;
+        wrapper.append(this.buildSectionHeader(node.header), node.content);
+        return wrapper;
+      }
+      return node.content;
+    }
+
+    const element = SectionBuilder.create(node.content as any, { tagName });
+    if (node.header) {
+      element.prepend(this.buildSectionHeader(node.header));
+    }
+    return element;
   }
 
   public render(): void {
-    this.container.innerHTML = '';
-    const shell = document.createElement('main');
-    shell.className = 'page';
-    this.nodes.forEach(node => shell.appendChild(this.buildNode(node)));
-    this.container.appendChild(shell);
+    if (!this.shell) {
+      this.shell = document.createElement('main');
+      this.shell.className = 'page';
+    }
+
+    if (this.shell.parentElement !== this.container) {
+      this.container.appendChild(this.shell);
+    }
+
+    this.shell.innerHTML = '';
+    if (this.useMenu && this.menuElement) {
+      this.shell.appendChild(this.menuElement);
+    }
+    this.nodes.forEach(node => this.shell?.appendChild(this.buildNode(node)));
+    if (this.useFooter && this.footerElement) {
+      this.shell.appendChild(this.footerElement);
+    }
   }
 
+  public destroy() {
+    this.container.innerHTML = ""
+  }
 
+  public switchPage(node: iLandingPageNode | iLandingPageNode[]): void {
+    this.nodes = this.normalizeNodes(Array.isArray(node) ? [...node] : [node]);
+    this.render();
+  }
 
 }

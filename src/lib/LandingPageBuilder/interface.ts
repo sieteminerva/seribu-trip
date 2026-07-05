@@ -1,6 +1,10 @@
 export interface iLandingPageBuilderConfig {
   container: HTMLElement | string;
   theme?: 'light' | 'dark' | string;
+  useMenu?: boolean;
+  useFooter?: boolean;
+  menu?: HTMLElement | null;
+  footer?: HTMLElement | null;
   allowCustomClasses?: boolean;
   onSectionRendered?: (sectionId: string, element: HTMLElement) => void;
 }
@@ -44,7 +48,7 @@ export interface iSectionContent {
 export interface iMenuContent {
   id?: string;
   className?: string;
-  items: { title: string; link: string; }[];
+  items: { title: string; link?: string; id?: string, className?: string }[];
 }
 
 export interface iHeroContent {
@@ -77,5 +81,12 @@ export interface iContactContent {
   items: Record<string, string | iActionProperty[]>[]
 }
 
-export type iActionProperty = { label?: string; href?: string; id?: string; className?: string; type?: string };
+export type iActionProperty = { label?: string; href?: string; id?: string; className?: string; type?: string, onClick?: any };
 export type iSectionProperty = { title?: string; description?: string; image?: string; actions?: iActionProperty[] }
+export type iTableProperty = { id?: string, className?: string, header: string, body: { name: string, className: string }[], action?: iActionProperty }
+
+export interface iPricingTableContent {
+  id?: string;
+  className?: string;
+  items: iTableProperty[]
+}

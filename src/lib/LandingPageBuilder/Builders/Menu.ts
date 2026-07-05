@@ -4,6 +4,20 @@ import type { iMenuContent } from "../interface";
 export class MenuBuilder {
 
   static create(content: iMenuContent): HTMLElement {
+    const normalizeTheme = (theme?: string | null): 'light' | 'dark' => theme?.toLowerCase() === 'dark' ? 'dark' : 'light';
+    const getTheme = () => normalizeTheme(document.documentElement.dataset.theme);
+    const applyTheme = (theme: 'light' | 'dark') => {
+      document.documentElement.dataset.theme = theme;
+      if (document.body) {
+        document.body.dataset.theme = theme;
+      }
+      nav.dataset.theme = theme;
+      toggleButton?.classList.toggle('is-dark', theme === 'dark');
+      if (toggleLabel) {
+        toggleLabel.textContent = theme === 'dark' ? 'Light' : 'Dark';
+      }
+    };
+
     const nav = document.createElement('nav');
     nav.id = content.id as string;
     nav.className = content.className as string || 'nav';
@@ -15,7 +29,11 @@ export class MenuBuilder {
     nav.innerHTML = `
       <div class="brand"><a href="${brand.link || '#'}">${brand.title}</a></div>
       <ul class="items">
-        ${links.map(link => `<li><a href="${link.link || '#'}">${link.title}</a></li>`).join('')}
+        ${links.map((link: any) => `
+        <li>
+          <a ${link.id ? 'id="' + link.id + '"' : ""} ${link.className ? 'class="' + link.className + '"' : ""} href="${link.link || '#'}">${link.title}</a>
+        </li>`).join('')
+      }
       </ul>
       <div class="actions">
         <button type="button" class="theme-toggle-btn" data-theme-toggle aria-label="Toggle theme">
@@ -28,19 +46,9 @@ export class MenuBuilder {
 
     const toggleButton = nav.querySelector<HTMLButtonElement>('[data-theme-toggle]');
     const toggleLabel = nav.querySelector<HTMLElement>('.theme-toggle-label');
-    const updateToggleState = () => {
-      const isDark = document.documentElement.dataset.theme === 'dark';
-      toggleButton?.classList.toggle('is-dark', isDark);
-      if (toggleLabel) {
-        toggleLabel.textContent = isDark ? 'Light' : 'Dark';
-      }
-    };
-
-    updateToggleState();
+    applyTheme(getTheme());
     toggleButton?.addEventListener('click', () => {
-      const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-      window.dispatchEvent(new CustomEvent('landing-page-theme-change', { detail: { theme: nextTheme } }));
-      updateToggleState();
+      applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
     });
 
     return nav;
