@@ -181,57 +181,6 @@ export function createOrderForm() {
   });
 }
 
-export function createOrderModal2() {
-  const dialog = document.createElement("dialog");
-  dialog.className = "dialog";
-
-  const dialogShell = document.createElement("div");
-  dialogShell.className = "modal";
-
-  const header = document.createElement("div");
-  header.className = "header";
-
-  const title = document.createElement("h2");
-  title.textContent = "Buat Pesanan Trip";
-
-  const closeButton = document.createElement("button");
-  closeButton.type = "button";
-  closeButton.className = "close";
-  closeButton.textContent = "×";
-
-  const form = createOrderForm();
-  form.classList.add("order", "form");
-
-  header.append(title, closeButton);
-  dialogShell.append(header, form);
-  dialog.appendChild(dialogShell);
-
-  const close = () => {
-    if (dialog.open) {
-      dialog.close();
-    }
-  };
-
-  closeButton.addEventListener("click", close);
-  dialog.addEventListener("click", (event) => {
-    if (event.target === dialog) {
-      close();
-    }
-  });
-
-  return {
-    dialog,
-    open: () => {
-      if (typeof dialog.showModal === "function") {
-        dialog.showModal();
-      } else if (!dialog.hasAttribute("open")) {
-        dialog.setAttribute("open", "");
-      }
-    },
-    close,
-  };
-}
-
 
 export function createOrderModal() {
   // Create outer backdrop wrap

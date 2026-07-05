@@ -11,8 +11,8 @@ if (app) {
   const menu = MenuBuilder.create({
     id: 'main-navigation',
     items: [
-      { title: 'SeribuTrip', link: '/' },
-      { title: 'Paket Perjalanan', id: 'open-package' },
+      { title: 'SeribuTrip', link: '#home' },
+      { title: 'Paket Perjalanan', link: '#package' },
       { title: 'FAQ', link: '#faq-section' },
     ],
   });
@@ -34,6 +34,11 @@ if (app) {
     useFooter: true,
     menu,
     footer,
+    pages: {
+      home: HomePageContent,
+      package: PackagePageContent,
+    },
+    defaultRoute: 'home',
   });
 
   builder.render();
@@ -50,11 +55,5 @@ if (app) {
     if (launcher) {
       launcher.addEventListener('click', () => orderModal.open());
     }
-  });
-
-  const packageLauncher = app.querySelector<HTMLElement>('#open-package');
-  packageLauncher?.addEventListener('click', (event) => {
-    event.preventDefault();
-    builder.switchPage(PackagePageContent);
   });
 }

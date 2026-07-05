@@ -5,6 +5,8 @@ export interface iLandingPageBuilderConfig {
   useFooter?: boolean;
   menu?: HTMLElement | null;
   footer?: HTMLElement | null;
+  pages?: Record<string, iLandingPageNode[]>;
+  defaultRoute?: string;
   allowCustomClasses?: boolean;
   onSectionRendered?: (sectionId: string, element: HTMLElement) => void;
 }
