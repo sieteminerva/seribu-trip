@@ -1,5 +1,5 @@
 import { SectionBuilder } from "./Builders/Section";
-import type { iLandingPageBuilderConfig, iLandingPageNode, iSectionHeader } from "./interface";
+import type { iLandingPageBuilderConfig, iLandingPageBuilderSource, iLandingPageNode, iSectionHeader } from "./interface";
 
 export class LandingPageBuilder {
   private container: HTMLElement;
@@ -13,7 +13,7 @@ export class LandingPageBuilder {
   private defaultRoute: string;
   private pendingFragment: string = "";
 
-  constructor(content: iLandingPageNode[], config: iLandingPageBuilderConfig) {
+  constructor(source: iLandingPageBuilderSource, config: iLandingPageBuilderConfig) {
     const resolved = typeof config.container === "string" ? document.querySelector(config.container) : config.container;
     if (!resolved || !(resolved instanceof HTMLElement)) {
       throw new Error("Target container not found.");
@@ -22,10 +22,10 @@ export class LandingPageBuilder {
     this.container = resolved;
     this.useMenu = config.useMenu ?? true;
     this.useFooter = config.useFooter ?? true;
-    this.menuElement = config.menu ?? null;
-    this.footerElement = config.footer ?? null;
+    this.menuElement = source.menu ?? null;
+    this.footerElement = source.footer ?? null;
     this.defaultRoute = this.normalizeRoute(config.defaultRoute || "home");
-    this.pages = this.buildPages(content, config.pages);
+    this.pages = this.buildPages(source.pages);
     const initialRoute = this.resolveRouteFromHash();
     this.currentRoute = initialRoute.route;
     this.pendingFragment = initialRoute.fragment;
@@ -53,17 +53,20 @@ export class LandingPageBuilder {
     return resolved || "home";
   }
 
-  private buildPages(content: iLandingPageNode[], pages?: Record<string, iLandingPageNode[]>): Record<string, iLandingPageNode[]> {
+  private buildPages(pages: Record<string, iLandingPageNode[]>): Record<string, iLandingPageNode[]> {
     const resolved: Record<string, iLandingPageNode[]> = {};
 
-    if (pages) {
-      for (const [route, nodes] of Object.entries(pages)) {
-        resolved[this.normalizeRoute(route)] = Array.isArray(nodes) ? [...nodes] : [];
-      }
+    for (const [route, nodes] of Object.entries(pages)) {
+      resolved[this.normalizeRoute(route)] = Array.isArray(nodes) ? [...nodes] : [];
     }
 
     if (!resolved[this.defaultRoute]) {
-      resolved[this.defaultRoute] = Array.isArray(content) ? [...content] : [];
+      const firstRoute = Object.keys(resolved)[0];
+      if (firstRoute) {
+        this.defaultRoute = firstRoute;
+      } else {
+        resolved[this.defaultRoute] = [];
+      }
     }
 
     return resolved;
@@ -143,7 +146,7 @@ export class LandingPageBuilder {
       this.container.appendChild(this.shell);
     }
 
-    const nodes = this.pages[this.normalizeRoute(route)] || this.pages[this.defaultRoute] || [];
+    const nodes = this.pages[this.currentRoute] || this.pages[this.defaultRoute] || [];
 
     this.shell.innerHTML = "";
     if (this.useMenu && this.menuElement) {

@@ -1,40 +1,92 @@
-import type { iActionProperty, iSectionContent } from "../interface";
+import type { iSectionContent, iActionProperty } from "../interface";
 
 export class SectionBuilder {
 
   static create(content: iSectionContent, config = { tagName: "section" }): HTMLElement {
-    console.log({ content })
+    console.log({ content });
+
     const el = document.createElement(config.tagName);
     el.id = content.id as string || '';
     el.className = 'section ' + ((content.className ? content.className : "row") || "");
+
     const items = Array.isArray(content.items) ? content.items : [content.items];
 
-    el.innerHTML = items.map(item => `
+    // Iterasi setiap item dan buat element DOM secara prosedural
+    items.forEach(item => {
+      // 1. Gambar (Image Column)
+      if (item.image) {
+        const colDiv = document.createElement('div');
+        colDiv.className = 'column half';
 
-        ${item.image ? `<div class="column half"><img class="img-fluid" src="${encodeURI(item.image)}" alt="${item.title}" /></div>` : ''}
-        ${item.title ? `<h2 class="title">${item.title}</h2>` : ''}
-        ${item.description ? `<p class="desc">${item.description}</p>` : ''}
-        ${item.actions && Array.isArray(item.actions) ? this.createAction(item.actions as iActionProperty[]) : ""}
+        const img = document.createElement('img');
+        img.className = 'img-fluid';
+        img.src = encodeURI(item.image);
+        img.alt = item.title || '';
 
-    `).join('');
+        colDiv.appendChild(img);
+        el.appendChild(colDiv);
+      }
+
+      // 2. Judul (Title)
+      if (item.title) {
+        const h2 = document.createElement('h2');
+        h2.className = 'title';
+        h2.textContent = item.title; // Aman dari XSS
+        el.appendChild(h2);
+      }
+
+      // 3. Deskripsi (Description)
+      if (item.description) {
+        const p = document.createElement('p');
+        p.className = 'desc';
+        p.textContent = item.description; // Aman dari XSS
+        el.appendChild(p);
+      }
+
+      // 4. Aksi (Actions)
+      if (item.actions && Array.isArray(item.actions)) {
+        const actionsEl = this.createAction(item.actions as iActionProperty[]);
+        if (actionsEl) {
+          el.appendChild(actionsEl);
+        }
+      }
+    });
 
     return el;
   }
 
-  static createAction(actions: iActionProperty[], config = { actionWrapper: "actions" }): string {
-    if (!actions.length) return '';
+  // Mengubah return type dari string menjadi HTMLElement | null
+  static createAction(actions: iActionProperty[], config = { actionWrapper: "actions" }): HTMLElement | null {
+    if (!actions.length) return null;
 
-    return `
-      <div class="${config.actionWrapper}">
-        ${actions.map((action) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = config.actionWrapper;
+
+    actions.forEach((action) => {
       if (action.href) {
-        return `<a href="${action.href}" class="${action.className || 'link secondary'}">${action.label || ''}</a>`;
+        // Buat elemen Anchor (Link)
+        const a = document.createElement('a');
+        a.href = action.href;
+        a.className = action.className || 'link secondary';
+        a.textContent = action.label || '';
+        wrapper.appendChild(a);
+      } else {
+        // Buat elemen Button
+        const btn = document.createElement('button');
+        btn.type = action.type as any || 'button';
+        btn.className = action.className || 'button primary';
+        btn.textContent = action.label || '';
+
+        if (action.id) {
+          btn.id = action.id;
+        }
+
+        if (action.onClick) btn.addEventListener("click", action.onClick);
+
+        wrapper.appendChild(btn);
       }
+    });
 
-      return `<button type="${action.type || 'button'}" class="${action.className || 'button primary'}"${action.id ? ` id="${action.id}"` : ''}>${action.label || ''}</button>`;
-    }).join('')}
-      </div>
-      `;
-
+    return wrapper;
   }
 }

@@ -3,12 +3,15 @@ export interface iLandingPageBuilderConfig {
   theme?: 'light' | 'dark' | string;
   useMenu?: boolean;
   useFooter?: boolean;
-  menu?: HTMLElement | null;
-  footer?: HTMLElement | null;
-  pages?: Record<string, iLandingPageNode[]>;
   defaultRoute?: string;
   allowCustomClasses?: boolean;
   onSectionRendered?: (sectionId: string, element: HTMLElement) => void;
+}
+
+export interface iLandingPageBuilderSource {
+  menu?: HTMLElement | null;
+  footer?: HTMLElement | null;
+  pages: Record<string, iLandingPageNode[]>;
 }
 
 export interface iSectionHeader {
@@ -83,7 +86,7 @@ export interface iContactContent {
   items: Record<string, string | iActionProperty[]>[]
 }
 
-export type iActionProperty = { label?: string; href?: string; id?: string; className?: string; type?: string, onClick?: any };
+export type iActionProperty = { label?: string; href?: string; id?: string; className?: string; type?: string, onClick?: (event: MouseEvent) => void };
 export type iSectionProperty = { title?: string; description?: string; image?: string; actions?: iActionProperty[] }
 export type iTableProperty = { id?: string, className?: string, header: string, body: { name: string, className: string }[], action?: iActionProperty }
 
