@@ -256,6 +256,12 @@ body {
   margin-bottom: calc(var(--margin-component) * 2);
 }
 
+.row.card.transparent {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+}
+
 .column.card,
 .section.card {
   /* Gutter background inherits cleanly */
@@ -652,6 +658,126 @@ body {
   width: 100%;
 }
 
+/* Carousel Component */
+.carousel-container {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-component);
+  background: var(--surface-bg);
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+}
+
+.carousel-track {
+  display: flex;
+  position: relative;
+  width: 100%;
+  height: 400px;
+}
+
+.carousel-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.5s ease-in-out,
+    visibility 0.5s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carousel-slide.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.carousel-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carousel-caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  color: white;
+  padding: 2rem 1.5rem 1.5rem;
+  text-align: center;
+}
+.carousel-caption h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  color: white;
+}
+.carousel-caption p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.carousel-control {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+}
+.carousel-control:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+.carousel-control.prev {
+  left: 1rem;
+}
+.carousel-control.next {
+  right: 1rem;
+}
+
+.carousel-nav {
+  position: absolute;
+  bottom: 1rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  z-index: 10;
+}
+.carousel-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition:
+    background 0.3s ease,
+    transform 0.3s ease;
+}
+.carousel-dot.active {
+  background: white;
+  transform: scale(1.2);
+}
+
 /* Masonry Grid Styling */
 .masonry-grid {
   column-count: 3;
@@ -699,7 +825,9 @@ body {
   z-index: 3000;
   opacity: 1;
   visibility: visible;
-  transition: opacity 200ms ease, visibility 200ms ease;
+  transition:
+    opacity 200ms ease,
+    visibility 200ms ease;
 }
 .gallery-modal.hidden {
   opacity: 0;

@@ -2,24 +2,43 @@ import { AccordionBuilder } from "./lib/LandingPageBuilder/Builders/Accordion";
 import { PricingTableBuilder } from "./lib/LandingPageBuilder/Builders/PricingTable";
 import { StatsBuilder } from "./lib/LandingPageBuilder/Builders/Stats";
 import { MasonryBuilder } from "./lib/LandingPageBuilder/Builders/Masonry";
+import { CarouselBuilder } from "./lib/LandingPageBuilder/Builders/Carousel";
 
 export const createHomePageContent = (onOpenOrderModal: () => void) => ([
   {
     name: "Hero",
+    className: "section row align-mid stackable",
     header: {
       className: "column half",
       eyebrow: "Private Trip Keluarga • Kepulauan Seribu",
       title: "Liburan laut yang tenang, privat, dan dipersiapkan dengan penuh perhatian.",
       description: "Kami menyusun perjalanan keluarga ke pulau impian dengan itinerary yang jelas, fasilitas yang nyaman, dan dukungan tim lokal yang siap membantu setiap langkahnya.",
     },
-    content: {
+    content: CarouselBuilder.create({
       id: "hero-section",
+      className: "column half",
       items: [
         {
           image: "https://placehold.co/640x420/1e3a5f/ffffff?text=Kepulauan+Seribu",
+          title: "Eksplorasi Keindahan",
+          description: "Nikmati perjalanan privat yang nyaman dan tenang bersama keluarga."
         },
+        {
+          image: "https://placehold.co/640x420/8764b5/ffffff?text=Pantai+Pasir+Putih",
+          title: "Pantai Pasir Putih",
+          description: "Menghabiskan waktu dengan pemandangan sunset yang luar biasa."
+        },
+        {
+          image: "https://placehold.co/640x420/3c2554/ffffff?text=Petualangan+Seru",
+          title: "Aktivitas Menyenangkan",
+          description: "Snorkeling dan aktivitas air lain yang disesuaikan untuk semua umur."
+        }
       ],
-    },
+    }, {
+      showControl: true,
+      showNavigation: true,
+      autoPlay: 4000
+    }),
   },
   {
     name: "Stats",
@@ -129,32 +148,63 @@ export const createHomePageContent = (onOpenOrderModal: () => void) => ([
 export const createPackagePageContent = () => ([
   {
     name: "package",
+    header: {
+      eyebrow: "Paket Liburan",
+      title: "Pilih Paket Sesuai Kebutuhan Keluarga Anda",
+      description: "Temukan opsi perjalanan yang paling pas untuk keluarga Anda dengan berbagai pilihan fasilitas dan aktivitas seru.",
+      className: "column full txt-center"
+    },
     content: PricingTableBuilder.create({
       id: "pricing-plans",
+      className: "row card transparent",
       items: [
         {
-          header: "Backpacker",
+          header: "Standard",
           body: [
-            { name: "✦ Transportasi lokal standard", className: "" },
-            { name: "✦ Penginapan homestay lokal", className: "" },
-            { name: "✕ Konsumsi harian disediakan", className: "disabled" },
+            { name: "✦ Kapal Kayu Tradisional", className: "" },
+            { name: "✦ Standard Shared Homestay", className: "" },
+            { name: "✦ Snorkeling Session", className: "" },
+            { name: "✦ Island Adventure Tour", className: "" },
+            { name: "✕ Banana Boat & Jet Ski", className: "disabled" },
+            { name: "✕ Dokumentasi Drone", className: "disabled" },
+            { name: "Mulai dari Rp 450.000 / pax", className: "price-tag" },
           ],
           action: {
-            label: "Pilih Paket",
-            onClick: () => console.log("Backpacker selected"),
+            label: "Pilih Paket Standard",
+            onClick: () => window.location.hash = "#home",
           },
         },
         {
-          header: "Explorer",
+          header: "Medium",
           className: "is-featured",
           body: [
-            { name: "✦ Transportasi AC Premium PP", className: "" },
-            { name: "✦ Hotel bintang 3 terkurasi", className: "" },
-            { name: "✦ Konsumsi full-board (3x sehari)", className: "" },
+            { name: "✦ Speedboat Kilat (Ancol)", className: "" },
+            { name: "✦ Standard Shared Homestay", className: "" },
+            { name: "✦ Snorkeling & Island Tour", className: "" },
+            { name: "✦ Banana Boat Ride", className: "" },
+            { name: "✦ Underwater Photo", className: "" },
+            { name: "✕ Jet Ski & Drone", className: "disabled" },
+            { name: "Mulai dari Rp 850.000 / pax", className: "price-tag" },
           ],
           action: {
-            label: "Pilih Paket",
-            onClick: () => console.log("Explorer selected"),
+            label: "Pilih Paket Medium",
+            onClick: () => window.location.hash = "#home",
+          },
+        },
+        {
+          header: "Premium",
+          body: [
+            { name: "✦ Speedboat Kilat (Ancol)", className: "" },
+            { name: "✦ Exclusive Private House", className: "" },
+            { name: "✦ All Basic Add-ons", className: "" },
+            { name: "✦ Jet Ski Session", className: "" },
+            { name: "✦ Paddle Surfing", className: "" },
+            { name: "✦ Drone Aerial Photo", className: "" },
+            { name: "Mulai dari Rp 1.500.000 / pax", className: "price-tag" },
+          ],
+          action: {
+            label: "Pilih Paket Premium",
+            onClick: () => window.location.hash = "#home",
           },
         },
       ],
