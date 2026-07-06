@@ -66,7 +66,7 @@ export class PricingTableBuilder {
 
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "btn";
+        btn.className = "button";
         btn.textContent = item.action.label || "Pilih Paket";
 
         // Dynamically style featured actions

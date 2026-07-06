@@ -36,16 +36,32 @@ export class LandingPageBuilder {
   /**
    * Internal Method: Standardizes header elements consistently across all sections
    */
-  private buildSectionHeader(headerData: iSectionHeader): HTMLElement {
-    const headerEl = document.createElement("div");
-    headerEl.className = headerData.className || "column";
+  private buildSectionHeader(content: iSectionHeader): HTMLElement {
+    const header = document.createElement("div");
+    header.className = content.className || "column";
 
-    headerEl.innerHTML = `
-      ${headerData.eyebrow ? `<p class="eyebrow">${headerData.eyebrow}</p>` : ""}
-      ${headerData.title ? `<h2 class="title">${headerData.title}</h2>` : ""}
-      ${headerData.description ? `<p class="description">${headerData.description}</p>` : ""}
-    `;
-    return headerEl;
+    if (content.eyebrow) {
+      const eyebrow = document.createElement("p");
+      eyebrow.className = "eyebrow"
+      eyebrow.textContent = content.eyebrow;
+      header.appendChild(eyebrow);
+    }
+
+    if (content.title) {
+      const title = document.createElement("h2");
+      title.className = "title";
+      title.textContent = content.title;
+      header.appendChild(title);
+    }
+
+    if (content.description) {
+      const desc = document.createElement("p");
+      desc.className = "description";
+      desc.textContent = content.description;
+      header.appendChild(desc);
+    }
+
+    return header;
   }
 
   private normalizeRoute(route: string): string {

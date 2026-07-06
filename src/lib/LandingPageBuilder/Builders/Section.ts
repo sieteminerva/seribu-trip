@@ -3,7 +3,6 @@ import type { iSectionContent, iActionProperty } from "../interface";
 export class SectionBuilder {
 
   static create(content: iSectionContent, config = { tagName: "section" }): HTMLElement {
-    console.log({ content });
 
     const el = document.createElement(config.tagName);
     el.id = content.id as string || '';

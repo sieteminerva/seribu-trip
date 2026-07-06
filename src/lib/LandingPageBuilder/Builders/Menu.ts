@@ -36,6 +36,14 @@ export class MenuBuilder {
     brandDiv.appendChild(brandLink);
     nav.appendChild(brandDiv);
 
+    // Hamburger button (Mobile)
+    const hamburgerBtn = document.createElement('button');
+    hamburgerBtn.type = 'button';
+    hamburgerBtn.className = 'hamburger-btn';
+    hamburgerBtn.setAttribute('aria-label', 'Toggle menu');
+    hamburgerBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>';
+    nav.appendChild(hamburgerBtn);
+
     // 3. Buat elemen Menu Items (UL & LI)
     const ulItems = document.createElement('ul');
     ulItems.className = 'items';
@@ -96,6 +104,10 @@ export class MenuBuilder {
 
     toggleButton.addEventListener('click', () => {
       applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
+    });
+
+    hamburgerBtn.addEventListener('click', () => {
+      nav.classList.toggle('menu-open');
     });
 
     return nav;

@@ -1,6 +1,7 @@
 import { AccordionBuilder } from "./lib/LandingPageBuilder/Builders/Accordion";
 import { PricingTableBuilder } from "./lib/LandingPageBuilder/Builders/PricingTable";
 import { StatsBuilder } from "./lib/LandingPageBuilder/Builders/Stats";
+import { MasonryBuilder } from "./lib/LandingPageBuilder/Builders/Masonry";
 
 export const createHomePageContent = (onOpenOrderModal: () => void) => ([
   {
@@ -159,4 +160,27 @@ export const createPackagePageContent = () => ([
       ],
     }),
   },
+]);
+
+export const createGalleryPageContent = () => ([
+  {
+    name: "Gallery",
+    header: {
+      eyebrow: "Galeri",
+      title: "Momen Tak Terlupakan Bersama Kami",
+      description: "Lihat pengalaman liburan keluarga yang telah mempercayakan perjalanannya bersama SeribuTrip.",
+      className: "column full txt-center"
+    },
+    content: MasonryBuilder.create({
+      id: "gallery-grid",
+      items: [
+        { image: "https://placehold.co/600x800/8764b5/ffffff?text=Pantai" },
+        { image: "https://placehold.co/800x600/1e3a5f/ffffff?text=Snorkeling" },
+        { image: "https://placehold.co/600x400/8764b5/ffffff?text=Sunset" },
+        { image: "https://placehold.co/400x600/1e3a5f/ffffff?text=Keluarga" },
+        { image: "https://placehold.co/800x800/8764b5/ffffff?text=Pemandangan" },
+        { image: "https://placehold.co/600x600/1e3a5f/ffffff?text=Kapal" },
+      ]
+    })
+  }
 ]);
