@@ -1,0 +1,1357 @@
+/* ==========================================================================
+   1. DESIGN ENGINE TOKENS (Merged Design Tokens & Themes)
+   ========================================================================== */
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Global Color Overrides */
+  --gsheets-accent-color: #f0f4f9;
+  --primary-color: rgba(91, 63, 134, 0.65);
+  --primary-color-solid: rgba(143, 126, 174, 1);
+  --primary-text-color: var(--primary-color);
+  --primary-background-color: rgb(240 244 249 / 70%);
+  --primary-light-color: rgba(235, 233, 251, 0.8);
+  --primary-hover-color: rgba(91, 63, 134, 0.8);
+  --secondary-text-color: rgb(94, 48, 110);
+  --default-text-color: rgba(255, 255, 255, 0.8);
+  --default-inverted-text-color: rgba(255, 255, 255, 0.9);
+
+  --light-border-color: rgba(183, 164, 216, 0.85);
+  --primary-border-color: rgba(144, 116, 186, 0.85);
+  --placeholder-color: rgba(201, 201, 201, 0.85);
+  --border-color: rgba(34, 36, 38, 0.15);
+
+  /* Shared Asset & Interface Parameters */
+  --input-min-height: 37px;
+  --input-border-radius: 0.75em;
+  --input-picker-height: calc(3 * var(--input-min-height, 37px));
+  --dropdown-transition-delay: 30ms;
+  --dropdown-arrow-content: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'><path fill-rule='evenodd' clip-rule='evenodd' d='M12.707 14.707a1 1 0 0 1-1.414 0l-5-5a1 1 0 0 1 1.414-1.414L12 12.586l4.293-4.293a1 1 0 1 1 1.414 1.414l-5 5Z' fill='rgba(91, 63, 134, 0.65)'/></svg>");
+  --spinner-content: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><circle cx='10' cy='10' r='8' fill='none' stroke='rgba(138,138,178,0.3)' stroke-width='4'/><circle cx='10' cy='10' r='8' fill='none' stroke='rgba(91, 63, 134, 0.65)' stroke-width='3' stroke-linecap='round' stroke-dasharray='45'><animateTransform attributeName='transform' attributeType='XML' type='rotate' from='0 10 10' to='360 10 10' dur='0.6s' repeatCount='indefinite'/><animate attributeName='stroke-dashoffset' values='0;90;180' dur='3s' repeatCount='indefinite'/></circle></svg>");
+  --scrollbar-width: 11px;
+
+  /* Spacing Hierarchy Engine */
+  --padding-layout: 2rem; /* Applied to columns for layout gutters */
+  --margin-layout: 1rem; /* Applied between macro layout sections */
+
+  --padding-component: calc(var(--padding-layout) / 3); /* 1/3 of column padding */
+  --margin-component: 1rem; /* Applied between inline items/buttons */
+
+  --gap: var(--padding-layout); /* Sync layout gap with layout padding */
+  --radius-component: 0.5em;
+  --radius-image: 18px;
+
+  /* Theme: Light Modes */
+  --page-bg: linear-gradient(135deg, #fff8f2 0%, #f7f1ff 45%, #eef6ff 100%);
+  --surface-bg: rgba(255, 255, 255, 0.84);
+  --surface-strong: rgba(255, 255, 255, 0.95);
+  --surface-muted: rgba(255, 255, 255, 0.72);
+  --text-main: #2f243d;
+  --text-muted: #55486a;
+  --text-heading: #3c2554;
+  --border-soft: rgba(183, 164, 216, 0.35);
+  --shadow-soft: 0 18px 40px rgba(92, 63, 134, 0.12);
+  --accent: rgba(91, 63, 134, 0.95);
+  --accent-strong: rgba(143, 126, 174, 1);
+}
+
+:root[data-theme="dark"] {
+  /* Theme: Dark Modes */
+  --page-bg: linear-gradient(135deg, #07111f 0%, #142641 45%, #1c2340 100%);
+  --surface-bg: rgba(17, 24, 39, 0.88);
+  --surface-strong: rgba(24, 33, 54, 0.95);
+  --surface-muted: rgba(24, 33, 54, 0.8);
+  --text-main: #f5edff;
+  --text-muted: #c3b6dd;
+  --text-heading: #ffffff;
+  --border-soft: rgba(145, 126, 190, 0.28);
+  --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.35);
+  --accent: #b498ff;
+  --accent-strong: #8d70ff;
+}
+
+/* ==========================================================================
+   2. BASE SYSTEM ENGINE & GLOBAL SCROLLBARS
+   ========================================================================== */
+html {
+  scrollbar-color: var(--primary-light-color) transparent;
+  scrollbar-width: thin;
+  scroll-behavior: smooth;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--page-bg);
+  color: var(--text-main);
+  transition:
+    background-color 220ms ease,
+    color 220ms ease;
+}
+
+/* ==========================================================================
+   3. CLEAN STRUCTURAL GRID & COMPOSABLE LAYOUT
+   ========================================================================== */
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: clamp(5.5rem, 7vw, 7.5rem) clamp(1rem, 2.5vw, 2rem) 2rem;
+  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.section {
+  margin-bottom: var(--margin-layout);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem;
+  margin-left: calc(var(--padding-layout) * -0);
+  margin-right: calc(var(--padding-layout) * -0);
+}
+
+.column {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-left: calc(var(--padding-layout) * 0.5);
+  padding-right: calc(var(--padding-layout) * 0.5);
+  padding-top: calc(var(--padding-layout) * 0.5);
+  padding-bottom: calc(var(--padding-layout) * 0.5);
+}
+
+/* Atomic Row/Column Modifiers (Max 2 variations stacked) */
+.column.half {
+  flex: 0 0 calc(50% - 0.75rem);
+}
+.column.full {
+  flex: 0 0 100%;
+  width: 100%;
+}
+.row.align-mid {
+  align-items: center;
+}
+.txt-center {
+  text-align: center;
+  justify-content: center;
+}
+
+/* ==========================================================================
+   4. NAVIGATION SPECIFICATION (.nav Framework)
+   ========================================================================== */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.95rem 1.2rem;
+
+  background: var(--surface-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-soft);
+  border-radius: 0 0 var(--radius-component) var(--radius-component);
+}
+
+.nav .brand a {
+  color: var(--text-heading);
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.nav .items {
+  display: flex;
+  gap: 0.85rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav .items a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.nav .actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Hamburger Menu Button */
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-heading);
+  cursor: pointer;
+  padding: 0.5rem;
+  margin-left: auto;
+}
+
+/* Footer Engine Components */
+.footer {
+  margin-top: auto;
+  padding: 1rem 2em 0 2em;
+}
+
+.footer .column:first-child {
+  text-align: right;
+}
+.footer .row.bottom {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--border-soft);
+  color: var(--text-muted);
+  text-align: center;
+  p {
+    width: 100%;
+  }
+}
+.unstyled-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+.unstyled-list a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* ==========================================================================
+   5. DECORATIVE & CONTAINER COMPONENTS
+   ========================================================================== */
+.card {
+  background: var(--surface-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-soft);
+  border-radius: var(--radius-component);
+  padding: var(--padding-component);
+  height: 100%; /* Ensures nesting components match column heights */
+}
+
+.row.card {
+  margin-bottom: calc(var(--margin-component) * 2);
+}
+
+.row.card.transparent {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+}
+
+.column.card,
+.section.card {
+  /* Gutter background inherits cleanly */
+  background-clip: padding-box;
+  margin-bottom: calc(var(--margin-component) * 2);
+  padding: calc(var(--padding-component) * 2);
+}
+
+/* Section Typographies */
+.eyebrow {
+  display: inline-flex;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--secondary-text-color);
+  margin: 0 0 0.5rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.title {
+  font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+  line-height: 1.1;
+  margin: 0.25rem 0 0.8rem;
+  color: var(--text-heading);
+}
+
+.desc {
+  margin: 0 0 1rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+.img-fluid {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: var(--radius-image);
+}
+
+/* Elements inside actions/buttons use component margins */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--margin-component);
+}
+
+/* Composable Buttons & Anchors */
+.button {
+  border: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.8rem 1.15rem;
+  text-decoration: none;
+  font-weight: 700;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.button.small {
+  font-weight: 500;
+  font-size: 0.9rem;
+  border-radius: 1.5em;
+  line-height: 1.6;
+  vertical-align: middle;
+  padding: 0.4rem 0.8rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: #fff;
+  box-shadow: 0 14px 28px rgba(91, 63, 134, 0.2);
+}
+
+.button.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: #fff;
+  box-shadow: 0 14px 28px rgba(91, 63, 134, 0.2);
+}
+
+.button.large {
+  padding: 1rem 2.5rem;
+  font-size: 1.1rem;
+}
+
+.link.secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.8rem 1.15rem;
+  text-decoration: none;
+  font-weight: 700;
+  background: rgba(91, 63, 134, 0.1);
+  color: var(--secondary-text-color);
+  transition: transform 180ms ease;
+}
+
+.button:hover,
+.link.secondary:hover {
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   6. DOM SPECIFIC COMPONENT OVERRIDES
+   ========================================================================== */
+/* Stats Modifier Layout */
+.column.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--text-muted);
+}
+.column.stat strong {
+  font-size: 1.5rem;
+  color: var(--text-heading);
+}
+.column.full.compact {
+  padding: 0;
+}
+.section.row.card:has(.column.full.compact) {
+  row-gap: 0;
+}
+
+/* Banner Component Modifier */
+.banner {
+  background: var(--surface-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-soft);
+  border-radius: var(--radius-component);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+}
+.banner h2 {
+  margin: 0;
+  color: var(--text-heading);
+  font-size: clamp(1.1rem, 2.4vw, 1.4rem);
+}
+
+/* Theme Switch Toggle Layout styles */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--surface-strong);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.theme-toggle-track {
+  width: 2.5rem;
+  height: 1.3rem;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-soft);
+}
+
+.theme-toggle-thumb {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  background: var(--accent);
+  transform: translateX(0.15rem);
+  transition: transform 180ms ease;
+}
+
+.theme-toggle-btn.is-dark .theme-toggle-thumb {
+  transform: translateX(1.2rem);
+}
+
+/* ==========================================================================
+   COMPONENT
+   ========================================================================== */
+
+/* Dialog */
+.dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--padding-layout);
+
+  background: rgba(31, 20, 49, 0.85);
+  /* backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px); */
+
+  /* Smooth state fade transition */
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 180ms ease,
+    visibility 180ms ease;
+}
+
+/* The structural layout wrapper inside the fixed view */
+.dialog .modal {
+  width: min(92vw, 900px);
+  max-height: 90vh;
+  overflow-y: auto;
+
+  padding: calc(var(--padding-component) * 2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-component);
+  background: var(--page-bg);
+  box-shadow: var(--shadow-soft);
+
+  scrollbar-color: var(--primary-light-color) transparent;
+  scrollbar-width: thin;
+}
+
+/* The Atomic Hidden Utility Class */
+.dialog.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none; /* Stops any invisible unselectable selections */
+}
+
+/* Shallow utility component rules */
+.modal .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.modal .title {
+  margin: 0;
+  color: var(--text-heading);
+  font-size: 1.2rem;
+}
+
+.modal .close {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 999px;
+  background: rgba(91, 63, 134, 0.1);
+  color: red;
+  font-size: 1.3rem;
+  border: none;
+  cursor: pointer;
+}
+
+.order.form fieldset {
+  border: 1px solid rgba(183, 164, 216, 0.45);
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.order.form fieldset .input-wrapper {
+  width: 100%;
+}
+
+.order.form legend {
+  padding: 0 0.35rem;
+  color: var(--secondary-text-color);
+  font-weight: 700;
+}
+
+/* Accordion Component */
+.accordion details {
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  background: var(--surface-strong);
+  margin-bottom: 0.75rem;
+}
+.accordion summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text-heading);
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+}
+.accordion summary::-webkit-details-marker {
+  display: none;
+}
+.accordion summary::after {
+  content: var(--dropdown-arrow-content);
+  transition: transform 180ms ease;
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+}
+.accordion details[open] summary::after {
+  transform: rotate(180deg);
+}
+.accordion .content {
+  padding-top: 0.55rem;
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   7. RESPONSIVE LAYER QUERIES (The Mobile Stack Engine)
+   ========================================================================== */
+@media (max-width: 900px) {
+  /* Break standard and stacked rows into vertical configurations */
+  .row,
+  .row.stackable {
+    flex-direction: column;
+  }
+
+  /* Reset column restrictions so they break out to full width on mobile */
+  .column,
+  .column.half,
+  .column.full {
+    flex: 0 0 100%;
+    width: 100%;
+  }
+
+  /* Allow cards to size naturally based on content height when stacked */
+  .card {
+    height: auto;
+  }
+}
+
+/* Pricing Table Styling */
+.pricing-card {
+  text-align: center;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+.pricing-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 24px 48px rgba(91, 63, 134, 0.2);
+}
+.pricing-card.is-featured {
+  border: 2px solid var(--accent);
+  background: linear-gradient(to bottom, var(--surface-strong), var(--surface-bg));
+  transform: scale(1.05);
+}
+.pricing-card.is-featured:hover {
+  transform: scale(1.05) translateY(-5px);
+}
+.pricing-header {
+  padding-bottom: 0.5rem;
+}
+.pricing-header .eyebrow {
+  font-size: 1.1rem;
+  color: var(--accent);
+  border: none;
+  margin-bottom: 0;
+  letter-spacing: 0.05em;
+}
+.pricing-card .divider {
+  border: 0;
+  height: 1px;
+  background: var(--border-soft);
+  margin: 1rem 0;
+}
+.pricing-features {
+  margin: 1.5rem 0;
+  text-align: left;
+}
+.pricing-features li {
+  padding: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.pricing-features li::before {
+  content: "✓";
+  color: var(--accent);
+  font-weight: bold;
+}
+.pricing-footer {
+  margin-top: auto;
+  padding-top: 1rem;
+}
+.pricing-footer .button {
+  width: 100%;
+}
+
+/* Carousel Component */
+.carousel-container {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-component);
+  background: var(--surface-bg);
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+}
+
+.carousel-track {
+  display: flex;
+  position: relative;
+  width: 100%;
+  height: 400px;
+}
+
+.carousel-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.5s ease-in-out,
+    visibility 0.5s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carousel-slide.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.carousel-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carousel-caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  color: white;
+  padding: 2rem 1.5rem 1.5rem;
+  text-align: center;
+}
+.carousel-caption h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  color: white;
+}
+.carousel-caption p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.carousel-control {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+}
+.carousel-control:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+.carousel-control.prev {
+  left: 1rem;
+}
+.carousel-control.next {
+  right: 1rem;
+}
+
+.carousel-nav {
+  position: absolute;
+  bottom: 1rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  z-index: 10;
+}
+.carousel-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition:
+    background 0.3s ease,
+    transform 0.3s ease;
+}
+.carousel-dot.active {
+  background: white;
+  transform: scale(1.2);
+}
+
+/* Masonry Grid Styling */
+.masonry-grid {
+  column-count: 3;
+  column-gap: 1.5rem;
+  padding: 1rem 0;
+}
+.masonry-item {
+  break-inside: avoid;
+  margin-bottom: 1.5rem;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  border-radius: var(--radius-image);
+  overflow: hidden;
+}
+.masonry-item:hover {
+  transform: scale(1.02);
+}
+.masonry-item img {
+  width: 100%;
+  display: block;
+}
+
+@media (max-width: 900px) {
+  .masonry-grid {
+    column-count: 2;
+  }
+}
+@media (max-width: 640px) {
+  .masonry-grid {
+    column-count: 1;
+  }
+}
+
+/* Gallery Modal */
+.gallery-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 10, 20, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 200ms ease,
+    visibility 200ms ease;
+}
+.gallery-modal.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.gallery-modal-img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: var(--radius-component);
+}
+.gallery-modal-close,
+.gallery-modal-next,
+.gallery-modal-prev {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+}
+.gallery-modal-close:hover,
+.gallery-modal-next:hover,
+.gallery-modal-prev:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+.gallery-modal-close {
+  top: 1.5rem;
+  right: 1.5rem;
+}
+.gallery-modal-prev {
+  left: 1.5rem;
+}
+.gallery-modal-next {
+  right: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .hamburger-btn {
+    display: flex;
+  }
+
+  .nav {
+    flex-wrap: wrap;
+  }
+
+  .nav .items,
+  .nav .actions {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    padding-bottom: 1rem;
+  }
+
+  .nav.menu-open .items,
+  .nav.menu-open .actions {
+    display: flex;
+  }
+}
+
+@media (max-width: 640px) {
+  .banner,
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  .button,
+  .link.secondary {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --padding-layout: 1.25rem;
+    --margin-layout: 2rem;
+  }
+}
+/* ==========================================================================
+   1. Form & Global Resets
+   ========================================================================== */
+.native.form,
+.ui.form {
+  margin: 0 auto;
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
+/* ==========================================================================
+   2. Input Wrapper & Display Layouts
+   ========================================================================== */
+.input-wrapper {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 1em;
+  text-align: left;
+}
+
+.input-wrapper[data-display="block"] {
+  /* Inherits display: block and width: 100% from base */
+  margin-bottom: 1em;
+}
+
+.input-wrapper[data-display="inline"] {
+  display: inline-grid;
+  width: auto;
+  margin-right: 1em;
+  margin-bottom: 0;
+  vertical-align: top;
+}
+
+/* --- Block Groups --- */
+.input-wrapper.group[data-display="block"] {
+  display: grid;
+  grid-template-columns: 1fr;
+  row-gap: 0.25em;
+  height: max-content;
+}
+
+.input-wrapper.group[data-display="block"] > label {
+  margin-bottom: 0;
+}
+
+.input-wrapper.group[data-display="block"] > input:not(:last-of-type) {
+  margin-bottom: 0.75em;
+}
+
+/* --- Inline Groups --- */
+.input-wrapper.group[data-display="inline"] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25em 1em;
+  width: 100%;
+  margin-right: 0;
+}
+
+.input-wrapper.group[data-display="inline"] > label:nth-of-type(1),
+.input-wrapper.group[data-display="inline"] > input:nth-of-type(1),
+.input-wrapper.group[data-display="inline"] > span.spinner:nth-of-type(1) {
+  grid-column: 1;
+}
+
+.input-wrapper.group[data-display="inline"] > label:nth-of-type(2),
+.input-wrapper.group[data-display="inline"] > input:nth-of-type(2),
+.input-wrapper.group[data-display="inline"] > span.spinner:nth-of-type(2) {
+  grid-column: 2;
+}
+
+.input-wrapper.group[data-display="inline"] > label {
+  grid-row: 1;
+}
+
+.input-wrapper.group[data-display="inline"] > input,
+.input-wrapper.group[data-display="inline"] > span.spinner {
+  grid-row: 2;
+}
+
+/* ==========================================================================
+   3. Labels & Base Form Controls
+   ========================================================================== */
+.input-wrapper label {
+  display: block;
+  margin-bottom: 0.25em;
+  color: var(--primary-text-color);
+  font-size: 0.75em;
+  font-weight: 600;
+}
+
+.input-wrapper select,
+.input-wrapper ::picker(select) {
+  appearance: base-select;
+  cursor: pointer;
+}
+
+/* Shared Core Input Inputs styles */
+.input-wrapper input:not([type="checkbox"]),
+.input-wrapper select,
+.input-wrapper textarea {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-height: var(--input-min-height);
+  line-height: calc(var(--input-min-height) - (0.57em * 2), 1.6);
+  padding: 0.4em 1em;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--input-border-radius) !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: 200ms;
+  background-color: var(--primary-background-color);
+}
+
+.input-wrapper input:not([type="checkbox"]),
+.input-wrapper select {
+  max-height: var(--input-min-height);
+}
+
+.input-wrapper textarea {
+  min-height: calc(var(--input-min-height) * 2.5);
+  resize: vertical;
+  white-space: normal;
+}
+
+/* --- Form Fields Base Interactive States --- */
+.input-wrapper input:not([type="checkbox"]):hover,
+.input-wrapper input:not([type="checkbox"]):focus,
+.input-wrapper input:not([type="checkbox"]):active,
+.input-wrapper input:not([type="checkbox"]):focus-visible,
+.input-wrapper textarea:hover,
+.input-wrapper textarea:focus,
+.input-wrapper textarea:active,
+.input-wrapper textarea:focus-visible,
+.input-wrapper select:hover,
+.input-wrapper select:active,
+.input-wrapper select:focus-visible,
+.input-wrapper select:open,
+.input-wrapper ::picker(select):popover-open,
+.input-wrapper:has(select:active) ::picker(select):popover-open,
+.input-wrapper:has(select:focus) ::picker(select):popover-open {
+  border: 1px solid var(--primary-border-color);
+  background-color: var(--gsheets-accent-color);
+}
+
+/* Open Select Special Rounding Layer Override */
+.input-wrapper select:open,
+.input-wrapper:has(select:open) select,
+.input-wrapper:has(select:open) select:hover,
+.input-wrapper:has(select:open) select:active {
+  transition: 200ms;
+  border-radius: var(--input-border-radius) var(--input-border-radius) 0 0 !important;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* ==========================================================================
+   4. Native Fieldset & Structural Legends
+   ========================================================================== */
+.native.form fieldset {
+  display: grid;
+  gap: 1em;
+  margin-bottom: 1em;
+  padding: 1.2em 1.5em 1.5em 1.5em;
+  border: 1px solid var(--light-border-color);
+  border-radius: calc(var(--input-border-radius) / 2);
+  /* background-color: var(--primary-background-color); */
+}
+
+.native.form fieldset legend {
+  padding: 0 0.5em;
+  color: var(--primary-color);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.native.form fieldset .input-wrapper:last-child {
+  margin-bottom: 1em;
+}
+
+/* ==========================================================================
+   5. Select Options & Elements Content Parts
+   ========================================================================== */
+.input-wrapper select option {
+  color: var(--primary-hover-color);
+  transition: all 100ms;
+}
+
+.input-wrapper select option,
+.input-wrapper select::part(selectedcontent) {
+  display: block;
+  position: relative;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5em;
+  padding: 0.5em 0.5em;
+}
+
+.input-wrapper select option::checkmark {
+  margin-right: 0.25em;
+}
+
+.input-wrapper select option:hover,
+.input-wrapper select option:focus {
+  color: var(--default-text-color);
+  background-color: var(--light-border-color);
+}
+
+.input-wrapper select::part(selectedcontent),
+.input-wrapper select option:checked {
+  background-color: var(--primary-light-color);
+  color: var(--primary-text-color);
+}
+
+/* --- Placeholder Colors vs Active Content Colors --- */
+.input-wrapper input:not([type="checkbox"])::placeholder,
+.input-wrapper select,
+.input-wrapper select:has(> option.placeholder:checked) {
+  color: var(--placeholder-color);
+}
+
+.input-wrapper input:not([type="checkbox"]),
+.input-wrapper select:has(> option[selected]) {
+  color: var(--primary-text-color);
+}
+
+/* ==========================================================================
+   6. Custom Picker Popovers [::picker(select)]
+   ========================================================================== */
+.input-wrapper ::picker(select) {
+  box-sizing: border-box;
+  max-height: var(--input-picker-height);
+  max-width: calc(95% - var(--scrollbar-width));
+  top: anchor(bottom);
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform-origin: top;
+  transform: translateY(-4px) scaleY(0%) scaleX(99.7%);
+  transition: all 150ms ease;
+  transition-behavior: allow-discrete;
+  transition-delay: var(--dropdown-transition-delay);
+  border-radius: var(--input-border-radius);
+  background-color: var(--gsheets-accent-color);
+  color: transparent;
+}
+
+.input-wrapper ::picker(select):popover-open {
+  opacity: 1;
+  transition-delay: var(--dropdown-transition-delay);
+  transform: translateY(0) scaleY(1) scaleX(1);
+  scrollbar-color: var(--primary-color) rgba(255, 229, 238, 0.562);
+  scrollbar-width: thin;
+  border-radius: 0 0 var(--input-border-radius) var(--input-border-radius) !important;
+  box-shadow: 0 2px 3px 0 var(--border-color);
+}
+
+/* Unified Flattened Borders on Active Popovers */
+.input-wrapper:has(select:active) ::picker(select):popover-open,
+.input-wrapper:has(select:focus) ::picker(select):popover-open,
+.input-wrapper ::picker(select),
+.input-wrapper ::picker(select):popover-open {
+  border-top: none;
+}
+
+@starting-style {
+  .input-wrapper ::picker(select):popover-open {
+    display: block;
+    opacity: 0;
+    transform: translateY(-4px) scaleY(0%) scaleX(99.7%);
+  }
+}
+
+/* ==========================================================================
+   7. Spinner Icons & Dynamic Indicators
+   ========================================================================== */
+.input-wrapper select::picker-icon,
+.input-wrapper span.spinner {
+  box-sizing: border-box;
+  justify-self: right;
+  z-index: 99;
+}
+
+.input-wrapper select.loading::picker-icon,
+.input-wrapper span.spinner {
+  content: var(--spinner-content);
+}
+
+.input-wrapper select:not(.loading)::picker-icon {
+  content: var(--dropdown-arrow-content);
+  color: var(--primary-border-color);
+  transform: scale(85%) translateY(-21px);
+  transition: rotate 200ms;
+  transform-origin: center -35%;
+}
+
+.input-wrapper select:not(.loading):open::picker-icon {
+  rotate: 90deg;
+}
+
+.input-wrapper select.loading::picker-icon {
+  transform: translateY(-19.5px);
+}
+
+.input-wrapper span.spinner {
+  display: block;
+  position: relative;
+  transform: translateX(-19.5px) translateY(-29.5px);
+}
+
+.input-wrapper input:not([type="checkbox"]) ~ span.spinner {
+  visibility: hidden;
+}
+
+.input-wrapper input:not([type="checkbox"]).loading ~ span.spinner {
+  visibility: visible;
+}
+
+/* ==========================================================================
+   8. Toggle Switch Components
+   ========================================================================== */
+.input-wrapper.toggle-switch {
+  display: inline-grid;
+  align-items: center;
+  justify-content: start;
+  gap: 0.5em 0.75em;
+  width: max-content;
+  height: auto;
+}
+
+.input-wrapper.toggle-switch:has(> label[data-position="top"]) {
+  grid-template-areas: "label" "control";
+}
+.input-wrapper.toggle-switch:has(> label[data-position="left"]) {
+  grid-template-areas: "label control";
+}
+.input-wrapper.toggle-switch:has(> label[data-position="right"]) {
+  grid-template-areas: "control label";
+}
+.input-wrapper.toggle-switch:has(> label[data-position="bottom"]) {
+  grid-template-areas: "control" "label";
+}
+.input-wrapper.toggle-switch > label {
+  grid-area: label;
+  margin-bottom: 0;
+  color: var(--primary-text-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+.input-wrapper.toggle-switch > .control {
+  position: relative;
+  grid-area: control;
+  display: inline-block;
+}
+
+.input-wrapper.toggle-switch > .control > input[type="checkbox"],
+.input-wrapper.toggle-switch > .control > input[type="checkbox"],
+.input-wrapper.toggle-switch > .control {
+  width: 44px;
+  height: 26px;
+}
+
+.input-wrapper.toggle-switch > .control > input[type="checkbox"] {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.input-wrapper.toggle-switch > .control > .slider {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background-color: rgb(208, 208, 214);
+  transition: 0.4s;
+}
+.input-wrapper.toggle-switch > .control > .slider[data-shape="round"] {
+  border-radius: 25px;
+}
+.input-wrapper.toggle-switch > .control > .slider[data-shape="square"] {
+  border-radius: 4px;
+}
+.input-wrapper.toggle-switch > .control > .slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.4s;
+}
+.input-wrapper.toggle-switch > .control > .slider[data-shape="round"]:before {
+  border-radius: 50%;
+}
+.input-wrapper.toggle-switch > .control > .slider[data-shape="square"]:before {
+  border-radius: 2px;
+}
+.input-wrapper.toggle-switch > .control > input[type="checkbox"]:checked ~ .slider {
+  background-color: var(--primary-color);
+}
+.input-wrapper.toggle-switch > .control > input[type="checkbox"]:focus-visible ~ .slider {
+  box-shadow: 0 0 1px #2196f3;
+}
+.input-wrapper.toggle-switch > .control > input[type="checkbox"]:checked ~ .slider:before {
+  transform: translateX(18px);
+} /* ==========================================================================9. Validation Error States========================================================================== */
+.input-wrapper input.error,
+.input-wrapper select.error,
+.input-wrapper:has(select.error:open) ::picker(select):popover-open {
+  background-color: #fff6f6;
+  border: 1px solid #fd5b5b;
+}
+.input-wrapper:has(select.error:open) ::picker(select):popover-open {
+  border-top: none;
+}
+.input-wrapper input.error,
+.input-wrapper select.error,
+.input-wrapper:has(select.error:open) ::picker(select):popover-open,
+.input-wrapper input.error::placeholder,
+.input-wrapper select.error:has(> option:first-child:checked) {
+  color: #ff93ae;
+}
+.input-wrapper:has(> input.error) label,
+.input-wrapper:has(> select.error) label {
+  color: #ff114d;
+}
