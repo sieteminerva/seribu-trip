@@ -9,7 +9,7 @@ export interface iCarouselConfig {
 export class CarouselBuilder {
   static create(content: iSectionContent, config: iCarouselConfig = {}): HTMLElement {
     let carousel: HTMLElement;
-    let container: HTMLElement;
+    let container: HTMLElement | null = null;
     if (content.className) {
       container = document.createElement("div")
       container.className = content.className;
@@ -130,11 +130,11 @@ export class CarouselBuilder {
 
     startAutoPlay();
 
-    if (container) {
-      container.appendChild(carousel);
-      return container;
+    if (!container) {
+      return carousel;
     }
+    container.appendChild(carousel);
+    return container;
 
-    return carousel;
   }
 }
