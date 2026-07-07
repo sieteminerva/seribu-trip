@@ -8,25 +8,24 @@ export interface iCarouselConfig {
 
 export class CarouselBuilder {
   static create(content: iSectionContent, config: iCarouselConfig = {}): HTMLElement {
-    let carousel: HTMLElement;
-    let container: HTMLElement | null = null;
-    if (content.className) {
-      container = document.createElement("div")
-      container.className = content.className;
-    }
+
+    const container: HTMLElement | null = document.createElement("div");
+    if (content.className) container.className = content.className;
+
     if (content.id && container) container.id = content.id;
 
-    carousel = document.createElement("div")
-    carousel.className = "carousel-container";
+    // container.classList.add("carousel");
+    const carousel = document.createElement("div")
+    carousel.className = "carousel";
     const track = document.createElement("div");
-    track.className = "carousel-track";
+    track.className = "track";
 
     const slides: HTMLElement[] = [];
 
     // Create slides
     content.items.forEach((item, index) => {
       const slide = document.createElement("div");
-      slide.className = "carousel-slide";
+      slide.className = "slide";
       if (index === 0) slide.classList.add("active");
 
       if (item.image) {
@@ -39,7 +38,7 @@ export class CarouselBuilder {
 
       if (item.title || item.description) {
         const caption = document.createElement("div");
-        caption.className = "carousel-caption";
+        caption.className = "caption";
         if (item.title) {
           const title = document.createElement("h3");
           title.textContent = item.title;
@@ -84,12 +83,12 @@ export class CarouselBuilder {
     // Controls (Prev/Next)
     if (config.showControl && totalSlides > 1) {
       const prevBtn = document.createElement("button");
-      prevBtn.className = "carousel-control prev";
+      prevBtn.className = "control prev";
       prevBtn.innerHTML = "&#10094;";
       prevBtn.onclick = () => { prevSlide(); resetAutoPlay(); };
 
       const nextBtn = document.createElement("button");
-      nextBtn.className = "carousel-control next";
+      nextBtn.className = "control next";
       nextBtn.innerHTML = "&#10095;";
       nextBtn.onclick = () => { nextSlide(); resetAutoPlay(); };
 
@@ -100,11 +99,11 @@ export class CarouselBuilder {
     const dots: HTMLElement[] = [];
     if (config.showNavigation && totalSlides > 1) {
       const navContainer = document.createElement("div");
-      navContainer.className = "carousel-nav";
+      navContainer.className = "navigation";
 
       slides.forEach((_, index) => {
         const dot = document.createElement("button");
-        dot.className = "carousel-dot";
+        dot.className = "dot";
         if (index === 0) dot.classList.add("active");
         dot.onclick = () => { goToSlide(index); resetAutoPlay(); };
         dots.push(dot);
@@ -130,9 +129,6 @@ export class CarouselBuilder {
 
     startAutoPlay();
 
-    if (!container) {
-      return carousel;
-    }
     container.appendChild(carousel);
     return container;
 

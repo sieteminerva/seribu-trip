@@ -7,26 +7,19 @@ export class PricingTableBuilder {
     if (content.id) section.id = content.id;
     if (content.className) section.classList.add(...content.className.split(" "));
 
-    // Main layout responsive section framework
-    const pageContainer = document.createElement("div");
-    pageContainer.className = "page";
-
-    const row = document.createElement("div");
-    row.className = "row stackable";
-
     // Loop render structural items array
     content.items.forEach((item: iTableProperty) => {
       const column = document.createElement("div");
       column.className = "column";
 
       const card = document.createElement("div");
-      card.className = "card pricing-card";
+      card.className = "card pricing";
       if (item.id) card.id = item.id;
       if (item.className) card.classList.add(...item.className.split(" "));
 
       // 1. Pricing Header Configuration
       const headerDiv = document.createElement("div");
-      headerDiv.className = "pricing-header";
+      headerDiv.className = "header";
 
       const eyebrow = document.createElement("span");
       eyebrow.className = "eyebrow";
@@ -42,10 +35,10 @@ export class PricingTableBuilder {
 
       // 3. Pricing Body / Feature Listing Loop
       const bodyDiv = document.createElement("div");
-      bodyDiv.className = "pricing-body";
+      bodyDiv.className = "body";
 
       const list = document.createElement("ul");
-      list.className = "unstyled-list pricing-features";
+      list.className = "features";
 
       item.body.forEach((feature) => {
         const li = document.createElement("li");
@@ -62,7 +55,7 @@ export class PricingTableBuilder {
       // 4. Action Button Footer Handler
       if (item.action) {
         const footerDiv = document.createElement("div");
-        footerDiv.className = "pricing-footer";
+        footerDiv.className = "footer";
 
         const btn = document.createElement("button");
         btn.type = "button";
@@ -87,11 +80,8 @@ export class PricingTableBuilder {
       }
 
       column.append(card);
-      row.append(column);
+      section.append(column);
     });
-
-    pageContainer.append(row);
-    section.append(pageContainer);
 
     return section;
   }

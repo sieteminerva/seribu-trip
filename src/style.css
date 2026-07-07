@@ -599,67 +599,90 @@ body {
 }
 
 /* Pricing Table Styling */
-.pricing-card {
+
+.card.pricing {
   text-align: center;
   transition:
     transform 0.3s ease,
     box-shadow 0.3s ease;
   display: flex;
   flex-direction: column;
+  border-radius: 1.3em;
+  background-color: transparent;
 }
-.pricing-card:hover {
+
+.card.pricing:hover {
   transform: translateY(-5px);
   box-shadow: 0 24px 48px rgba(91, 63, 134, 0.2);
 }
-.pricing-card.is-featured {
+
+.card.pricing:not(.is-featured) {
+  border: 2px solid var(--border-soft);
+}
+
+.card.pricing.is-featured {
   border: 2px solid var(--accent);
-  background: linear-gradient(to bottom, var(--surface-strong), var(--surface-bg));
+  background: linear-gradient(to bottom, var(--surface-strong), var(--shadow-soft));
   transform: scale(1.05);
 }
-.pricing-card.is-featured:hover {
+
+.card.pricing.is-featured:hover {
   transform: scale(1.05) translateY(-5px);
 }
-.pricing-header {
-  padding-bottom: 0.5rem;
+
+.card.pricing .header {
+  padding-bottom: 0rem;
 }
-.pricing-header .eyebrow {
+
+.card.pricing .header .eyebrow {
   font-size: 1.1rem;
   color: var(--accent);
   border: none;
   margin-bottom: 0;
   letter-spacing: 0.05em;
 }
-.pricing-card .divider {
+
+.card.pricing .divider {
   border: 0;
   height: 1px;
   background: var(--border-soft);
   margin: 1rem 0;
 }
-.pricing-features {
-  margin: 1.5rem 0;
-  text-align: left;
+
+.card.pricing .body {
+  text-align: center;
 }
-.pricing-features li {
+
+.card.pricing .features {
+  margin: 1.5rem 0;
+  list-style: none;
+  padding: 0;
+}
+
+.card.pricing .features li {
   padding: 0.5rem 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.75rem;
 }
-.pricing-features li::before {
-  content: "✓";
+
+.card.pricing .features li::before {
+  content: "";
   color: var(--accent);
   font-weight: bold;
 }
-.pricing-footer {
+
+.card.pricing .footer {
   margin-top: auto;
   padding-top: 1rem;
 }
-.pricing-footer .button {
+.card.pricing .footer .button {
   width: 100%;
 }
 
 /* Carousel Component */
-.carousel-container {
+.carousel {
   width: 100%;
   position: relative;
   overflow: hidden;
@@ -670,14 +693,14 @@ body {
   flex-direction: column;
 }
 
-.carousel-track {
+.carousel .track {
   display: flex;
   position: relative;
   width: 100%;
   height: 400px;
 }
 
-.carousel-slide {
+.carousel .track .slide {
   position: absolute;
   top: 0;
   left: 0;
@@ -693,46 +716,46 @@ body {
   justify-content: center;
 }
 
-.carousel-slide.active {
+.carousel .track .slide.active {
   opacity: 1;
   visibility: visible;
 }
 
-.carousel-slide img {
+.carousel .track .slide img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.carousel-caption {
+.carousel .slide .caption {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
   color: white;
-  padding: 2rem 1.5rem 1.5rem;
+  padding: 2rem 1.5rem 2.5rem;
   text-align: center;
 }
-.carousel-caption h3 {
+.carousel .slide .caption h3 {
   margin: 0 0 0.5rem;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   color: white;
 }
-.carousel-caption p {
+.carousel .slide .caption p {
   margin: 0;
   opacity: 0.9;
 }
 
-.carousel-control {
+.carousel .control {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   background: rgba(255, 255, 255, 0.2);
   border: none;
   color: white;
-  width: 3rem;
-  height: 3rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   font-size: 1.2rem;
   cursor: pointer;
@@ -742,17 +765,17 @@ body {
   justify-content: center;
   transition: background 0.3s ease;
 }
-.carousel-control:hover {
+.carousel .control:hover {
   background: rgba(255, 255, 255, 0.5);
 }
-.carousel-control.prev {
+.carousel .control.prev {
   left: 1rem;
 }
-.carousel-control.next {
+.carousel .control.next {
   right: 1rem;
 }
 
-.carousel-nav {
+.carousel .navigation {
   position: absolute;
   bottom: 1rem;
   left: 0;
@@ -762,10 +785,10 @@ body {
   gap: 0.5rem;
   z-index: 10;
 }
-.carousel-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+.carousel .navigation .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 1em;
   border: none;
   background: rgba(255, 255, 255, 0.4);
   cursor: pointer;
@@ -773,18 +796,18 @@ body {
     background 0.3s ease,
     transform 0.3s ease;
 }
-.carousel-dot.active {
+.carousel .navigation .dot.active {
   background: white;
   transform: scale(1.2);
 }
 
 /* Masonry Grid Styling */
-.masonry-grid {
+.masonry .grid {
   column-count: 3;
   column-gap: 1.5rem;
   padding: 1rem 0;
 }
-.masonry-item {
+.masonry .item {
   break-inside: avoid;
   margin-bottom: 1.5rem;
   cursor: pointer;
@@ -792,27 +815,27 @@ body {
   border-radius: var(--radius-image);
   overflow: hidden;
 }
-.masonry-item:hover {
+.masonry .item:hover {
   transform: scale(1.02);
 }
-.masonry-item img {
+.masonry .item img {
   width: 100%;
   display: block;
 }
 
 @media (max-width: 900px) {
-  .masonry-grid {
+  .masonry .grid {
     column-count: 2;
   }
 }
 @media (max-width: 640px) {
-  .masonry-grid {
+  .masonry .grid {
     column-count: 1;
   }
 }
 
 /* Gallery Modal */
-.gallery-modal {
+.gallery .modal {
   position: fixed;
   top: 0;
   left: 0;
@@ -829,20 +852,20 @@ body {
     opacity 200ms ease,
     visibility 200ms ease;
 }
-.gallery-modal.hidden {
+.gallery .modal.hidden {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 }
-.gallery-modal-img {
+.gallery .modal .img {
   max-width: 90vw;
   max-height: 90vh;
   object-fit: contain;
   border-radius: var(--radius-component);
 }
-.gallery-modal-close,
-.gallery-modal-next,
-.gallery-modal-prev {
+.gallery .modal .close,
+.gallery .modal .next,
+.gallery .modal .prev {
   position: absolute;
   background: rgba(255, 255, 255, 0.1);
   color: white;
@@ -857,19 +880,19 @@ body {
   justify-content: center;
   transition: background 0.3s ease;
 }
-.gallery-modal-close:hover,
-.gallery-modal-next:hover,
-.gallery-modal-prev:hover {
+.gallery .modal .close:hover,
+.gallery .modal .next:hover,
+.gallery .modal .prev:hover {
   background: rgba(255, 255, 255, 0.3);
 }
-.gallery-modal-close {
+.gallery .modal .close {
   top: 1.5rem;
   right: 1.5rem;
 }
-.gallery-modal-prev {
+.gallery .modal .prev {
   left: 1.5rem;
 }
-.gallery-modal-next {
+.gallery .modal .next {
   right: 1.5rem;
 }
 
