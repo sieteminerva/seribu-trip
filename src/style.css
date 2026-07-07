@@ -686,7 +686,7 @@ body {
   width: 100%;
   position: relative;
   overflow: hidden;
-  border-radius: var(--radius-component);
+  border-radius: var(--radius-image);
   background: var(--surface-bg);
   box-shadow: var(--shadow-soft);
   display: flex;
