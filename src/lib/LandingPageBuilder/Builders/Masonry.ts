@@ -252,6 +252,7 @@ export class MasonryBuilder {
     const fragment = document.createDocumentFragment();
 
     let imageIndexCounter = this.currentVisibleImages.length;
+    let batchIndex = 0;
 
     for (let i = start; i < end; i++) {
       const content = filtered[i];
@@ -263,6 +264,9 @@ export class MasonryBuilder {
       }
 
       const item = this._createItem(content, assignedIndex);
+      item.style.setProperty('--batch-index', batchIndex.toString());
+      batchIndex++;
+
       fragment.appendChild(item);
     }
 
