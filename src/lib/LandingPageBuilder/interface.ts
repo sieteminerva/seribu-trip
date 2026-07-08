@@ -47,7 +47,7 @@ export type iLandingPageNode = iSectionBlock | iGroupNode;
 export interface iSectionContent {
   id?: string;
   className?: string;
-  items: iSectionProperty[];
+  items: (iSectionProperty | HTMLElement)[];
 }
 
 export interface iMenuContent {
@@ -87,7 +87,7 @@ export interface iContactContent {
 }
 
 export type iActionProperty = { label?: string; href?: string; id?: string; className?: string; type?: string, onClick?: (event: MouseEvent) => void };
-export type iSectionProperty = { title?: string; description?: string; image?: string; actions?: iActionProperty[] }
+export type iSectionProperty = { id?: string; className?: string; title?: string; description?: string; image?: string; actions?: iActionProperty[], category?: string; }
 export type iTableProperty = { id?: string, className?: string, header: string, body: { name: string, className: string }[], action?: iActionProperty }
 
 export interface iPricingTableContent {

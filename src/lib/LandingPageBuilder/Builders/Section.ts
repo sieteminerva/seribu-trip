@@ -1,57 +1,61 @@
-import type { iSectionContent, iActionProperty } from "../interface";
+import type { iSectionContent, iActionProperty, iSectionProperty } from "../interface";
 
 export class SectionBuilder {
 
   static create(content: iSectionContent, config = { tagName: "section" }): HTMLElement {
 
-    const el = document.createElement(config.tagName);
-    el.id = content.id as string || '';
-    el.className = 'section ' + ((content.className ? content.className : "row") || "");
+    const section = document.createElement(config.tagName);
+    section.id = content.id as string || '';
+    section.className = 'section ' + ((content.className ? content.className : "row") || "");
 
     const items = Array.isArray(content.items) ? content.items : [content.items];
 
     // Iterasi setiap item dan buat element DOM secara prosedural
-    items.forEach(item => {
-      // 1. Gambar (Image Column)
-      if (item.image) {
-        const colDiv = document.createElement('div');
-        colDiv.className = 'column half';
+    items.forEach((item: iSectionProperty | HTMLElement) => {
+      if (item instanceof HTMLElement) {
+        section.appendChild(item)
+      } else {
+        // 1. Gambar (Image Column)
+        if (item.image) {
+          const colDiv = document.createElement('div');
+          colDiv.className = 'column half';
 
-        const img = document.createElement('img');
-        img.className = 'img-fluid';
-        img.src = encodeURI(item.image);
-        img.alt = item.title || '';
+          const img = document.createElement('img');
+          img.className = 'img-fluid';
+          img.src = encodeURI(item.image);
+          img.alt = item.title || '';
 
-        colDiv.appendChild(img);
-        el.appendChild(colDiv);
-      }
+          colDiv.appendChild(img);
+          section.appendChild(colDiv);
+        }
 
-      // 2. Judul (Title)
-      if (item.title) {
-        const h2 = document.createElement('h2');
-        h2.className = 'title';
-        h2.textContent = item.title; // Aman dari XSS
-        el.appendChild(h2);
-      }
+        // 2. Judul (Title)
+        if (item.title) {
+          const h2 = document.createElement('h2');
+          h2.className = 'title';
+          h2.textContent = item.title; // Aman dari XSS
+          section.appendChild(h2);
+        }
 
-      // 3. Deskripsi (Description)
-      if (item.description) {
-        const p = document.createElement('p');
-        p.className = 'desc';
-        p.textContent = item.description; // Aman dari XSS
-        el.appendChild(p);
-      }
+        // 3. Deskripsi (Description)
+        if (item.description) {
+          const p = document.createElement('p');
+          p.className = 'desc';
+          p.textContent = item.description; // Aman dari XSS
+          section.appendChild(p);
+        }
 
-      // 4. Aksi (Actions)
-      if (item.actions && Array.isArray(item.actions)) {
-        const actionsEl = this.createAction(item.actions as iActionProperty[]);
-        if (actionsEl) {
-          el.appendChild(actionsEl);
+        // 4. Aksi (Actions)
+        if (item.actions && Array.isArray(item.actions)) {
+          const actionsEl = this.createAction(item.actions as iActionProperty[]);
+          if (actionsEl) {
+            section.appendChild(actionsEl);
+          }
         }
       }
     });
 
-    return el;
+    return section;
   }
 
   // Mengubah return type dari string menjadi HTMLElement | null

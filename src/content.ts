@@ -14,7 +14,11 @@ export const createHomePageContent = (onOpenOrderModal: () => void) => ([
       title: "Liburan laut yang tenang, privat, dan dipersiapkan dengan penuh perhatian.",
       description: "Kami menyusun perjalanan keluarga ke pulau impian dengan itinerary yang jelas, fasilitas yang nyaman, dan dukungan tim lokal yang siap membantu setiap langkahnya.",
     },
-    content: CarouselBuilder.create({
+    content: new CarouselBuilder({
+      showControl: true,
+      showNavigation: true,
+      autoPlay: 4000
+    }).create({
       id: "hero-section",
       className: "column half",
       items: [
@@ -34,10 +38,6 @@ export const createHomePageContent = (onOpenOrderModal: () => void) => ([
           description: "Snorkeling dan aktivitas air lain yang disesuaikan untuk semua umur."
         }
       ],
-    }, {
-      showControl: true,
-      showNavigation: true,
-      autoPlay: 4000
     }),
   },
   {
@@ -221,15 +221,45 @@ export const createGalleryPageContent = () => ([
       description: "Lihat pengalaman liburan keluarga yang telah mempercayakan perjalanannya bersama SeribuTrip.",
       className: "column full txt-center"
     },
-    content: MasonryBuilder.create({
+    content: new MasonryBuilder({ category: "category" }).create({
       id: "gallery-grid",
       items: [
-        { image: "https://placehold.co/600x800/8764b5/ffffff?text=Pantai" },
-        { image: "https://placehold.co/800x600/1e3a5f/ffffff?text=Snorkeling" },
-        { image: "https://placehold.co/600x400/8764b5/ffffff?text=Sunset" },
-        { image: "https://placehold.co/400x600/1e3a5f/ffffff?text=Keluarga" },
-        { image: "https://placehold.co/800x800/8764b5/ffffff?text=Pemandangan" },
-        { image: "https://placehold.co/600x600/1e3a5f/ffffff?text=Kapal" },
+        {
+          image: "https://placehold.co/600x800/8764b5/ffffff?text=Pantai",
+          category: "A"
+        },
+        {
+          image: "https://placehold.co/800x600/1e3a5f/ffffff?text=Snorkeling",
+          category: "A"
+        },
+        {
+          image: "https://placehold.co/600x400/8764b5/ffffff?text=Sunset",
+          category: "A"
+        },
+        {
+          image: "https://placehold.co/400x600/1e3a5f/ffffff?text=Keluarga",
+          category: "B"
+        },
+        {
+          image: "https://placehold.co/800x800/8764b5/ffffff?text=Pemandangan",
+          category: "B"
+        },
+        {
+          image: "https://placehold.co/600x600/1e3a5f/ffffff?text=Kapal",
+          category: "B"
+        },
+        {
+          image: "https://placehold.co/400x600/1e3a5f/ffffff?text=Penginapan",
+          category: "C"
+        },
+        {
+          image: "https://placehold.co/800x800/8764b5/ffffff?text=Permainan",
+          category: "C"
+        },
+        {
+          image: "https://placehold.co/600x600/1e3a5f/ffffff?text=Suasana Malam",
+          category: "C"
+        },
       ]
     })
   }
