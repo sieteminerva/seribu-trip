@@ -34,11 +34,10 @@ export interface iMasonryConfig {
 
 export class MasonryBuilder {
   private config: iMasonryConfig;
-  private rawItems: (iSectionProperty | HTMLElement)[] = [];
-  private filteredItems: (iSectionProperty | HTMLElement)[] = [];
-  private allImages: string[] = [];
+  private selector!: Required<iMasonrySelectors>;
+  #items: (iSectionProperty | HTMLElement)[] = [];
   private displayedCount = 0;
-  private contentItems: (iSectionProperty | HTMLElement)[] = [];
+  private selectedCategory: string | null = null;
 
   private rootElement!: HTMLElement;
   private gridElement!: HTMLElement;
@@ -49,10 +48,10 @@ export class MasonryBuilder {
     show: (index: number) => void;
     updateNavigation: () => void;
     destroy: () => void;
-  };;
+  };
   private observer?: IntersectionObserver;
-  private selector!: Required<iMasonrySelectors>;
-  private selectedCategory: string | null = null;
+
+
 
   constructor(config?: Partial<iMasonryConfig>) {
 
@@ -86,8 +85,54 @@ export class MasonryBuilder {
     (this.selector as iMasonrySelectors) = this.config.selectors as iMasonrySelectors;
   }
 
+  /**
+   * SETTER: Tempat validasi pusat untuk mengamankan data sebelum masuk ke aplikasi
+   */
+  public set items(newItems: (iSectionProperty | HTMLElement)[]) {
+    // Validasi Keamanan: Pastikan data berupa array dan lakukan pembersihan
+    if (!Array.isArray(newItems)) {
+      console.error('Validasi Gagal: Data masonry harus berupa array.');
+      return;
+    }
+
+    // Bekukan data (Immutability) agar tidak bisa dimutasi secara ilegal dari luar skrip
+    this.#items = newItems.map(item => {
+      if (item instanceof HTMLElement) return item;
+
+      // Sanitasi dasar: Pastikan properti penting aman dari manipulasi tipe data
+      return Object.freeze({
+        ...item,
+        title: item.title ? String(item.title).trim() : undefined,
+        description: item.description ? String(item.description).trim() : undefined,
+        category: item.category ? String(item.category).trim() : undefined,
+        image: item.image ? String(item.image).trim() : undefined
+      });
+    });
+  }
+
+
+  /**
+   * GETTER KATEGORI: Menghitung daftar gambar yang AKTIF dan SUDAH TER-RENDER di layar saat ini
+   * (Menghilangkan celah bypass modal data secara instan)
+   */
+  private get currentVisibleImages(): string[] {
+    // 1. Ambil data yang lolos saringan kategori saat ini
+    const filtered = this.#items.filter(item => {
+      if (item instanceof HTMLElement) return false;
+      return this.selectedCategory === null || item.category === this.selectedCategory;
+    }) as iSectionProperty[];
+
+    // 2. Batasi hanya sebanyak jumlah item yang sedang aktif di-render di layar (displayedCount)
+    const visibleBatch = filtered.slice(0, this.displayedCount);
+
+    // 3. Ekstrak string URL gambarnya saja
+    return visibleBatch.map(item => item.image).filter((img): img is string => !!img);
+  }
+
   public create(content: iSectionContent): HTMLElement {
-    this.rawItems = content.items;
+    this.items = content.items;
+    // console.log({ items: this.items })
+    this.displayedCount = 0;
 
     if (this.config.container) {
       if (typeof this.config.container === 'string') {
@@ -107,11 +152,13 @@ export class MasonryBuilder {
 
     // 2. Ekstrak Kategori Unik di Level create() untuk validasi awal
     const categoriesSet = new Set<string>();
-    this.rawItems.forEach(item => {
+
+    this.#items.forEach(item => {
       if (!(item instanceof HTMLElement) && item.category) {
         categoriesSet.add(item.category.trim());
       }
     });
+
     const categories = Array.from(categoriesSet);
 
     // 3. Tentukan State Kategori Aktif Awal (Gunakan dari config, fallback ke categories[0], atau null jika kosong)
@@ -131,9 +178,10 @@ export class MasonryBuilder {
     this.gridElement.className = this.selector.grid;
     this.gridElement.style.setProperty('--init-columns', this.config.column.toString());
     this.rootElement.appendChild(this.gridElement);
-    console.log({ allImages: this.allImages })
-    // Inisialisasi modal dengan fungsi destroy bawaan
+    // console.log({ allImages: this.allImages })
+
     this.modal = this._initModal();
+
 
     this._applyFilter(this.selectedCategory as string)
 
@@ -176,7 +224,7 @@ export class MasonryBuilder {
 
       this.observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-          if (entry.isIntersecting && this.displayedCount < this.contentItems.length) {
+          if (entry.isIntersecting && this.displayedCount < this.#items.filter(item => { if (item instanceof HTMLElement) return false; return this.selectedCategory === null || item.category === this.selectedCategory; }).length) {
             this._loadNextBatch();
           }
         });
@@ -189,27 +237,45 @@ export class MasonryBuilder {
   }
 
   private _loadNextBatch(): void {
+
+    const filtered = this.#items.filter(item => {
+      if (item instanceof HTMLElement) return false;
+      return this.selectedCategory === null || item.category === this.selectedCategory;
+    });
+
     const start = this.displayedCount;
-    const end = Math.min(start + this.config.maxDisplayed, this.filteredItems.length);
+    const end = Math.min(start + this.config.maxDisplayed, filtered.length);
 
     if (start >= end) return;
 
     this.spinnerElement?.classList.remove('hidden');
     const fragment = document.createDocumentFragment();
 
+    let imageIndexCounter = this.currentVisibleImages.length;
+
     for (let i = start; i < end; i++) {
-      const item = this._createItem(this.filteredItems[i]);
+      const content = filtered[i];
+      let assignedIndex = -1;
+
+      if (!(content instanceof HTMLElement) && content.image) {
+        assignedIndex = imageIndexCounter;
+        imageIndexCounter++;
+      }
+
+      const item = this._createItem(content, assignedIndex);
       fragment.appendChild(item);
     }
 
     this.gridElement.appendChild(fragment);
     this.displayedCount = end;
 
+    this.modal.updateNavigation();
+
     setTimeout(() => {
       this.spinnerElement?.classList.add('hidden');
     }, 200);
 
-    if (this.displayedCount >= this.filteredItems.length) {
+    if (this.displayedCount >= filtered.length) {
       if (this.observer) this.observer.disconnect();
       this.triggerElement?.remove();
       this.spinnerElement?.remove();
@@ -325,30 +391,12 @@ export class MasonryBuilder {
     this.spinnerElement?.remove();
     this.gridElement.innerHTML = '';
 
-    // Reset state internal tracking pagination
-    this.allImages = [];
     this.displayedCount = 0;
+    this.selectedCategory = category;
 
-    // 2. Lakukan Penyaringan Data Array
-    if (category === null) {
-      this.filteredItems = [...this.rawItems];
-    } else {
-      this.filteredItems = this.rawItems.filter(item => {
-        if (item instanceof HTMLElement) return false; // Elemen murni tidak punya kategori instan
-        return item.category === category;
-      });
-      // console.log(this.filteredItems)
-    }
-
-    this.filteredItems.forEach(item => {
-      if (!(item instanceof HTMLElement) && item.image) {
-        this.allImages.push(item.image);
-      }
-    });
-
+    // Sinkronisasi ulang navigasi modal
     this.modal.updateNavigation();
 
-    // 3. Bangun ulang Spinner & Pagination Trigger khusus untuk kelompok data baru ini
     this._createSpinner(this.rootElement);
     this._initPaginationTrigger(this.rootElement);
   }
@@ -359,7 +407,7 @@ export class MasonryBuilder {
     root.appendChild(this.spinnerElement);
   }
 
-  private _createItem(content: iSectionProperty | HTMLElement): HTMLElement {
+  private _createItem(content: iSectionProperty | HTMLElement, modalIndex: number): HTMLElement {
     const card = document.createElement('div');
     card.className = `${this.selector.item} ${this.selector.itemFadeIn}`;
 
@@ -383,7 +431,6 @@ export class MasonryBuilder {
     if (item.id) card.id = item.id;
 
     if (item.image) {
-      const currentModalIndex = this.allImages.indexOf(item.image);
 
       const img = document.createElement('img');
       img.className = 'img-fluid';
@@ -402,10 +449,9 @@ export class MasonryBuilder {
       card.appendChild(img);
       img.style.cursor = 'pointer';
       img.addEventListener('click', (e) => {
-        console.log("show Modal", currentModalIndex)
         e.stopPropagation();
-        if (currentModalIndex !== -1) {
-          this.modal.show(currentModalIndex);
+        if (modalIndex !== -1) {
+          this.modal.show(modalIndex);
         }
       });
     }
@@ -493,10 +539,12 @@ export class MasonryBuilder {
 
     // Fungsi Kontrol Internal
     const show = (index: number) => {
-      if (!this.allImages.length) return;
-      // Membaca 'this.allImages' dari kelas induk secara realtime
-      currentIndex = (index + this.allImages.length) % this.allImages.length;
-      modalImg.src = this.allImages[currentIndex];
+      // Membaca data dinamis ter-render dari Getter pusat
+      const activeImages = this.currentVisibleImages;
+      if (!activeImages.length) return;
+
+      currentIndex = (index + activeImages.length) % activeImages.length;
+      modalImg.src = activeImages[currentIndex];
       modalEl.classList.remove('hidden');
       isModalOpen = true;
       setTimeout(() => modalEl.focus(), 50);
