@@ -284,10 +284,6 @@ export class MasonryBuilder {
 
   private _renderFilterMenu(categories: string[], selectedCategory: string) {
 
-    // Jika tidak ada data kategori sama sekali, lewati pembuatan menu
-    if (categories.length === 0) return;
-
-    // 2. LOGIKA UTAMA: Jika config.category kosong, otomatis paksa pakai kategori pertama yang ada
     const menu = document.createElement('div');
     menu.className = this.selector.filterMenu;
 
@@ -299,7 +295,7 @@ export class MasonryBuilder {
     allBtn.onclick = () => this._handleCategoryChange(null, allBtn);
     menu.appendChild(allBtn);
 
-    if (!selectedCategory) {
+    if (selectedCategory === null) {
       activeBtnElement = allBtn;
     }
 
@@ -329,9 +325,15 @@ export class MasonryBuilder {
   }
 
   private _updateSlider = (activeBtn: HTMLButtonElement, isInit = false) => {
+    console.log(activeBtn)
     const sliderClass = this.selector.filterSlider.split(' ')[0];
     const slider = this.filterMenuElement?.querySelector(`.${sliderClass}`) as HTMLElement;
     if (!slider || !activeBtn) return;
+
+    if (activeBtn.offsetWidth === 0 && isInit) {
+      requestAnimationFrame(() => this._updateSlider(activeBtn, true));
+      return;
+    }
 
     // 1. Jika inisialisasi awal, matikan transisi agar tidak melompat dari atas/kiri screen
     if (isInit) {

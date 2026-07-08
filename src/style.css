@@ -952,6 +952,8 @@ body {
         height 0.35s cubic-bezier(0.25, 1, 0.5, 1);
       z-index: -1;
       pointer-events: none;
+      min-width: 45px;
+      min-height: 30px;
     }
 
     & .item {

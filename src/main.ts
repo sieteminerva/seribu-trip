@@ -1,5 +1,6 @@
 import './style.css';
 import './form.css';
+import './overrides.css';
 import { createOrderModal } from './order-form';
 import { ContactBuilder } from './lib/LandingPageBuilder/Builders/Contact';
 import { MenuBuilder } from './lib/LandingPageBuilder/Builders/Menu';
