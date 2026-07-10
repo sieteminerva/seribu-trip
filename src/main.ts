@@ -5,12 +5,13 @@ import { createOrderModal } from './order-form';
 import { createHomePageContent, createPackagePageContent, createGalleryPageContent } from './content';
 import { ContactBuilder } from './lib/LandingPageBuilder/Builders/Contact';
 import { MenuBuilder } from './lib/LandingPageBuilder/Builders/Menu';
-import { BuilderRegistry, LandingPageBuilder } from './lib/LandingPageBuilder/LandingPage';
+import { LandingPageBuilder } from './lib/LandingPageBuilder/LandingPage';
 import { CarouselBuilder } from './lib/LandingPageBuilder/Builders/Carousel';
 import { AccordionBuilder } from './lib/LandingPageBuilder/Builders/Accordion';
 import { PricingTableBuilder } from './lib/LandingPageBuilder/Builders/PricingTable';
 import { MasonryBuilder } from './lib/LandingPageBuilder/Builders/Masonry';
 import { SectionBuilder } from './lib/LandingPageBuilder/Builders/Section';
+import { BuilderRegistry } from './lib/LandingPageBuilder/BuilderRegistry';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 

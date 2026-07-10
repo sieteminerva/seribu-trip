@@ -1,4 +1,5 @@
-import type { ComponentBuilderFn, iBasicNode, iBuilderRegistry, iLandingPageBuilderSource, iNodeContent } from "./interface";
+import type { BuilderRegistry } from "./BuilderRegistry";
+import type { iBasicNode, iLandingPageBuilderSource, iNodeContent } from "./interface";
 import { DOMRenderer } from "./Renderers/DOMRenderer";
 
 export interface iLandingPageBuilderConfig {
@@ -69,23 +70,7 @@ export function resolveContentObj(nodeObj: iBasicNode): any {
   return result;
 }
 
-export class BuilderRegistry {
-  // Gunakan tipe data Map internal yang fleksibel namun aman
-  private builders = new Map<string, ComponentBuilderFn>();
 
-  public register<K extends keyof iBuilderRegistry>(name: K, builderFn: ComponentBuilderFn<iBuilderRegistry[K]>): this {
-    this.builders.set(name, builderFn);
-    return this;
-  }
-
-  public get<K extends keyof iBuilderRegistry>(name: K): ComponentBuilderFn<iBuilderRegistry[K]> | undefined {
-    return this.builders.get(name) as any;
-  }
-
-  public has(name: string): boolean {
-    return this.builders.has(name);
-  }
-}
 
 export class LandingPageBuilder {
   private container: HTMLElement;

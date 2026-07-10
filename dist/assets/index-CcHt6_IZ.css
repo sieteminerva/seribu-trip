@@ -35,6 +35,7 @@
   --scrollbar-width: 11px;
 
   /* Spacing Hierarchy Engine */
+  --masonry-columns: 3;
   --padding-layout: 2rem; /* Applied to columns for layout gutters */
   --margin-layout: 1rem; /* Applied between macro layout sections */
 
@@ -144,6 +145,7 @@ body {
   align-items: center;
 }
 .txt-center {
+  width: 100%;
   text-align: center;
   justify-content: center;
 }
@@ -373,8 +375,10 @@ body {
 /* Stats Modifier Layout */
 .column.stat {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 1rem;
   color: var(--text-muted);
 }
 .column.stat strong {
@@ -599,85 +603,263 @@ body {
 }
 
 /* Pricing Table Styling */
-.pricing-card {
+
+.card.pricing {
   text-align: center;
   transition:
     transform 0.3s ease,
     box-shadow 0.3s ease;
   display: flex;
   flex-direction: column;
+  border-radius: 1.3em;
+  background-color: transparent;
 }
-.pricing-card:hover {
+
+.card.pricing:hover {
   transform: translateY(-5px);
   box-shadow: 0 24px 48px rgba(91, 63, 134, 0.2);
 }
-.pricing-card.is-featured {
+
+.card.pricing:not(.is-featured) {
+  border: 2px solid var(--border-soft);
+}
+
+.card.pricing.is-featured {
   border: 2px solid var(--accent);
-  background: linear-gradient(to bottom, var(--surface-strong), var(--surface-bg));
+  background: linear-gradient(to bottom, var(--surface-strong), var(--shadow-soft));
   transform: scale(1.05);
 }
-.pricing-card.is-featured:hover {
+
+.card.pricing.is-featured:hover {
   transform: scale(1.05) translateY(-5px);
 }
-.pricing-header {
-  padding-bottom: 0.5rem;
+
+.card.pricing .header {
+  padding-bottom: 0rem;
 }
-.pricing-header .eyebrow {
+
+.card.pricing .header .eyebrow {
   font-size: 1.1rem;
   color: var(--accent);
   border: none;
   margin-bottom: 0;
   letter-spacing: 0.05em;
 }
-.pricing-card .divider {
+
+.card.pricing .divider {
   border: 0;
   height: 1px;
   background: var(--border-soft);
   margin: 1rem 0;
 }
-.pricing-features {
-  margin: 1.5rem 0;
-  text-align: left;
+
+.card.pricing .body {
+  text-align: center;
 }
-.pricing-features li {
+
+.card.pricing .features {
+  margin: 1.5rem 0;
+  list-style: none;
+  padding: 0;
+}
+
+.card.pricing .features li {
   padding: 0.5rem 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.75rem;
 }
-.pricing-features li::before {
-  content: "✓";
+
+.card.pricing .features li::before {
+  content: "";
   color: var(--accent);
   font-weight: bold;
 }
-.pricing-footer {
+
+.card.pricing .footer {
   margin-top: auto;
   padding-top: 1rem;
 }
-.pricing-footer .button {
+.card.pricing .footer .button {
   width: 100%;
 }
 
+/* Tab Component */
+.tab-container {
+  display: flex;
+  gap: 1.5rem;
+  position: relative;
+
+  /* POSISI ATAS (TOP) */
+  &.position-top {
+    flex-direction: column;
+    & .tab-menu {
+      flex-direction: row;
+      border-bottom: 2px solid var(--accent-strong);
+    }
+  }
+
+  /* POSISI BAWAH (BOTTOM) */
+  &.position-bottom {
+    flex-direction: column;
+    & .tab-menu {
+      flex-direction: row;
+      border-top: 2px solid var(--accent-strong);
+      order: 2;
+    }
+    & .tab-body {
+      order: 1;
+    }
+  }
+
+  /* POSISI KIRI (LEFT) */
+  &.position-left {
+    flex-direction: row;
+    & .tab-menu {
+      flex-direction: column;
+      border-right: 2px solid var(--accent-strong);
+      width: 250px;
+    }
+    & .tab-body {
+      flex: 1;
+    }
+  }
+
+  /* POSISI KANAN (RIGHT) */
+  &.position-right {
+    flex-direction: row-reverse;
+    & .tab-menu {
+      flex-direction: column;
+      border-left: 2px solid var(--accent-strong);
+      width: 250px;
+    }
+    & .tab-body {
+      flex: 1;
+    }
+  }
+
+  /* MENU BUTTON STYLING */
+  & .tab-menu {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem;
+
+    & .tab-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 0.75rem 1.5rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid transparent;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: left;
+
+      & .btn-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+      & .btn-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-top: 0.25rem;
+      }
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      &.active {
+        background: var(--accent-strong);
+        color: var(--surface-muted);
+        & .btn-label {
+          color: rgba(255, 255, 255, 0.7);
+        }
+      }
+    }
+  }
+
+  /* BODY & PANEL STYLING */
+  & .tab-body {
+    position: relative;
+    padding: 1rem 0;
+
+    & .tab-panel {
+      animation: tabFadeIn 0.35s ease forwards;
+
+      & .content-wrapper {
+        & .eyebrow {
+          font-size: 0.85rem;
+          color: var(--accent-strong);
+          text-transform: uppercase;
+        }
+        & .title {
+          font-size: 1.75rem;
+          margin: 0.5rem 0;
+          color: #fff;
+        }
+        & .desc {
+          font-size: 1rem;
+          line-height: 1.6;
+          color: var(--text-main);
+        }
+      }
+    }
+  }
+
+  & .spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 30px;
+    height: 30px;
+    background-image: var(--spinner-content);
+    background-size: contain;
+    z-index: 10;
+
+    &.hidden {
+      display: none;
+    }
+  }
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Carousel Component */
-.carousel-container {
+.carousel {
   width: 100%;
   position: relative;
   overflow: hidden;
-  border-radius: var(--radius-component);
+  border-radius: var(--radius-image);
   background: var(--surface-bg);
   box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
 }
 
-.carousel-track {
+.carousel .track {
   display: flex;
   position: relative;
   width: 100%;
   height: 400px;
 }
 
-.carousel-slide {
+/* --- ANIMATION LAYOUT STRUCTURING --- */
+
+/* 1. FADE ANIMATION MECHANICS */
+.carousel.anim-fade .track .slide {
   position: absolute;
   top: 0;
   left: 0;
@@ -688,51 +870,78 @@ body {
   transition:
     opacity 0.5s ease-in-out,
     visibility 0.5s ease-in-out;
+}
+
+.carousel.anim-fade .track .slide.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 2. HORIZONTAL SLIDING ANIMATION MECHANICS (Left & Right) */
+.carousel.anim-slide-left .track,
+.carousel.anim-slide-right .track {
+  position: relative;
+  transition: transform 0.5s ease-in-out;
+}
+.carousel.anim-slide-left .track .slide,
+.carousel.anim-slide-right .track .slide {
+  position: relative; /* Items stay structural in a horizontal row line */
+  opacity: 1;
+  visibility: visible;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* Adjust tracking flex alignments to build natural reverse loops for slide-right direction */
+.carousel.anim-slide-right .track {
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
+/* --- SHARED SUB-ELEMENT STYLES --- */
+.carousel .track .slide {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.carousel-slide.active {
-  opacity: 1;
-  visibility: visible;
-}
-
-.carousel-slide img {
+.carousel .track .slide img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.carousel-caption {
+.carousel .slide .caption {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
   color: white;
-  padding: 2rem 1.5rem 1.5rem;
+  padding: 2rem 1.5rem 2.5rem;
   text-align: center;
 }
-.carousel-caption h3 {
+
+.carousel .slide .caption h3 {
   margin: 0 0 0.5rem;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   color: white;
 }
-.carousel-caption p {
+
+.carousel .slide .caption p {
   margin: 0;
   opacity: 0.9;
 }
 
-.carousel-control {
+.carousel .control {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   background: rgba(255, 255, 255, 0.2);
   border: none;
   color: white;
-  width: 3rem;
-  height: 3rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   font-size: 1.2rem;
   cursor: pointer;
@@ -742,17 +951,20 @@ body {
   justify-content: center;
   transition: background 0.3s ease;
 }
-.carousel-control:hover {
+
+.carousel .control:hover {
   background: rgba(255, 255, 255, 0.5);
 }
-.carousel-control.prev {
+
+.carousel .control.prev {
   left: 1rem;
 }
-.carousel-control.next {
+
+.carousel .control.next {
   right: 1rem;
 }
 
-.carousel-nav {
+.carousel .navigation {
   position: absolute;
   bottom: 1rem;
   left: 0;
@@ -762,10 +974,11 @@ body {
   gap: 0.5rem;
   z-index: 10;
 }
-.carousel-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+
+.carousel .navigation .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 1em;
   border: none;
   background: rgba(255, 255, 255, 0.4);
   cursor: pointer;
@@ -773,46 +986,180 @@ body {
     background 0.3s ease,
     transform 0.3s ease;
 }
-.carousel-dot.active {
+
+.carousel .navigation .dot.active {
   background: white;
   transform: scale(1.2);
 }
 
 /* Masonry Grid Styling */
-.masonry-grid {
-  column-count: 3;
+.masonry .grid {
+  column-count: var(--masonry-columns, 3);
   column-gap: 1.5rem;
   padding: 1rem 0;
 }
-.masonry-item {
+.masonry .item {
   break-inside: avoid;
   margin-bottom: 1.5rem;
   cursor: pointer;
   transition: transform 0.3s ease;
   border-radius: var(--radius-image);
   overflow: hidden;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  /* display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 1rem;
+  box-sizing: border-box; */
 }
-.masonry-item:hover {
+.masonry .item:hover {
   transform: scale(1.02);
+  box-shadow: 0 24px 48px rgba(91, 63, 134, 0.2);
 }
-.masonry-item img {
+.masonry .item img {
   width: 100%;
   display: block;
 }
 
+.masonry .more {
+  display: block;
+  margin: 2rem auto;
+  padding: 0.75rem 2rem;
+  background: var(--accent-strong);
+  color: var(--surface-strong);
+  border: 2px solid var(--border-soft);
+  border-radius: calc(var(--radius-component, 8px) * 4);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  transition: background 0.3s ease;
+}
+
+.masonry .more:hover {
+  background: none;
+  color: var(--accent);
+  border: 2px solid var(--accent);
+}
+
+.masonry .spinner {
+  display: block;
+  margin: 1.5rem auto;
+  width: 40px;
+  height: 40px;
+  background-image: var(--spinner-content);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+  opacity: 1;
+  visibility: visible;
+}
+
+.masonry .spinner.hidden {
+  opacity: 0;
+  visibility: hidden;
+  margin: 0 auto;
+  height: 0;
+}
+
+.masonry .sentinel {
+  width: 100%;
+  pointer-events: none;
+}
+
+.masonry .item.fade-in {
+  opacity: 0;
+  transform: translateY(30px);
+  animation: masonryFadeIn 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  animation-delay: calc(var(--batch-index, 0) * 0.05s);
+}
+
+.masonry {
+  & .filter.menu {
+    position: relative;
+    display: flex;
+    gap: 0.75rem;
+    margin: 1.5rem auto;
+    flex-wrap: wrap;
+    width: max-content;
+    height: fit-content;
+    justify-content: center;
+    align-items: center;
+    padding: 5px;
+    border: 2px solid var(--accent-strong);
+    border-radius: calc(var(--radius-image) * 2);
+    justify-self: center;
+    z-index: 1;
+
+    /* STYLING ELEMEN SLIDER */
+    & .slider {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: var(--accent-strong);
+      border-radius: var(--radius-image);
+      box-shadow: var(--shadow-soft);
+      transition:
+        transform 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+        width 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+        height 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+      z-index: -1;
+      pointer-events: none;
+      min-width: 45px;
+      min-height: 30px;
+    }
+
+    & .item {
+      position: relative;
+      padding: 0.5rem 1.25rem;
+      margin-bottom: 0;
+      color: var(--text-main);
+      border-radius: var(--radius-image);
+      cursor: pointer;
+      font-size: 0.9rem;
+
+      transition: color 0.3s ease;
+      background: none;
+      border: none;
+      outline: none;
+
+      &:hover {
+        color: var(--text-muted);
+      }
+
+      &.active {
+        background: none;
+        box-shadow: none;
+        color: var(--surface-muted);
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+@keyframes masonryFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 900px) {
-  .masonry-grid {
+  .masonry .grid {
     column-count: 2;
   }
 }
 @media (max-width: 640px) {
-  .masonry-grid {
+  .masonry .grid {
     column-count: 1;
   }
 }
 
 /* Gallery Modal */
-.gallery-modal {
+.gallery .modal {
   position: fixed;
   top: 0;
   left: 0;
@@ -829,20 +1176,20 @@ body {
     opacity 200ms ease,
     visibility 200ms ease;
 }
-.gallery-modal.hidden {
+.gallery .modal.hidden {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 }
-.gallery-modal-img {
+.gallery .modal .img {
   max-width: 90vw;
   max-height: 90vh;
   object-fit: contain;
   border-radius: var(--radius-component);
 }
-.gallery-modal-close,
-.gallery-modal-next,
-.gallery-modal-prev {
+.gallery .modal .close,
+.gallery .modal .next,
+.gallery .modal .prev {
   position: absolute;
   background: rgba(255, 255, 255, 0.1);
   color: white;
@@ -857,19 +1204,19 @@ body {
   justify-content: center;
   transition: background 0.3s ease;
 }
-.gallery-modal-close:hover,
-.gallery-modal-next:hover,
-.gallery-modal-prev:hover {
+.gallery .modal .close:hover,
+.gallery .modal .next:hover,
+.gallery .modal .prev:hover {
   background: rgba(255, 255, 255, 0.3);
 }
-.gallery-modal-close {
+.gallery .modal .close {
   top: 1.5rem;
   right: 1.5rem;
 }
-.gallery-modal-prev {
+.gallery .modal .prev {
   left: 1.5rem;
 }
-.gallery-modal-next {
+.gallery .modal .next {
   right: 1.5rem;
 }
 
@@ -1354,4 +1701,13 @@ textarea:focus-visible {
 .input-wrapper:has(> input.error) label,
 .input-wrapper:has(> select.error) label {
   color: #ff114d;
+}
+#faq-section h2 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+#faq-section h2 {
+  margin-top: 0;
+  margin-bottom: 0;
 }
