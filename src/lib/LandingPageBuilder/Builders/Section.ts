@@ -1,8 +1,8 @@
-import type { iSectionContent, iActionProperty, iSectionProperty } from "../interface";
+import type { iActionProperty, iBasicNode } from "../interface";
 
 export class SectionBuilder {
 
-  static create(content: iSectionContent, config = { tagName: "section" }): HTMLElement {
+  static create(content: iBasicNode, config = { tagName: "section" }): HTMLElement {
 
     const section = document.createElement(config.tagName);
     section.id = content.id as string || '';
@@ -11,7 +11,7 @@ export class SectionBuilder {
     const items = Array.isArray(content.items) ? content.items : [content.items];
 
     // Iterasi setiap item dan buat element DOM secara prosedural
-    items.forEach((item: iSectionProperty | HTMLElement) => {
+    items.forEach((item: iBasicNode | HTMLElement) => {
       if (item instanceof HTMLElement) {
         section.appendChild(item)
       } else {

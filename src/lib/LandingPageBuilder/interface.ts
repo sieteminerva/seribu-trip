@@ -1,97 +1,137 @@
-export interface iLandingPageBuilderConfig {
-  container: HTMLElement | string;
-  theme?: 'light' | 'dark' | string;
-  useMenu?: boolean;
-  useFooter?: boolean;
-  defaultRoute?: string;
-  allowCustomClasses?: boolean;
-  onSectionRendered?: (sectionId: string, element: HTMLElement) => void;
-}
-
 export interface iLandingPageBuilderSource {
   menu?: HTMLElement | null;
   footer?: HTMLElement | null;
-  pages: Record<string, iLandingPageNode[]>;
+  pages: Record<string, iBasicNode[]>;
 }
 
-export interface iSectionHeader {
+interface iDefaultProps {
+  id?: string;
+  className?: string;
+  tagName?: string;
+}
+// ==========================================
+// 1. INDIVIDUAL ATOM PROPERTIES & DESIGN TOKENS
+// ==========================================
+export interface iHeaderProperty extends iDefaultProps {
   title?: string;
   eyebrow?: string;
   description?: string;
-  className?: string; // For alignment or header styling overrides
 }
 
-export interface iSectionBlock {
-  name: string;
-  id?: string;
-  className?: string;
-  isSection?: boolean; // Optional flag to indicate if this node is a section block
-  tagName?: string; // Optional override for the HTML tag used for the section
-  header?: iSectionHeader; // Optional section header structural definition
-  content: string | HTMLElement | iSectionContent;
+export interface iActionProperty extends iDefaultProps {
+  label?: string;
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  onClick?: (event: MouseEvent) => void;
 }
 
-export interface iGroupNode {
-  name: string;
-  id?: string;
-  className?: string;
-  isSection?: boolean; // Optional flag to indicate if this node is a section block
-  tagName?: string; // Optional override for the HTML tag used for the section
-  header?: iSectionHeader; // A group can also have a single overarching header!
-  group: iLandingPageNode[];
-}
-
-export type iLandingPageNode = iSectionBlock | iGroupNode;
-
-/* Module interfaces */
-export interface iSectionContent {
-  id?: string;
-  className?: string;
-  items: (iSectionProperty | HTMLElement)[];
-}
-
-export interface iMenuContent {
-  id?: string;
-  className?: string;
-  items: { title: string; link?: string; id?: string, className?: string }[];
-}
-
-export interface iHeroContent {
-  image?: string;
+// Data Item khusus untuk builder bertipe 'section', 'carousel', 'masonry'
+export interface iBuilderContent extends iDefaultProps {
   title?: string;
-  actions?: iActionProperty[]
-}
-
-export interface iStatsContent {
-  id?: string;
-  className?: string;
-  items: { title?: string; description?: string; }[];
-}
-
-
-export interface iAccordionContent {
-  id?: string;
-  name?: string;
-  className?: string;
+  description?: string;
   image?: string;
-  title?: string;
-  items: { eyebrow?: string; title?: string; description?: string; }[];
+  actions?: iActionProperty[];
+  category?: string;
 }
 
-export interface iContactContent {
+// Data Item khusus untuk builder bertipe 'pricing-table'
+export interface iTableProperty extends iDefaultProps {
+  header: string;
+  body: { name: string; className: string }[];
+  action?: iActionProperty;
+}
+
+// ==========================================
+// 2. KONTRAK REGISTRY UTAMA (Single Source of Truth)
+// ==========================================
+export interface iBuilderRegistry {
+  carousel: iBuilderContent[];
+  accordion: iHeaderProperty[];
+  "pricing-table": iTableProperty[];
+  masonry: iBuilderContent[];
+  section: iBuilderContent[];
+  // Untuk komponen baru nanti, cukup daftarkan jenis array atomnya di sini:
+  // stats: iStatsProperty[];
+}
+
+// Function signature constraint for allowed builders
+export type ComponentBuilderFn<Args = any> = (content: Args) => HTMLElement | null;
+
+// Registry map type contract tracking all active builder functions
+export type BuilderFunctionsMap = {
+  [K in keyof iBuilderRegistry]: ComponentBuilderFn<iBuilderRegistry[K]>;
+};
+
+// ==========================================
+// 3. BASE STRUCTURAL HOOKS INTERFACE
+// ==========================================
+export interface iNodeLifecycleHooks {
+  onCreated?: (element: HTMLElement) => void;
+  onDestroy?: (element: HTMLElement) => void;
+}
+
+// ==========================================
+// 4. ADVANCED MODE PATTERNS (String Selectors)
+// ==========================================
+export type DefaultSelectors = 'grid' | 'row' | 'column' | string;
+export type ValidLayoutKey<S extends string> = S | `${S}${string}`;
+
+// Rantai Rekursif Advanced Mode untuk Elemen HTML Standar
+export interface iAdvancedStandardNode<S extends string = DefaultSelectors> extends iNodeLifecycleHooks {
+  builder?: never;
+  attrs?: Record<string, string>;
+  content?: string | HTMLElement | iNodeContent<S> | iNodeContent<S>[];
+  [childKey: string]: any;
+}
+
+// Rantai Rekursif Advanced Mode untuk Builder Komponen Kompleks (Mendukung Penyatuan Content)
+export type iAdvancedBuilderNode<S extends string = DefaultSelectors> = {
+  [K in keyof iBuilderRegistry]: iNodeLifecycleHooks & {
+    builder: K;
+    content: iBuilderRegistry[K]; // Mengunci content secara otomatis menjadi array item dari registry komponen tersebut!
+    attrs?: Record<string, string>;
+    [childKey: string]: iNodeContent<S> | any;
+  }
+}[keyof iBuilderRegistry];
+
+// Kombinasi Utama untuk Item Node di Advanced Mode
+export type iLayoutItemNode<S extends string = DefaultSelectors> =
+  | iAdvancedStandardNode<S>
+  | iAdvancedBuilderNode<S>;
+
+export type iDOMStructure<S extends string = DefaultSelectors> = {
+  [K in ValidLayoutKey<S>]?: iLayoutItemNode<S> | any;
+};
+
+export type iNodeContent<S extends string = DefaultSelectors> = iDOMStructure<S>;
+
+
+// ==========================================
+// 5. BASIC MODE PATTERNS (JSON Style / Ramah Pemula)
+// ==========================================
+
+// Rantai Rekursif Basic Mode untuk Elemen HTML Standar + Custom Attributes Support
+export interface iBasicStandardNode extends iNodeLifecycleHooks {
+  tagName?: string;
   id?: string;
   className?: string;
-  title: string;
-  description: string;
-  items: Record<string, string | iActionProperty[]>[]
+  builder?: never;
+  isRoot?: boolean;
+  content?: string | HTMLElement | iBasicNode | iBasicNode[] | iActionProperty;
+  [customHtmlAttr: string]: any;
 }
 
-export type iActionProperty = { label?: string; href?: string; id?: string; className?: string; type?: string, onClick?: (event: MouseEvent) => void };
-export type iSectionProperty = { id?: string; className?: string; title?: string; description?: string; image?: string; actions?: iActionProperty[], category?: string; }
-export type iTableProperty = { id?: string, className?: string, header: string, body: { name: string, className: string }[], action?: iActionProperty }
+// Rantai Rekursif Basic Mode untuk Builder Komponen Kompleks (Mendukung Penyatuan Content)
+export type iBasicBuilderNode = {
+  [K in keyof iBuilderRegistry]: iNodeLifecycleHooks & {
+    tagName?: string;
+    id?: string;
+    className?: string;
+    builder: K;
+    isRoot?: boolean;
+    content: iBuilderRegistry[K]; // Mengunci content secara otomatis menjadi array item dari registry komponen tersebut!
+    [customHtmlAttr: string]: any;
+  }
+}[keyof iBuilderRegistry];
 
-export interface iPricingTableContent {
-  id?: string;
-  className?: string;
-  items: iTableProperty[]
-}
+export type iBasicNode = iBasicStandardNode | iBasicBuilderNode;

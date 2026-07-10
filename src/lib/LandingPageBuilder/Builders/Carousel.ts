@@ -1,6 +1,7 @@
-import type { iSectionContent } from "../interface";
+import type { iBasicNode } from "../interface";
 
 export interface iCarouselConfig {
+  container?: null | string | HTMLElement;
   showControl?: boolean; // show arrow
   showNavigation?: boolean; // show the dot
   autoPlay?: boolean | number; // autoplay animation
@@ -34,31 +35,50 @@ export class CarouselBuilder {
   private dots: HTMLElement[] = [];
   private buttons: HTMLButtonElement[] = [];
 
-  constructor(config: iCarouselConfig = {}) {
-    this.config = config;
-
+  constructor(config: Partial<iCarouselConfig> = {}) {
+    const defaultConfig: Required<iCarouselConfig> = {
+      container: null,
+      showNavigation: true,
+      showControl: true,
+      autoPlay: 4000,
+      animation: "fade",
+      slidesPerView: 1,
+      loop: true
+    };
+    this.config = { ...defaultConfig, ...config };
   }
 
   /**
    * Public API to get the fully assembled carousel element
    */
-  public create(content: iSectionContent): HTMLElement {
+  public create(content: iBasicNode[]): HTMLElement {
     this.destroy();
     this.currentIndex = 0;
     this.slides = [];
     this.dots = [];
     this.buttons = [];
-    const totalSlides = content.items.length;
+    const totalSlides = content.length;
     this.rConfig = this._resolveConfig(this.config, totalSlides);
-    this.container = this._createContainer(content) || document.createElement("div");
+    this.container = this._getContainer() as HTMLElement;
 
-    this._buildDOM(content);
+    const carousel = this._buildCarouselDOM(content);
+
+    if (this.config.container) {
+      this.container.appendChild(carousel);
+    } else {
+      this.container = carousel;
+    }
 
     if (this.config.autoPlay) {
       this._startAutoPlay();
     }
 
     return this.container;
+  }
+
+  private _getContainer(): HTMLElement | null {
+    const container = typeof this.config.container === "string" ? document.querySelector(this.config.container as string) : this.config.container;
+    return container as HTMLElement;
   }
 
   /**
@@ -146,14 +166,14 @@ export class CarouselBuilder {
 
   // --- Core Lifecycle Breakdown Methods ---
 
-  private _buildDOM(content: iSectionContent): void {
+  private _buildCarouselDOM(content: iBasicNode[]): HTMLElement {
     const carousel = document.createElement("div");
     carousel.className = `carousel anim-${this.rConfig.animation}`;
 
     this.track = document.createElement("div");
     this.track.className = "track";
 
-    this.slides = content.items.map((item, index) => {
+    this.slides = content.map((item, index) => {
       const slide = this._createSlide(item, index, this.rConfig.slidesPerView);
       this.track.appendChild(slide);
       return slide;
@@ -168,8 +188,7 @@ export class CarouselBuilder {
       const navigableSlides = this.slides.slice(0, this.rConfig.maxDots);
       this._attachNavigation(carousel, navigableSlides);
     }
-
-    this.container.appendChild(carousel);
+    return carousel;
   }
 
   private _startAutoPlay(): void {
@@ -228,13 +247,6 @@ export class CarouselBuilder {
       maxIndex: maxIndex > 0 ? maxIndex : 0,
       maxDots: maxDots > 0 ? maxDots : 1
     };
-  }
-
-  private _createContainer(content: iSectionContent): HTMLElement | null {
-    const container = document.createElement("div");
-    if (content.className) container.className = content.className;
-    if (content.id) container.id = content.id;
-    return container;
   }
 
   private _createSlide(item: any, index: number, slidesPerView: number): HTMLElement {

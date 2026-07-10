@@ -1,32 +1,14 @@
-import type { iAccordionContent } from "../interface";
-
+import type { iBasicNode } from "../interface";
 
 export class AccordionBuilder {
 
-  static create(content: iAccordionContent): HTMLElement {
-    const section = document.createElement('section');
-    section.id = content.id as string;
-    section.className = content.className as string || "section card";
-
-    const items = Array.isArray(content.items) ? content.items : [content.items];
-
-    const headData = items[0] || { eyebrow: '', title: '' };
-
-    if (headData.eyebrow) {
-      const eyebrow = document.createElement("p");
-      eyebrow.className = "eyebrow"
-    }
-
-    const h2 = document.createElement("h2");
-    h2.style.width = "100%";
-    h2.style.textAlign = "center"
-    h2.textContent = content.name || "Pertanyaan Populer (FAQ)"
+  static create(content: iBasicNode[]): HTMLElement {
 
     // create Accordion
     const accordionContainer = document.createElement("div");
     accordionContainer.className = "accordion";
 
-    items.forEach(item => {
+    content.forEach(item => {
       const details = document.createElement("details");
 
       const summary = document.createElement("summary");
@@ -44,8 +26,6 @@ export class AccordionBuilder {
       accordionContainer.appendChild(details);
     })
 
-    section.append(h2, accordionContainer);
-
-    return section;
+    return accordionContainer;
   }
 }

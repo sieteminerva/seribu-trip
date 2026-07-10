@@ -1,12 +1,12 @@
-import type { iContactContent } from "../interface";
+import type { iBasicNode } from "../interface";
 
 
 export class ContactBuilder {
 
-  static create(content: iContactContent): HTMLElement {
+  static create(data: iBasicNode): HTMLElement {
     const footer = document.createElement('footer');
-    footer.id = content.id as string;
-    footer.className = content.className || "footer";
+    footer.id = data.id as string;
+    footer.className = data.className || "footer";
 
     // 1. Buat Baris Utama (Top Row)
     const topRow = document.createElement('div');
@@ -17,11 +17,11 @@ export class ContactBuilder {
     infoCol.className = 'column';
 
     const h2 = document.createElement('h2');
-    h2.textContent = content.title || '';
+    h2.textContent = data.title || '';
     infoCol.appendChild(h2);
 
     const pDesc = document.createElement('p');
-    pDesc.textContent = content.description || '';
+    pDesc.textContent = data.description || '';
     infoCol.appendChild(pDesc);
 
     topRow.appendChild(infoCol);
@@ -37,8 +37,8 @@ export class ContactBuilder {
     const ul = document.createElement('ul');
     ul.className = 'unstyled-list';
 
-    if (content.items && Array.isArray(content.items)) {
-      content.items.forEach(item => {
+    if (data.content && Array.isArray(data.content)) {
+      data.content.forEach((item: iBasicNode) => {
         const li = document.createElement('li');
         const a = document.createElement('a');
 
@@ -63,7 +63,7 @@ export class ContactBuilder {
     bottomRow.className = 'row bottom';
 
     const pCopy = document.createElement('p');
-    pCopy.textContent = `© ${new Date().getFullYear()} ${content.title || ''}. All rights reserved.`;
+    pCopy.textContent = `© ${new Date().getFullYear()} ${data.title || ''}. All rights reserved.`;
 
     bottomRow.appendChild(pCopy);
     footer.appendChild(bottomRow);

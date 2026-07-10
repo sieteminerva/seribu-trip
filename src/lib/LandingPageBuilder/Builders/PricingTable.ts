@@ -1,14 +1,13 @@
-import type { iPricingTableContent, iTableProperty } from "../interface";
+import type { iBasicNode } from "../interface";
 
 export class PricingTableBuilder {
-  static create(content: iPricingTableContent): HTMLElement {
-    const section = document.createElement("section");
-    section.className = "section";
-    if (content.id) section.id = content.id;
-    if (content.className) section.classList.add(...content.className.split(" "));
+  static create(content: iBasicNode[]): HTMLElement {
+    console.log(content)
+    const section = document.createElement("div");
+    section.className = "row";
 
     // Loop render structural items array
-    content.items.forEach((item: iTableProperty) => {
+    content.forEach((item: any) => {
       const column = document.createElement("div");
       column.className = "column";
 
@@ -40,7 +39,7 @@ export class PricingTableBuilder {
       const list = document.createElement("ul");
       list.className = "features";
 
-      item.body.forEach((feature) => {
+      item.body.forEach((feature: any) => {
         const li = document.createElement("li");
         li.textContent = feature.name;
         if (feature.className) {

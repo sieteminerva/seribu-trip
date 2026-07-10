@@ -145,6 +145,7 @@ body {
   align-items: center;
 }
 .txt-center {
+  width: 100%;
   text-align: center;
   justify-content: center;
 }
@@ -374,8 +375,10 @@ body {
 /* Stats Modifier Layout */
 .column.stat {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 1rem;
   color: var(--text-muted);
 }
 .column.stat strong {
@@ -682,6 +685,158 @@ body {
   width: 100%;
 }
 
+/* Tab Component */
+.tab-container {
+  display: flex;
+  gap: 1.5rem;
+  position: relative;
+
+  /* POSISI ATAS (TOP) */
+  &.position-top {
+    flex-direction: column;
+    & .tab-menu {
+      flex-direction: row;
+      border-bottom: 2px solid var(--accent-strong);
+    }
+  }
+
+  /* POSISI BAWAH (BOTTOM) */
+  &.position-bottom {
+    flex-direction: column;
+    & .tab-menu {
+      flex-direction: row;
+      border-top: 2px solid var(--accent-strong);
+      order: 2;
+    }
+    & .tab-body {
+      order: 1;
+    }
+  }
+
+  /* POSISI KIRI (LEFT) */
+  &.position-left {
+    flex-direction: row;
+    & .tab-menu {
+      flex-direction: column;
+      border-right: 2px solid var(--accent-strong);
+      width: 250px;
+    }
+    & .tab-body {
+      flex: 1;
+    }
+  }
+
+  /* POSISI KANAN (RIGHT) */
+  &.position-right {
+    flex-direction: row-reverse;
+    & .tab-menu {
+      flex-direction: column;
+      border-left: 2px solid var(--accent-strong);
+      width: 250px;
+    }
+    & .tab-body {
+      flex: 1;
+    }
+  }
+
+  /* MENU BUTTON STYLING */
+  & .tab-menu {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem;
+
+    & .tab-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 0.75rem 1.5rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid transparent;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: left;
+
+      & .btn-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+      & .btn-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-top: 0.25rem;
+      }
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      &.active {
+        background: var(--accent-strong);
+        color: var(--surface-muted);
+        & .btn-label {
+          color: rgba(255, 255, 255, 0.7);
+        }
+      }
+    }
+  }
+
+  /* BODY & PANEL STYLING */
+  & .tab-body {
+    position: relative;
+    padding: 1rem 0;
+
+    & .tab-panel {
+      animation: tabFadeIn 0.35s ease forwards;
+
+      & .content-wrapper {
+        & .eyebrow {
+          font-size: 0.85rem;
+          color: var(--accent-strong);
+          text-transform: uppercase;
+        }
+        & .title {
+          font-size: 1.75rem;
+          margin: 0.5rem 0;
+          color: #fff;
+        }
+        & .desc {
+          font-size: 1rem;
+          line-height: 1.6;
+          color: var(--text-main);
+        }
+      }
+    }
+  }
+
+  & .spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 30px;
+    height: 30px;
+    background-image: var(--spinner-content);
+    background-size: contain;
+    z-index: 10;
+
+    &.hidden {
+      display: none;
+    }
+  }
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Carousel Component */
 .carousel {
   width: 100%;
@@ -917,7 +1072,7 @@ body {
 
 .masonry .item.fade-in {
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(30px);
   animation: masonryFadeIn 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   animation-delay: calc(var(--batch-index, 0) * 0.05s);
 }

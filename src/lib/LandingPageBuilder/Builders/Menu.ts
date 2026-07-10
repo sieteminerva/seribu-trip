@@ -1,9 +1,9 @@
 
-import type { iMenuContent } from "../interface";
+import type { iActionProperty, iBasicNode } from "../interface";
 
 export class MenuBuilder {
 
-  static create(content: iMenuContent): HTMLElement {
+  static create(data: iBasicNode): HTMLElement {
     const normalizeTheme = (theme?: string | null): 'light' | 'dark' => theme?.toLowerCase() === 'dark' ? 'dark' : 'light';
     const getTheme = () => normalizeTheme(document.documentElement.dataset.theme);
     const applyTheme = (theme: 'light' | 'dark') => {
@@ -18,11 +18,11 @@ export class MenuBuilder {
 
     // 1. Buat elemen NAV utama
     const nav = document.createElement('nav');
-    nav.id = content.id as string;
-    nav.className = content.className as string || 'nav';
+    nav.id = data.id as string;
+    nav.className = data.className as string || 'nav';
 
-    const items = Array.isArray(content.items) ? content.items : [content.items];
-    const brandData = items[0] || { title: 'Logo', link: '#' };
+    const items = Array.isArray(data.content) ? data.content : [data.content];
+    const brandData = (items[0] || { label: 'Logo', href: '#' }) as iActionProperty;
     const linksData = items.slice(1);
 
     // 2. Buat elemen Brand
@@ -30,8 +30,8 @@ export class MenuBuilder {
     brandDiv.className = 'brand';
 
     const brandLink = document.createElement('a');
-    brandLink.href = brandData.link || '#';
-    brandLink.textContent = brandData.title;
+    brandLink.href = brandData.href || '#';
+    brandLink.textContent = brandData.label as string;
 
     brandDiv.appendChild(brandLink);
     nav.appendChild(brandDiv);
@@ -48,14 +48,14 @@ export class MenuBuilder {
     const ulItems = document.createElement('ul');
     ulItems.className = 'items';
 
-    linksData.forEach((link: any) => {
+    linksData.forEach((link?: iActionProperty) => {
       const li = document.createElement('li');
       const a = document.createElement('a');
 
-      if (link.id) a.id = link.id;
-      if (link.className) a.className = link.className;
-      a.href = link.link || '#';
-      a.textContent = link.title;
+      if (link?.id) a.id = link.id;
+      if (link?.className) a.className = link.className;
+      a.href = link?.href || '#';
+      a.textContent = link?.label as string;
 
       li.appendChild(a);
       ulItems.appendChild(li);

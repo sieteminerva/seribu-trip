@@ -1,10 +1,96 @@
-import { SectionBuilder } from "./Builders/Section";
-import type { iLandingPageBuilderConfig, iLandingPageBuilderSource, iLandingPageNode, iSectionHeader } from "./interface";
+import type { ComponentBuilderFn, iBasicNode, iBuilderRegistry, iLandingPageBuilderSource, iNodeContent } from "./interface";
+import { DOMRenderer } from "./Renderers/DOMRenderer";
+
+export interface iLandingPageBuilderConfig {
+  container: HTMLElement | string;
+  theme?: 'light' | 'dark' | string;
+  useMenu?: boolean;
+  useFooter?: boolean;
+  defaultRoute?: string;
+  allowCustomClasses?: boolean;
+  onSectionRendered?: (sectionId: string, element: HTMLElement) => void;
+}
+
+export function resolveContentObj(nodeObj: iBasicNode): any {
+  const tagName = nodeObj.tagName || "div";
+  const idToken = nodeObj.id ? `#${nodeObj.id.trim()}` : "";
+  const classToken = nodeObj.className ? `.${nodeObj.className.trim().replace(/\s+/g, '.')}` : "";
+
+  const generatedKey = `${tagName}${idToken}${classToken}`;
+  const result: any = { [generatedKey]: {} };
+  const innerBlock = result[generatedKey];
+
+  // 1. Salin properti operasional utama jika ada
+  if (nodeObj.builder) innerBlock.builder = nodeObj.builder;
+  if (nodeObj.onCreated) innerBlock.onCreated = nodeObj.onCreated;
+  if (nodeObj.onDestroy) innerBlock.onDestroy = nodeObj.onDestroy;
+  if (nodeObj.isRoot !== undefined) innerBlock.isRoot = nodeObj.isRoot;
+
+  // 2. Kumpulkan semua atribut kustom (seperti src, href, alt) selevel tag dasar
+  const reservedKeys = ['tag', 'tagName', 'id', 'className', 'builder', 'content', 'onCreated', 'onDestroy', 'attrs'];
+  const extractedAttrs = { ...(nodeObj.attrs || {}) };
+
+  Object.keys(nodeObj).forEach(key => {
+    if (!reservedKeys.includes(key)) {
+      extractedAttrs[key] = nodeObj[key];
+    }
+  });
+
+  if (Object.keys(extractedAttrs).length > 0) {
+    innerBlock.attrs = extractedAttrs;
+  }
+
+  // 3. PERBAIKAN LOGIKA: Proses Konversi Konten secara Selektif
+  if (nodeObj.content !== undefined) {
+    const payload = nodeObj.content;
+
+    if (payload instanceof HTMLElement || typeof payload === "string") {
+      // Jika berupa HTML element hidup atau teks mentah
+      innerBlock.content = payload;
+    } else if (nodeObj.builder) {
+      // 💡 FIX: Jika objek saat ini memiliki properti 'builder', 
+      // JANGAN LAKUKAN KONVERSI REKURSIF pada content-nya! Biarkan payload data aslinya lewat secara utuh.
+      innerBlock.content = payload;
+    } else if (Array.isArray(payload)) {
+      // Jika berupa array berisi anak-anak layout (iBasicNode[])
+      const childLayoutObj: any = {};
+      payload.forEach((childItem, index) => {
+        const resolvedChild = resolveContentObj(childItem);
+        const childKey = Object.keys(resolvedChild)[0];
+        childLayoutObj[`${childKey}$child-${index}`] = resolvedChild[childKey];
+      });
+      innerBlock.content = childLayoutObj;
+    } else if (typeof payload === "object" && payload !== null) {
+      // Jika berupa objek tata letak standar tunggal tanpa builder
+      innerBlock.content = resolveContentObj(payload);
+    }
+  }
+
+  return result;
+}
+
+export class BuilderRegistry {
+  // Gunakan tipe data Map internal yang fleksibel namun aman
+  private builders = new Map<string, ComponentBuilderFn>();
+
+  public register<K extends keyof iBuilderRegistry>(name: K, builderFn: ComponentBuilderFn<iBuilderRegistry[K]>): this {
+    this.builders.set(name, builderFn);
+    return this;
+  }
+
+  public get<K extends keyof iBuilderRegistry>(name: K): ComponentBuilderFn<iBuilderRegistry[K]> | undefined {
+    return this.builders.get(name) as any;
+  }
+
+  public has(name: string): boolean {
+    return this.builders.has(name);
+  }
+}
 
 export class LandingPageBuilder {
   private container: HTMLElement;
   private shell: HTMLElement | null = null;
-  private pages: Record<string, iLandingPageNode[]> = {};
+  private pages: Record<string, (iNodeContent<any> | iBasicNode)[]> = {};
   private currentRoute: string;
   private menuElement: HTMLElement | null = null;
   private footerElement: HTMLElement | null = null;
@@ -13,7 +99,11 @@ export class LandingPageBuilder {
   private defaultRoute: string;
   private pendingFragment: string = "";
 
-  constructor(source: iLandingPageBuilderSource, config: iLandingPageBuilderConfig) {
+  // Core Render Engine
+  private factory: DOMRenderer;
+  private builder: BuilderRegistry | null;
+
+  constructor(source: iLandingPageBuilderSource, config: iLandingPageBuilderConfig, builder: BuilderRegistry | null = null) {
     const resolved = typeof config.container === "string" ? document.querySelector(config.container) : config.container;
     if (!resolved || !(resolved instanceof HTMLElement)) {
       throw new Error("Target container not found.");
@@ -24,8 +114,13 @@ export class LandingPageBuilder {
     this.useFooter = config.useFooter ?? true;
     this.menuElement = source.menu ?? null;
     this.footerElement = source.footer ?? null;
+
+    this.factory = new DOMRenderer(); // Instantiasi tunggal renderer abadi kita
+    this.builder = builder;
+
     this.defaultRoute = this.normalizeRoute(config.defaultRoute || "home");
-    this.pages = this.buildPages(source.pages);
+    this.pages = this.buildPages(source?.pages as any);
+
     const initialRoute = this.resolveRouteFromHash();
     this.currentRoute = initialRoute.route;
     this.pendingFragment = initialRoute.fragment;
@@ -34,43 +129,69 @@ export class LandingPageBuilder {
   }
 
   /**
-   * Internal Method: Standardizes header elements consistently across all sections
+   * REFACTOR TOTAL: Metode render menjadi super pendek dan linear!
    */
-  private buildSectionHeader(content: iSectionHeader): HTMLElement {
-    const header = document.createElement("div");
-    header.className = content.className || "column";
-
-    if (content.eyebrow) {
-      const eyebrow = document.createElement("p");
-      eyebrow.className = "eyebrow"
-      eyebrow.textContent = content.eyebrow;
-      header.appendChild(eyebrow);
+  public render(route: string = this.currentRoute): void {
+    if (!this.shell) {
+      this.shell = document.createElement("main");
+      this.shell.className = "page";
     }
 
-    if (content.title) {
-      const title = document.createElement("h2");
-      title.className = "title";
-      title.textContent = content.title;
-      header.appendChild(title);
+    this.currentRoute = this.normalizeRoute(route);
+
+    if (this.shell.parentElement !== this.container) {
+      this.container.appendChild(this.shell);
     }
 
-    if (content.description) {
-      const desc = document.createElement("p");
-      desc.className = "description";
-      desc.textContent = content.description;
-      header.appendChild(desc);
+    const blocks = this.pages[this.currentRoute] || this.pages[this.defaultRoute] || [];
+    this.shell.innerHTML = "";
+
+    if (this.useMenu && this.menuElement) {
+      this.shell.appendChild(this.menuElement);
     }
 
-    return header;
+    blocks.forEach((block) => {
+      let DOMSchema: iNodeContent<any>;
+
+      // JEMBATAN OTOMATIS: Deteksi apakah block menggunakan format ramah pemula
+      if ("tagName" in block || ("content" in block && !Object.keys(block)[0].includes('.'))) {
+        // Jika ya, konversi otomatis menjadi format core engine di balik layar
+        DOMSchema = resolveContentObj(block as iBasicNode);
+      } else {
+        // Jika tidak (berarti format string selector milik senior), langsung pakai
+        DOMSchema = block as iNodeContent<any>;
+      }
+
+      // Jalankan render menggunakan core engine abadi
+      const renderedBlock = this.factory.render(DOMSchema as any, this.builder);
+      this.shell?.appendChild(renderedBlock);
+    });
+
+    if (this.useFooter && this.footerElement) {
+      this.shell.appendChild(this.footerElement);
+    }
+
+    // Logika scroll pendingFragment bawaan Anda tetap konsisten berjalan di bawah ini...
+    if (this.pendingFragment) {
+      const fragment = this.pendingFragment;
+      this.pendingFragment = "";
+      window.requestAnimationFrame(() => {
+        const target = document.getElementById(fragment);
+        target?.scrollIntoView({ block: "start", behavior: "auto" });
+      });
+    }
   }
 
-  private normalizeRoute(route: string): string {
-    const resolved = route.trim().replace(/^#/, "");
-    return resolved || "home";
+  public destroy(): void {
+    window.removeEventListener("hashchange", this.handleHashChange);
+    this.container.innerHTML = "";
   }
 
-  private buildPages(pages: Record<string, iLandingPageNode[]>): Record<string, iLandingPageNode[]> {
-    const resolved: Record<string, iLandingPageNode[]> = {};
+  // =============================
+  //      Hash Route handler 
+  // =============================
+  private buildPages(pages: Record<string, iBasicNode[]>): Record<string, iBasicNode[]> {
+    const resolved: Record<string, iBasicNode[]> = {};
 
     for (const [route, nodes] of Object.entries(pages)) {
       resolved[this.normalizeRoute(route)] = Array.isArray(nodes) ? [...nodes] : [];
@@ -87,6 +208,13 @@ export class LandingPageBuilder {
 
     return resolved;
   }
+
+
+  private normalizeRoute(route: string): string {
+    const resolved = route.trim().replace(/^#/, "");
+    return resolved || "home";
+  }
+
 
   private resolveRouteFromHash(): { route: string; fragment: string } {
     const rawHash = window.location.hash;
@@ -116,87 +244,5 @@ export class LandingPageBuilder {
     this.currentRoute = route;
     this.pendingFragment = fragment;
     this.render(route);
-  }
-
-  private buildNode(node: iLandingPageNode, tagName = "section"): HTMLElement {
-    if ("group" in node) {
-      const element = document.createElement("section");
-      element.id = node.id || "";
-      element.className = node.className || "section row stackable";
-      if (node.header) {
-        element.append(this.buildSectionHeader(node.header));
-      }
-      for (const subNode of node.group) {
-        element.appendChild(this.buildNode(subNode, "div"));
-      }
-      return element;
-    }
-
-    if (node.content instanceof HTMLElement) {
-      if (node.header) {
-        const wrapper = document.createElement("section");
-        if (node.id) wrapper.id = node.id;
-        if (node.className) wrapper.className = node.className;
-        wrapper.append(this.buildSectionHeader(node.header), node.content);
-        return wrapper;
-      }
-      return node.content;
-    }
-
-    const element = SectionBuilder.create(node.content as any, { tagName });
-    if (node.header) {
-      element.prepend(this.buildSectionHeader(node.header));
-    }
-    return element;
-  }
-
-  public render(route: string = this.currentRoute): void {
-    if (!this.shell) {
-      this.shell = document.createElement("main");
-      this.shell.className = "page";
-    }
-
-    this.currentRoute = this.normalizeRoute(route);
-
-    if (this.shell.parentElement !== this.container) {
-      this.container.appendChild(this.shell);
-    }
-
-    const nodes = this.pages[this.currentRoute] || this.pages[this.defaultRoute] || [];
-
-    this.shell.innerHTML = "";
-    if (this.useMenu && this.menuElement) {
-      this.shell.appendChild(this.menuElement);
-    }
-    nodes.forEach((node) => this.shell?.appendChild(this.buildNode(node)));
-    if (this.useFooter && this.footerElement) {
-      this.shell.appendChild(this.footerElement);
-    }
-
-    if (this.pendingFragment) {
-      const fragment = this.pendingFragment;
-      this.pendingFragment = "";
-      window.requestAnimationFrame(() => {
-        const target = document.getElementById(fragment);
-        target?.scrollIntoView({ block: "start", behavior: "auto" });
-      });
-    }
-  }
-
-  public destroy(): void {
-    window.removeEventListener("hashchange", this.handleHashChange);
-    this.container.innerHTML = "";
-  }
-
-  public navigateTo(route: string): void {
-    const normalized = this.normalizeRoute(route);
-    const nextHash = `#${normalized}`;
-
-    if (window.location.hash !== nextHash) {
-      window.location.hash = nextHash;
-      return;
-    }
-
-    this.syncRouteFromHash();
   }
 }

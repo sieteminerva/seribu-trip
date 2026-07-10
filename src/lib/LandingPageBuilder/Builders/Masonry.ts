@@ -1,4 +1,4 @@
-import type { iActionProperty, iSectionContent, iSectionProperty } from "../interface";
+import type { iActionProperty, iBasicNode } from "../interface";
 
 export interface iMasonrySelectors {
   // Menu Filter Kategori
@@ -35,7 +35,7 @@ export interface iMasonryConfig {
 export class MasonryBuilder {
   private config: iMasonryConfig;
   private selector!: Required<iMasonrySelectors>;
-  #items: (iSectionProperty | HTMLElement)[] = [];
+  #items: (iBasicNode | HTMLElement)[] = [];
   private displayedCount = 0;
   private selectedCategory: string | null = null;
 
@@ -88,7 +88,7 @@ export class MasonryBuilder {
   /**
    * SETTER: Tempat validasi pusat untuk mengamankan data sebelum masuk ke aplikasi
    */
-  public set items(newItems: (iSectionProperty | HTMLElement)[]) {
+  public set items(newItems: (iBasicNode | HTMLElement)[]) {
     // Validasi Keamanan: Pastikan data berupa array dan lakukan pembersihan
     if (!Array.isArray(newItems)) {
       console.error('Validasi Gagal: Data masonry harus berupa array.');
@@ -120,7 +120,7 @@ export class MasonryBuilder {
     const filtered = this.#items.filter(item => {
       if (item instanceof HTMLElement) return false;
       return this.selectedCategory === null || item.category === this.selectedCategory;
-    }) as iSectionProperty[];
+    }) as iBasicNode[];
 
     // 2. Batasi hanya sebanyak jumlah item yang sedang aktif di-render di layar (displayedCount)
     const visibleBatch = filtered.slice(0, this.displayedCount);
@@ -129,26 +129,23 @@ export class MasonryBuilder {
     return visibleBatch.map(item => item.image).filter((img): img is string => !!img);
   }
 
-  public create(content: iSectionContent): HTMLElement {
-    this.items = content.items;
+  public create(content: iBasicNode[]): HTMLElement {
+    this.items = content;
     // console.log({ items: this.items })
     this.displayedCount = 0;
 
     if (this.config.container) {
       if (typeof this.config.container === 'string') {
-        this.rootElement = document.querySelector(this.config.container) || document.createElement('section');
+        this.rootElement = document.querySelector(this.config.container) || document.createElement('div');
       } else {
         this.rootElement = this.config.container;
       }
     } else {
-      this.rootElement = document.createElement('section');
+      this.rootElement = document.createElement('div');
     }
 
     this.rootElement.innerHTML = '';
     this.rootElement.className = 'section masonry gallery';
-
-    if (content.id) this.rootElement.id = content.id;
-    if (content.className) this.rootElement.classList.add(...content.className.split(' '));
 
     // 2. Ekstrak Kategori Unik di Level create() untuk validasi awal
     const categoriesSet = new Set<string>();
@@ -329,7 +326,7 @@ export class MasonryBuilder {
   }
 
   private _updateSlider = (activeBtn: HTMLButtonElement, isInit = false) => {
-    console.log(activeBtn)
+    // console.log(activeBtn)
     const sliderClass = this.selector.filterSlider.split(' ')[0];
     const slider = this.filterMenuElement?.querySelector(`.${sliderClass}`) as HTMLElement;
     if (!slider || !activeBtn) return;
@@ -413,7 +410,7 @@ export class MasonryBuilder {
     root.appendChild(this.spinnerElement);
   }
 
-  private _createItem(content: iSectionProperty | HTMLElement, modalIndex: number): HTMLElement {
+  private _createItem(content: iBasicNode | HTMLElement, modalIndex: number): HTMLElement {
     const card = document.createElement('div');
     card.className = `${this.selector.item} ${this.selector.itemFadeIn}`;
 
