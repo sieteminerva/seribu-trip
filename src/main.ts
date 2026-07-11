@@ -13,10 +13,8 @@ import { AccordionBuilder } from './lib/LandingPageBuilder/Builders/Accordion';
 import { PricingCardBuilder } from './lib/LandingPageBuilder/Builders/PricingCard';
 import { MasonryBuilder } from './lib/LandingPageBuilder/Builders/Masonry';
 import { SectionBuilder } from './lib/LandingPageBuilder/Builders/Section';
-import { BuilderRegistry } from './lib/LandingPageBuilder/BuilderRegistry';
 import { FormBuilder } from './lib/LandingPageBuilder/Builders/Form';
 import { NodeTransformer } from './lib/LandingPageBuilder/Utils/NodeTransformer';
-import { ThemeRenderer } from './lib/LandingPageBuilder/Renderers/ThemeRenderer';
 import { VerticalTheme, CyberpunkTheme } from './lib/LandingPageBuilder/Themes/test';
 import { HorizontalTheme } from './lib/LandingPageBuilder/Themes/HorizontalTheme';
 import type { iBasicNode } from './lib/LandingPageBuilder/interface';
@@ -73,20 +71,7 @@ if (app) {
 
   console.log({ reverseNode });
 
-
-  // Register Component Builder
-  const builder = new BuilderRegistry()
-    .register("accordion", (data) => AccordionBuilder.create(data))
-    .register("carousel", (data: any) => new CarouselBuilder().create(data))
-    .register("pricing-card", (data: any) => PricingCardBuilder.create(data))
-    .register("masonry", (data: any) => new MasonryBuilder({ category: "category" }).create(data))
-    .register("section", (data: any) => SectionBuilder.create(data, { tagName: "section" }))
-    .register("form", (data: any) => new FormBuilder().create(data))
-    .register("menu", (data: any) => MenuBuilder.create(data))
-    .register("footer", (data: any) => ContactBuilder.create(data))
-
-
-  const engine = new LandingPageBuilder({
+  const builder = new LandingPageBuilder({
     menu,
     pages: {
       home: homePageContent,
@@ -106,22 +91,26 @@ if (app) {
     useFooter: true,
     defaultRoute: 'home',
     theme: "vertical"
-  }, builder);
+  });
 
+  builder.component?.register("accordion", (data) => AccordionBuilder.create(data))
+    .register("carousel", (data: any) => new CarouselBuilder().create(data))
+    .register("pricing-card", (data: any) => PricingCardBuilder.create(data))
+    .register("masonry", (data: any) => new MasonryBuilder({ category: "category" }).create(data))
+    .register("section", (data: any) => SectionBuilder.create(data, { tagName: "section" }))
+    .register("form", (data: any) => new FormBuilder().create(data))
+    .register("menu", (data: any) => MenuBuilder.create(data))
+    .register("footer", (data: any) => ContactBuilder.create(data))
 
-  // 3. Sambungkan ke ThemeRenderer dan aktifkan Switcher Melayang di posisi "bottom-left"
-  const themeEngine = new ThemeRenderer(engine, "bottom-left")
-    .registerTheme(VerticalTheme)
-    .registerTheme(new HorizontalTheme())
-    .registerTheme(CyberpunkTheme);
+  builder.theme?.register(VerticalTheme)
+    .register(new HorizontalTheme())
+    .register(CyberpunkTheme);
 
-  if (themeEngine) {
-    console.log("Registered Theme Ready to used")
-  }
+  builder.theme?.renderSwitcher({ position: "bottom-left", duration: 10000 });
 
-  engine.render();
+  builder.render();
 
-  engine.events.on("onThemeChanged", (data) => {
+  builder.events.on("onThemeChanged", (data) => {
     console.log(data)
   })
 }

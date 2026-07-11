@@ -1,6 +1,7 @@
-import { type BuilderRegistry } from "./BuilderRegistry";
+import { BuilderRegistry } from "./BuilderRegistry";
 import type { iBasicNode, iLandingPageBuilderSource, iNodeContent } from "./interface";
 import { DOMRenderer } from "./Renderers/DOMRenderer";
+import { ThemeRenderer } from "./Renderers/ThemeRenderer";
 import { EventEmitter } from "./Utils/EventEmitter";
 import { NodeTransformer } from "./Utils/NodeTransformer";
 
@@ -16,25 +17,34 @@ export interface iLandingPageBuilderConfig {
 }
 
 export class LandingPageBuilder {
+  /* NODE/ELEMENT  */
   private container!: HTMLElement;
-  private shell: HTMLElement | null = null;
-  private pages: Record<string, (iNodeContent<any> | iBasicNode)[]> = {};
-  private currentRoute!: string;
+  public shell: HTMLElement | null = null;
+
   private menu: HTMLElement | iBasicNode | null = null;
   private footer: HTMLElement | iBasicNode | null = null;
-  private useMenu!: boolean;
-  private useFooter!: boolean;
-  private defaultRoute!: string;
-  private pendingFragment: string = "";
-  currentThemeId: string = "default";
+  private pages: Record<string, (iNodeContent<any> | iBasicNode)[]> = {};
   private renderedNodesMap = new Map<string, HTMLElement>();
 
+  /* ROUTE */
+  private defaultRoute!: string;
+  private currentRoute!: string;
+  private pendingFragment: string = "";
+
+  /* CONFIG */
+  private useMenu!: boolean;
+  private useFooter!: boolean;
+  public currentThemeId: string = "default";
+
   // Core Render Engine
-  private factory!: DOMRenderer;
-  private builder!: BuilderRegistry | null;
+  public factory: DOMRenderer | null = null;
+  public component: BuilderRegistry | null = null;
+  public theme: ThemeRenderer | null = null;
   public events = new EventEmitter();
 
-  constructor(source: iLandingPageBuilderSource, config: iLandingPageBuilderConfig, builder: BuilderRegistry | null = null) {
+  constructor(
+    source: iLandingPageBuilderSource,
+    config: iLandingPageBuilderConfig) {
     try {
       const resolved = typeof config.container === "string" ? document.querySelector(config.container) : config.container;
       if (!resolved || !(resolved instanceof HTMLElement)) {
@@ -42,22 +52,30 @@ export class LandingPageBuilder {
       }
 
       this.factory = new DOMRenderer();
-      this.builder = builder;
+      this.theme = new ThemeRenderer();
+      this.component = new BuilderRegistry();
 
       this.container = resolved;
       this.useMenu = config.useMenu ?? true;
       this.useFooter = config.useFooter ?? true;
+
       this.menu = source.menu ?? null;
       this.footer = source.footer ?? null;
       this.pages = source.pages || {};
 
-      this.currentThemeId = config.theme || "default";
+
+      // activate theme
+      this.theme.attachBuilder(this);
 
       this.defaultRoute = this.normalizeRoute(config.defaultRoute || "home");
-
       const initialRoute = this.resolveRouteFromHash();
       this.currentRoute = initialRoute.route;
       this.pendingFragment = initialRoute.fragment;
+
+      // const urlState = this.parseUrlHash();
+
+      // 2. 🧙‍♂️ JALUR HIBRIDA: Cek URL dulu, kalau kosong cek localStorage, kalau kosong baru pakai config default!
+      this.currentThemeId = localStorage.getItem("cms_active_theme") as string || config.theme as string;
 
       window.addEventListener("hashchange", this.handleHashChange);
     } catch (error: any) {
@@ -66,10 +84,13 @@ export class LandingPageBuilder {
     }
   }
 
-  private restore(element: HTMLElement | null): iBasicNode | null {
-    if (!element) return null;
-    element.removeAttribute("style");
-    return { content: element } as any;
+  private restore(target: HTMLElement | null): iBasicNode | null {
+    if (!target) return null;
+    if (target instanceof HTMLElement) {
+      target.removeAttribute("style");
+      return { content: target } as any;
+    }
+    return target as iBasicNode;
   }
 
   /**
@@ -77,6 +98,11 @@ export class LandingPageBuilder {
    */
   public changeTheme(themeId: string) {
     this.currentThemeId = themeId;
+
+    localStorage.setItem("cms_active_theme", themeId);
+
+    window.location.hash = `${this.currentRoute}?theme=${themeId}`;
+
     if (this.shell) {
       // 💡 EVENT TRIGGER: onThemeChanged
       this.events.emit("onThemeChanged", { themeId, shell: this.shell });
@@ -103,8 +129,8 @@ export class LandingPageBuilder {
 
       // 1. Ambil salinan data mentah asal rute aktif saat ini (Gunakan Deep Clone agar data asli aman)
       let rawBlocks = JSON.parse(JSON.stringify(this.pages[this.currentRoute] || this.pages[this.defaultRoute] || []));
-      let rawMenu = this.menu instanceof HTMLElement ? this.restore(this.menu) : this.menu; // Representasi objek basic menu
-      let rawFooter = this.footer instanceof HTMLElement ? this.restore(this.footer) : this.footer;
+      let rawMenu = this.restore(this.menu as HTMLElement | null);
+      let rawFooter = this.restore(this.footer as HTMLElement | null);
 
       // 2. Bungkus ke dalam satu paket objek referensi
       const renderPayload = { pages: rawBlocks, menu: rawMenu, footer: rawFooter };
@@ -114,8 +140,6 @@ export class LandingPageBuilder {
       this.events.emit("beforeRender", renderPayload);
 
       this.renderedNodesMap.clear();
-
-      // const blocks = this.pages[this.currentRoute] || this.pages[this.defaultRoute] || [];
 
       // Simulasikan pembersihan elemen lama untuk memicu onElementRemoved
       if (this.shell.children.length > 0) {
@@ -129,7 +153,7 @@ export class LandingPageBuilder {
 
 
       if (this.useMenu && renderPayload.menu) {
-        const renderedMenu = this.factory.render(NodeTransformer.resolveContentNode(renderPayload.menu), this.builder);
+        const renderedMenu = this.factory?.render(NodeTransformer.resolveContentNode(renderPayload.menu), this.component) as HTMLElement;
         this.shell.appendChild(renderedMenu);
         this.renderedNodesMap.set("system-navbar", renderedMenu);
         this.events.emit("onElementAdded", { element: renderedMenu, parent: this.shell });
@@ -149,7 +173,7 @@ export class LandingPageBuilder {
         }
 
         // Jalankan render menggunakan core engine abadi
-        const renderedBlock = this.factory.render(DOMSchema as any, this.builder);
+        const renderedBlock = this.factory?.render(DOMSchema as any, this.component) as HTMLElement;
 
         const nodeKey = block.id || block.name || `section-block-${index}`;
         this.renderedNodesMap.set(nodeKey, renderedBlock);
@@ -159,7 +183,7 @@ export class LandingPageBuilder {
       });
 
       if (this.useFooter && renderPayload.footer) {
-        const renderedFooter = this.factory.render(NodeTransformer.resolveContentNode(renderPayload.footer), this.builder);
+        const renderedFooter = this.factory?.render(NodeTransformer.resolveContentNode(renderPayload.footer), this.component) as HTMLElement;
         this.renderedNodesMap.set("system-footer", renderedFooter);
         this.shell.appendChild(renderedFooter);
         this.events.emit("onElementAdded", { element: renderedFooter, parent: this.shell });
@@ -224,15 +248,63 @@ export class LandingPageBuilder {
     return { route: this.defaultRoute, fragment: hash };
   }
 
+  /**
+   * Handler otomatis saat user mengetik URL baru atau klik link
+   */
   private handleHashChange = (): void => {
-    this.syncRouteFromHash();
+    const urlState = this.parseUrlHash();
+
+    // Jika tema di URL berubah (misal user klik link eksternal yang membawa token tema)
+    if (urlState.theme && urlState.theme !== this.currentThemeId) {
+      this.currentThemeId = urlState.theme;
+      this.events.emit("onThemeChanged", { themeId: this.currentThemeId, shell: this.shell! });
+    }
+
+    this.render(urlState.route);
   };
 
-  private syncRouteFromHash(): void {
-    const { route, fragment } = this.resolveRouteFromHash();
-    this.currentRoute = route;
-    this.pendingFragment = fragment;
-    this.render(route);
+  // private syncRouteFromHash(): void {
+  //   const { route, fragment } = this.resolveRouteFromHash();
+  //   this.currentRoute = route;
+  //   this.pendingFragment = fragment;
+  //   this.render(route);
+  // }
+
+  private parseUrlHash(): { route: string; theme: string | null; fragment: string } {
+    // Ambil string hash mentah dan bersihkan tanda # di depan
+    const rawHash = window.location.hash.trim().replace(/^#/, "");
+
+    if (!rawHash) {
+      return { route: "home", theme: null, fragment: "" };
+    }
+
+    // 1. Pisahkan fragment ID internal (#section-id) jika ada di ujung belakang
+    const [mainPath, fragment = ""] = rawHash.split("#");
+
+    // 2. Pisahkan Rute Utama dengan Parameter Tema menggunakan tanda tanya (?)
+    const [routePath, queryString = ""] = mainPath.split("?");
+
+    let extractedTheme: string | null = null;
+
+    // 3. Jika ada query string, cari parameter 'theme=' secara aman tanpa library luar
+    if (queryString) {
+      const params = queryString.split("&");
+      for (const param of params) {
+        const [key, value] = param.split("=");
+        if (key === "theme" && value) {
+          extractedTheme = value.trim();
+          break;
+        }
+      }
+    }
+
+    return {
+      route: this.normalizeRoute(routePath),
+      theme: extractedTheme,
+      fragment: fragment.trim()
+    };
   }
+
+
 }
 

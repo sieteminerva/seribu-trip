@@ -1,46 +1,39 @@
 import { BuilderRegistry } from "../BuilderRegistry";
 import type { iBasicNode, iThemeModule, themeSwitcherPosition } from "../interface";
-import type { LandingPageBuilder } from "../LandingPage";
 import { NodeTransformer } from "../Utils/NodeTransformer";
 import { DOMRenderer } from "./DOMRenderer";
-
+interface iSwitcherConfig { position: boolean | themeSwitcherPosition, duration: number | null }
 export class ThemeRenderer {
-  private activeTheme: iThemeModule | null = null;
-  private themesMap = new Map<string, iThemeModule>();
-  private builder: LandingPageBuilder;
+  public activeTheme: iThemeModule | null = null;
+  public themesMap = new Map<string, iThemeModule>();
 
-  // New configuration properties
-  private switcherPosition: themeSwitcherPosition = "bottom-right";
-  private showSwitcher: boolean = false;
-  private switcherElement: HTMLElement | null = null;
-
-  private isSwitcherOpen = false;
-  private idleTimeoutTimer: number | null = null;
-  private idleDelayDuration = 10000; // 10 Detik durasi idle (bisa disesuaikan)
+  private builder: any = null;
 
   // Local helper renderer engine
   private engine = new DOMRenderer();
   private emptyRegistry = new BuilderRegistry();
+  isSwitcherOpen: boolean = false;
+  switcherElement: HTMLElement | null = null;
 
-  constructor(builderInstance: LandingPageBuilder, switcherConfig: boolean | themeSwitcherPosition = false) {
+  private isEventBound = false;
+
+  constructor() { }
+
+  public attachBuilder(builderInstance: any) {
     this.builder = builderInstance;
-
-    if (typeof switcherConfig === "string") {
-      this.showSwitcher = true;
-      this.switcherPosition = switcherConfig;
-    } else if (switcherConfig === true) {
-      this.showSwitcher = true;
-      this.switcherPosition = "bottom-right"; // Default fallback position
-    }
-
-    this.initEventBindings();
   }
 
   /**
    * Registers a dynamic design layout theme module
    */
-  public registerTheme(theme: iThemeModule): this {
+  public register(theme: iThemeModule): this {
     this.themesMap.set(theme.themeId, theme);
+
+    if (this.builder && !this.isEventBound) {
+      this.initEventBindings();
+      this.isEventBound = true;
+    }
+
     return this;
   }
 
@@ -48,9 +41,9 @@ export class ThemeRenderer {
    * Core Event Subscription Engine
    */
   private initEventBindings() {
-
+    if (!this.builder) return;
     // 🧙‍♂️ TAHAP 1: Intercept Struktur Objek via Pass-by-Reference Mutation (Pre-Render)
-    this.builder.events.on("beforeRender", (renderPayload) => {
+    this.builder.events.on("beforeRender", (renderPayload: any) => {
       const currentThemeId = (this.builder as any).currentThemeId;
       const targetTheme = this.themesMap.get(currentThemeId);
 
@@ -65,7 +58,7 @@ export class ThemeRenderer {
       }
     });
 
-    this.builder.events.on("onReady", (eventData) => {
+    this.builder.events.on("onReady", (eventData: any) => {
       const currentThemeId = (this.builder as any).currentThemeId;
 
       if (this.activeTheme && this.activeTheme.themeId !== currentThemeId && this.activeTheme.deactivate) {
@@ -77,25 +70,25 @@ export class ThemeRenderer {
         this.activeTheme = targetTheme;
 
         // 💡 BENTUK AMAN: Kirim iterator array hasil values Map cloningan ke modul tema
-        const liveElementsArray = Array.from(eventData.components.values());
 
         // Modul tema menerima array element hidup hasil saringan aman
-        targetTheme.activate(eventData.shell, liveElementsArray);
+        targetTheme.activate(eventData.shell, Array.from(eventData.components.values()));
       }
 
-      if (this.showSwitcher) this.renderSwitcher();
     });
 
-    this.builder.events.on("onError", (errData) => {
+    this.builder.events.on("onError", (errData: any) => {
       console.error(`[ThemeEngine] Captured core anomaly: ${errData.message}`, errData.error);
     });
   }
 
+  public renderSwitcher(config: Partial<iSwitcherConfig> = { position: "bottom-left", duration: 10000 }) {
 
-  private renderSwitcher() {
+    const switcherPosition = config.position;
+
     // 1. Hancurkan switcher widget lama jika ada di halaman
-    if (this.switcherElement && this.switcherElement.parentNode) {
-      this.switcherElement.parentNode.removeChild(this.switcherElement);
+    if (this.switcherElement && (this.switcherElement as HTMLElement).parentNode) {
+      ((this.switcherElement as HTMLElement).parentNode as HTMLElement).removeChild(this.switcherElement);
     }
 
     // 2. Dapatkan status tema yang sedang aktif saat ini
@@ -115,7 +108,7 @@ export class ThemeRenderer {
         content: themeModule.name || themeId,
         onCreated: (btnEl: HTMLElement) => {
           btnEl.addEventListener("click", () => {
-            this.resetIdleTimer(); // Reset hitung mundur timer setiap ada aktivitas klik
+            this.resetIdleTimer(this.isSwitcherOpen, config.duration as number); // Reset hitung mundur timer setiap ada aktivitas klik
             if (!isActive) {
               this.builder.changeTheme(themeId);
             }
@@ -133,7 +126,7 @@ export class ThemeRenderer {
     };
 
     // Jika posisi melayang di bawah, taruh panel menu di ATAS tombol FAB
-    if (this.switcherPosition.startsWith("bottom")) {
+    if ((switcherPosition as themeSwitcherPosition).startsWith("bottom")) {
       widgetNodes.push(panelSchema);
     }
 
@@ -148,9 +141,9 @@ export class ThemeRenderer {
           this.isSwitcherOpen = !this.isSwitcherOpen;
 
           if (this.isSwitcherOpen) {
-            this.resetIdleTimer();
+            this.resetIdleTimer(this.isSwitcherOpen, config.duration as number);
           } else {
-            this.clearIdleTimer();
+            this.clearIdleTimer(config.duration as number);
           }
 
           this.renderSwitcher(); // Re-render visual murni memutasi kelas CSS
@@ -159,7 +152,7 @@ export class ThemeRenderer {
     });
 
     // Jika posisi melayang di atas, taruh panel menu di BAWAH tombol FAB
-    if (this.switcherPosition.startsWith("top")) {
+    if ((switcherPosition as themeSwitcherPosition).startsWith("top")) {
       widgetNodes.push(panelSchema);
     }
 
@@ -167,7 +160,7 @@ export class ThemeRenderer {
     const switcherSchema: iBasicNode = {
       tagName: "div",
       // id: "theme-switcher-wrapper",
-      className: `fab ${this.switcherPosition}`, // Menembak class CSS eksternal .pos-bottom-right dll.
+      className: `fab ${switcherPosition}`, // Menembak class CSS eksternal .pos-bottom-right dll.
       content: widgetNodes
     };
 
@@ -177,23 +170,23 @@ export class ThemeRenderer {
   }
 
 
-  private resetIdleTimer() {
+  private resetIdleTimer(isSwitcherOpen: boolean, idleDuration: number) {
     this.clearIdleTimer();
 
     // Daftarkan hitung mundur baru berdasarkan durasi yang ditentukan (misal 10 detik)
-    this.idleTimeoutTimer = window.setTimeout(() => {
-      if (this.isSwitcherOpen) {
-        console.log(`[ThemeEngine Idle] ${this.idleDelayDuration / 1000}s Idle reached. Closing menu panel...`);
-        this.isSwitcherOpen = false;
+    window.setTimeout(() => {
+      if (isSwitcherOpen) {
+        console.log(`[ThemeEngine Idle] ${idleDuration as number / 1000}s Idle reached. Closing menu panel...`);
+        isSwitcherOpen = false;
         this.renderSwitcher(); // Mengembalikan ke state awal rounded button secara otomatis
       }
-    }, this.idleDelayDuration);
+    }, idleDuration);
   }
 
-  private clearIdleTimer() {
-    if (this.idleTimeoutTimer) {
-      window.clearTimeout(this.idleTimeoutTimer);
-      this.idleTimeoutTimer = null;
+  private clearIdleTimer(timeoutTimer?: number) {
+    if (timeoutTimer) {
+      window.clearTimeout(timeoutTimer);
+      timeoutTimer = null as any;
     }
   }
 }
