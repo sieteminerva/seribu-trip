@@ -205,7 +205,7 @@ export const createPackagePageContent = [
       },
       {
         id: "pricing-plans",
-        builder: "pricing-table",
+        builder: "pricing-card",
         isRoot: true,
         content: [
           {
@@ -322,3 +322,4 @@ export const createGalleryPageContent = [
     ] as iBasicNode
   }
 ];
+

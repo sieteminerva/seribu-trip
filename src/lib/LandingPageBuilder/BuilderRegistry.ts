@@ -2,6 +2,7 @@ import type { ComponentBuilderFn, iBuilderRegistry } from "./interface";
 
 
 
+
 export class BuilderRegistry {
   // Gunakan tipe data Map internal yang fleksibel namun aman
   private builders = new Map<string, ComponentBuilderFn>();

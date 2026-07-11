@@ -1,4 +1,4 @@
-import type { iBasicNode } from "../interface";
+import type { iActionProperty, iBasicNode } from "../interface";
 
 
 export class ContactBuilder {
@@ -37,17 +37,17 @@ export class ContactBuilder {
     const ul = document.createElement('ul');
     ul.className = 'unstyled-list';
 
-    if (data.content && Array.isArray(data.content)) {
-      data.content.forEach((item: iBasicNode) => {
+    if (data.actions && Array.isArray(data.actions)) {
+      data.actions.forEach((item: iActionProperty) => {
         const li = document.createElement('li');
         const a = document.createElement('a');
 
         if (item.id) a.id = item.id as string;
         if (item.className) a.className = item.className as string;
-        a.href = item.data as string || '#';
+        a.href = item.href as string || '#';
 
         // Menggabungkan label dan data teks secara aman
-        a.textContent = `${item.label || ''} ${item.data || ''}`.trim();
+        a.textContent = `${item.label || ''} ${item.href || ''}`.trim();
 
         li.appendChild(a);
         ul.appendChild(li);

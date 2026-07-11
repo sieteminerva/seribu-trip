@@ -1,6 +1,6 @@
 import type { iBasicNode } from "../interface";
 
-export class PricingTableBuilder {
+export class PricingCardBuilder {
   static create(content: iBasicNode[]): HTMLElement {
     console.log(content)
     const section = document.createElement("div");

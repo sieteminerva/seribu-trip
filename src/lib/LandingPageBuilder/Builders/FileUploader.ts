@@ -1,4 +1,4 @@
-import { truncateText } from "./helper";
+import { truncateText } from "../../helper";
 
 interface FileUploaderConfigMessages {
   selectedFiles: (count: number) => string;
@@ -130,7 +130,7 @@ export class FileUploader {
     // Step 2: Store references to the input element and its closest parent with class 'field'.
     this.input = input;
     this.input.title = "You can select or drop the files here to upload.";
-    this.container = input.closest(".field") as HTMLElement | null;
+    this.container = input.closest(".input-wrapper") as HTMLElement | null;
 
     // Attribute-based config overrides
     // Step 3: Parse 'accept' attribute from DOM, splitting by comma and cleaning up.
@@ -158,6 +158,7 @@ export class FileUploader {
 
     // Step 5: Create a container element for displaying file previews and append it to the input's field container.
     this.viewContainer = document.createElement("div");
+    this.viewContainer.className = "file hidden"
     if (this.container && this.viewContainer) {
       this.container.append(this.viewContainer);
     }
@@ -232,6 +233,7 @@ export class FileUploader {
    *    extracts files from the `dataTransfer` object, and calls `this.handleFiles` to process them.
    */
   _onDragNdrop() {
+    console.log(this.container)
     if (!this.container) return;
 
     this.container.addEventListener("dragover", (e: DragEvent) => {
@@ -597,7 +599,7 @@ export class FileUploader {
       const close = document.createElement("div");
       // Step 8: Create the close/remove button.
       close.classList.add("close", "button");
-      close.innerHTML = `<i class="trash alternate icon"></i>`;
+      close.innerHTML = /* `<i class="trash alternate icon"></i>` */ "❌";
       // Step 9: Attach the event listener for removing the item.
       this._onCloseRemoveItem(file, close, item);
 
@@ -800,6 +802,7 @@ export class FileUploader {
       const filename = document.createElement("div");
       filename.classList.add("filename");
       filename.style.color = "var(--unallowed-color)";
+      // TODO use emoji or svg content in `FileUploader.css`
       filename.innerHTML = `<i class="file alternate icon"></i> ${messageText}`;
 
       const info = document.createElement("div");
@@ -854,6 +857,7 @@ export class FileUploader {
   updateUploadInfo(allSelectedFiles: number, totalAllowedFiles: number) {
     const messages = this.config.messages ?? FileUploader.config.messages;
     if (!this.viewContainer || !messages) return;
+    // TODO use emoji or svg content in `FileUploader.css` to replace `<i class="* icon"></i>`
     const totalFilesMsg = `
       <div class="message">
         <i class="copy outline icon"></i>
@@ -1140,6 +1144,7 @@ export class FileUploader {
       this._configDefaults || {
         accept: ["image/*", ".pdf"],
         input: 'input[type="file"][data-uploader]',
+        container: "",
         closeButton: ".close.icon",
         maxFileSize: 5 * 1024 * 1024,
         maxUpload: 10,
@@ -1147,6 +1152,18 @@ export class FileUploader {
         view: "thumbnails",
         renderThumbnail: true,
         groupUnallowed: true,
+        icons: {
+          remove: `<i class="close icon"></i>`,
+          allowed: `<i class="check circle icon"></i>`,
+          unallowed: `<i class="times circle icon"></i>`,
+          warning: `<i class="circle exclamation icon"></i>`,
+          image: `<i class="file image outline icon"></i>`,
+          audio: `<i class="file audio outline icon"></i>`,
+          video: `<i class="file video outline icon"></i>`,
+          pdf: `<i class="file pdf outline icon"></i>`,
+          file: `<i class="file outline icon"></i>`,
+          files: `<i class="copy outline icon"></i>`
+        },
         messages: {
           selectedFiles: (count) => `${count} selected file(s)`,
           readyFiles: (count) => `${count} file(s) ready to upload.`,

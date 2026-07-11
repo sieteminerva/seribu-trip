@@ -73,8 +73,14 @@ export class DOMRenderer<
       let currentElement: HTMLElement;
       let customComponentFromBuilder: HTMLElement | null = null;
 
+      if ((value as any).content instanceof HTMLElement && !builderName && !isRootFlag) {
+        // 💡 SOLUSI: Bajak langsung element dari InputBuilder untuk dijadikan elemen utama!
+        // Kita singkirkan document.createElement pembungkus palsu selamanya.
+        currentElement = (value as any).content;
+      }
+
       // 1. Eksekusi builder terlebih dahulu jika terdeteksi pola isRoot = true
-      if (builderName && isRootFlag && builder && builder.has(builderName)) {
+      else if (builderName && isRootFlag && builder && builder.has(builderName)) {
         const builderFn = builder.get(builderName);
         if (builderFn) {
           const nodePayload = (value as any).content;
@@ -83,12 +89,10 @@ export class DOMRenderer<
             customComponentFromBuilder = resultComponent;
           }
         }
+        currentElement = customComponentFromBuilder || document.createElement(baseName || 'div');
       }
-
-      // 2. Tentukan Elemen Utama: Pakai hasil builder (jika isRoot), atau cetak div/tag wrapper baru
-      if (customComponentFromBuilder) {
-        currentElement = customComponentFromBuilder; // Elemen dibajak langsung dari builder!
-      } else {
+      // Fallback standard untuk deklarasi template biasa
+      else {
         const tagName = baseName || 'div';
         currentElement = document.createElement(tagName);
       }
@@ -119,10 +123,10 @@ export class DOMRenderer<
       }
 
       // 6. Evaluasi Konten jika TIDAK menggunakan jalur isRoot (jalur standard fallback)
-      if (!customComponentFromBuilder && (value as any).content !== undefined) {
+      if (!((value as any).content instanceof HTMLElement) && !customComponentFromBuilder && (value as any).content !== undefined) {
         const nodePayload = (value as any).content;
 
-        if (builderName && builder && builder.has(builderName)) {
+        if (builderName && builder?.has(builderName)) {
           const builderFn = builder.get(builderName);
           if (builderFn) {
             const normalComponent = builderFn(nodePayload);

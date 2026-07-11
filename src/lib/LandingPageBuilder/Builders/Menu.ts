@@ -21,7 +21,7 @@ export class MenuBuilder {
     nav.id = data.id as string;
     nav.className = data.className as string || 'nav';
 
-    const items = Array.isArray(data.content) ? data.content : [data.content];
+    const items = Array.isArray(data.actions) ? data.actions : [data.actions];
     const brandData = (items[0] || { label: 'Logo', href: '#' }) as iActionProperty;
     const linksData = items.slice(1);
 
@@ -48,7 +48,7 @@ export class MenuBuilder {
     const ulItems = document.createElement('ul');
     ulItems.className = 'items';
 
-    linksData.forEach((link?: iActionProperty) => {
+    linksData.forEach((link?: any) => {
       const li = document.createElement('li');
       const a = document.createElement('a');
 

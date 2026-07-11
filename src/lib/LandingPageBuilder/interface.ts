@@ -1,8 +1,62 @@
 export interface iLandingPageBuilderSource {
-  menu?: HTMLElement | null;
-  footer?: HTMLElement | null;
+  menu?: HTMLElement | iBasicNode | null;
+  footer?: HTMLElement | iBasicNode | null;
   pages: Record<string, iBasicNode[]>;
 }
+
+export interface iLandingPageEvents {
+  beforeRender: {
+    pages: iBasicNode[];
+    menu: iBasicNode | null;
+    footer: iBasicNode | null;
+  };
+  onPageChanged: { route: string; activeNodes: HTMLElement[] };
+  onThemeChanged: { themeId: string; shell: HTMLElement };
+  onElementAdded: { element: HTMLElement; parent: HTMLElement };
+  onElementRemoved: { element: HTMLElement };
+  onReady: { shell: HTMLElement; components: Map<string, HTMLElement> };
+  onError: { message: string; error: Error; context?: string };
+}
+
+
+/**
+ * CONTRACT SPECIFICATION: Base Contract for all Architectural Themes.
+ * Every theme MUST implement this interface to be recognized by the ThemeRenderer.
+ */
+export interface iThemeModule {
+  readonly themeId: string;
+  readonly name: string;
+
+  /**
+   * 🧙‍♂️ HOOK 1: STRUCTURAL MUTATION (Pre-Render Lifecycle)
+   * Veto right to reconstruct the raw template objects BEFORE DOM synthesis.
+   */
+  beforePageRender?(
+    pageBlocks: iBasicNode[],
+    menuBlock: iBasicNode | null,
+    footerBlock: iBasicNode | null
+  ): {
+    pages: iBasicNode[];
+    menu: iBasicNode | null;
+    footer: iBasicNode | null;
+  };
+
+  /**
+   * ⚡ HOOK 2: BEHAVIORAL INTERACTION (Post-Render Lifecycle)
+   * Triggered when the final elements tree is fully live on the DOM.
+   */
+  activate(shell: HTMLElement, elements: HTMLElement[]): void;
+
+  /**
+   * 🛑 HOOK 3: MEMORY CLEANUP (Unmount Lifecycle)
+   * MUST be used to unbind custom event listeners to eliminate memory leaks.
+   */
+  deactivate?(shell: HTMLElement): void;
+}
+
+
+export type themeSwitcherPosition = "top-left" | "top-right" | "bottom-right" | "bottom-left";
+
 
 interface iDefaultProps {
   id?: string;
@@ -35,10 +89,91 @@ export interface iBuilderContent extends iDefaultProps {
 }
 
 // Data Item khusus untuk builder bertipe 'pricing-table'
-export interface iTableProperty extends iDefaultProps {
+export interface iCardProperty extends iDefaultProps {
   header: string;
   body: { name: string; className: string }[];
   action?: iActionProperty;
+}
+
+// Skema untuk Form Builder
+export interface iFormGroupNode {
+  legend?: string;
+  title?: string;
+  description?: string;
+  className?: string;
+  submitButton?: boolean;
+  group: Array<iBasicInputNode | HTMLElement | string>;
+}
+
+// =========================================
+// 2. INPUT & FORM
+// =========================================
+export type InputType =
+  | "text"
+  | "textarea"
+  | "number"
+  | "select"
+  | "checkbox"
+  | "radio"
+  | "range"
+  | "date"
+  | "time"
+  | "datetime-local"
+  | "file"
+  | "color"
+  | "email"
+  | "password"
+  | "url"
+  | "tel"
+  | "hidden";
+
+export interface InputBuilderSelectorOption {
+  value?: string;
+  label?: string;
+  icon?: string;
+}
+
+export interface InputBuilderConfigOptions {
+  attributes?: Array<{ name: string; value: string }>;
+  style?: string;
+  field?: string;
+  className?: string;
+  options?: Array<string | InputBuilderSelectorOption>;
+  position?: "left" | "right";
+  icon?: string;
+  content?: string | Record<string, unknown>;
+  action?: { mode?: string } | null;
+  actionMode?: string;
+  wide?: number | null;
+  useLabel?: boolean;
+  view?: string;
+  thumbnail?: boolean;
+  maxUpload?: number;
+  maxFileSize?: number;
+  groupUnallowed?: boolean;
+  createEventListener?: boolean;
+  display?: "block" | "inline";
+}
+
+export interface iBasicInputNode {
+  type?: InputType;
+  id?: string;
+  name?: string;
+  title?: string;
+  placeholder?: string;
+  value?: string | number | boolean;
+  rows?: number;
+  cols?: number;
+  multiple?: boolean;
+  disabled?: boolean;
+  readonly?: boolean;
+  required?: boolean;
+  checked?: boolean;
+  range?: string;
+  info?: string;
+  accept?: string;
+  config?: Partial<InputBuilderConfigOptions>;
+  [key: string]: unknown;
 }
 
 // ==========================================
@@ -47,9 +182,12 @@ export interface iTableProperty extends iDefaultProps {
 export interface iBuilderRegistry {
   carousel: iBuilderContent[];
   accordion: iHeaderProperty[];
-  "pricing-table": iTableProperty[];
+  "pricing-card": iCardProperty[];
   masonry: iBuilderContent[];
   section: iBuilderContent[];
+  form: Array<iBasicInputNode | iFormGroupNode | HTMLElement | string>;
+  menu: iBasicNode,
+  footer: iBasicNode
   // Untuk komponen baru nanti, cukup daftarkan jenis array atomnya di sini:
   // stats: iStatsProperty[];
 }
@@ -118,6 +256,9 @@ export interface iBasicStandardNode extends iNodeLifecycleHooks {
   builder?: never;
   isRoot?: boolean;
   content?: string | HTMLElement | iBasicNode | iBasicNode[] | iActionProperty;
+  // 💡 INTERNAL SYSTEM TRACKING: Metadata penanda form admin dashboard Anda
+  _field?: string;
+
   [customHtmlAttr: string]: any;
 }
 

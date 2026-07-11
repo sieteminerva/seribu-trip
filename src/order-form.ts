@@ -1,4 +1,4 @@
-import { generateFormElement } from "./lib/form-builder";
+import { FormBuilder } from "./lib/LandingPageBuilder/Builders/Form";
 
 const orderFormSchema = [
   {
@@ -172,13 +172,13 @@ const orderFormSchema = [
 ];
 
 export function createOrderForm() {
-  return generateFormElement(orderFormSchema, {
+  return new FormBuilder({
     id: "booking-calculator-form",
-    class: "native form",
+    className: "native form",
     submitButton: true,
     createEventListener: true,
     minHeight: "auto",
-  });
+  }).create(orderFormSchema);
 }
 
 
