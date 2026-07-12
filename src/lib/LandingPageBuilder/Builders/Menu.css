@@ -1,0 +1,120 @@
+/* ==========================================================================
+   4. NAVIGATION SPECIFICATION (.nav Framework)
+   ========================================================================== */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.95rem 1.2rem;
+
+  background: var(--surface-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-soft);
+  border-radius: 0 0 var(--radius-component) var(--radius-component);
+}
+
+.nav .brand a {
+  color: var(--text-heading);
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.nav .items {
+  display: flex;
+  gap: 0.85rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav .items a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.nav .actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+/* Theme Switch Toggle Layout styles */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--surface-strong);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.theme-toggle-track {
+  width: 2.5rem;
+  height: 1.3rem;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-soft);
+}
+
+.theme-toggle-thumb {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  background: var(--accent);
+  transform: translateX(0.15rem);
+  transition: transform 180ms ease;
+}
+
+.theme-toggle-btn.is-dark .theme-toggle-thumb {
+  transform: translateX(1.2rem);
+}
+
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-heading);
+  cursor: pointer;
+  padding: 0.5rem;
+  margin-left: auto;
+}
+
+@media (max-width: 768px) {
+  .hamburger-btn {
+    display: flex;
+  }
+
+  .nav {
+    flex-wrap: wrap;
+  }
+
+  .nav .items,
+  .nav .actions {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    padding-bottom: 1rem;
+  }
+
+  .nav.menu-open .items,
+  .nav.menu-open .actions {
+    display: flex;
+  }
+}

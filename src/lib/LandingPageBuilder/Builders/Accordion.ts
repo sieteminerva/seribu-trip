@@ -1,14 +1,15 @@
 import type { iBasicNode } from "../interface";
+import "./Accordion.css";
 
 export class AccordionBuilder {
 
-  static create(content: iBasicNode[]): HTMLElement {
+  static create(data: iBasicNode): HTMLElement {
 
     // create Accordion
     const accordionContainer = document.createElement("div");
     accordionContainer.className = "accordion";
 
-    content.forEach(item => {
+    (data.content as iBasicNode[]).forEach(item => {
       const details = document.createElement("details");
 
       const summary = document.createElement("summary");

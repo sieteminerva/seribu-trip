@@ -1,8 +1,7 @@
 import './style.css';
 import './lib/LandingPageBuilder/Builders/Form.css'
-import './lib/LandingPageBuilder/Builders/FileUploader.css';
-import './lib/LandingPageBuilder/Themes/theme-switcher.css';
 import './overrides.css';
+
 import { createOrderModal } from './order-form';
 import { createHomePageContent, createPackagePageContent, createGalleryPageContent } from './content';
 import { ContactBuilder } from './lib/LandingPageBuilder/Builders/Contact';
@@ -15,9 +14,10 @@ import { MasonryBuilder } from './lib/LandingPageBuilder/Builders/Masonry';
 import { SectionBuilder } from './lib/LandingPageBuilder/Builders/Section';
 import { FormBuilder } from './lib/LandingPageBuilder/Builders/Form';
 import { NodeTransformer } from './lib/LandingPageBuilder/Utils/NodeTransformer';
-import { VerticalTheme, CyberpunkTheme } from './lib/LandingPageBuilder/Themes/test';
+import { VerticalTheme } from './lib/LandingPageBuilder/Themes/test';
 import { HorizontalTheme } from './lib/LandingPageBuilder/Themes/HorizontalTheme';
 import type { iBasicNode } from './lib/LandingPageBuilder/interface';
+import { CyberpunkTheme } from './lib/LandingPageBuilder/Themes/CyberpunkTheme';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 
@@ -95,16 +95,16 @@ if (app) {
 
   builder.component?.register("accordion", (data) => AccordionBuilder.create(data))
     .register("carousel", (data: any) => new CarouselBuilder().create(data))
-    .register("pricing-card", (data: any) => PricingCardBuilder.create(data))
-    .register("masonry", (data: any) => new MasonryBuilder({ category: "category" }).create(data))
+    .register("pricing-card", (data: any) => PricingCardBuilder.create(data.content))
+    .register("masonry", (data: any) => new MasonryBuilder({ category: "category" }).create(data.content))
     .register("section", (data: any) => SectionBuilder.create(data, { tagName: "section" }))
-    .register("form", (data: any) => new FormBuilder().create(data))
+    .register("form", (data: any) => new FormBuilder().create(data.content))
     .register("menu", (data: any) => MenuBuilder.create(data))
     .register("footer", (data: any) => ContactBuilder.create(data))
 
   builder.theme?.register(VerticalTheme)
     .register(new HorizontalTheme())
-    .register(CyberpunkTheme);
+    .register(new CyberpunkTheme());
 
   builder.theme?.renderSwitcher({ position: "bottom-left", duration: 10000 });
 

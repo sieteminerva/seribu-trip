@@ -20,5 +20,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "archieves/form-builder.ts", "archieves/input-builder.ts"]
+  "include": ["src", "archieves/form-builder.ts", "archieves/input-builder.ts", "archieves/@ff.ts"]
 }

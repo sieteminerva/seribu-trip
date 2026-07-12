@@ -9,6 +9,7 @@ export interface iLandingPageEvents {
     pages: iBasicNode[];
     menu: iBasicNode | null;
     footer: iBasicNode | null;
+    pageMetaReport?: iPageMetaReport
   };
   onPageChanged: { route: string; activeNodes: HTMLElement[] };
   onThemeChanged: { themeId: string; shell: HTMLElement };
@@ -34,7 +35,8 @@ export interface iThemeModule {
   beforePageRender?(
     pageBlocks: iBasicNode[],
     menuBlock: iBasicNode | null,
-    footerBlock: iBasicNode | null
+    footerBlock: iBasicNode | null,
+    pageMetaReport?: iPageMetaReport
   ): {
     pages: iBasicNode[];
     menu: iBasicNode | null;
@@ -174,6 +176,23 @@ export interface iBasicInputNode {
   accept?: string;
   config?: Partial<InputBuilderConfigOptions>;
   [key: string]: unknown;
+}
+
+export interface iComponentMeta {
+  active: boolean;
+  container: string;       // Selector CSS unik tempat dia bersarang (misal: "div#carousel-container")
+  count: number;           // Jumlah komponen sejenis di halaman tersebut
+  instances: any[];        // Salinan referensi payload data internalnya
+}
+
+export interface iPageMetaReport {
+  isArray: boolean;
+  totalSections: number;
+  hasComponent: {
+    [K in keyof iBuilderRegistry]?: iComponentMeta;
+  };
+  // Tambahan info taktis: Daftar seluruh ID seksi dan label nama seksi untuk timeline
+  timelinePaths: Array<{ id: string; name: string; type: string }>;
 }
 
 // ==========================================

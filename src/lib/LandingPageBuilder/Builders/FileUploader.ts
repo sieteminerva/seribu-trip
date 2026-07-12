@@ -1,4 +1,5 @@
 import { truncateText } from "../../helper";
+import './FileUploader.css';
 
 interface FileUploaderConfigMessages {
   selectedFiles: (count: number) => string;

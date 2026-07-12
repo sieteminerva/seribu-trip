@@ -1,4 +1,4 @@
-import type { iBasicNode } from "../interface";
+import type { iBasicNode, iBuilderRegistry, iPageMetaReport } from "../interface";
 
 
 export interface iInjectionRule {
@@ -7,6 +7,33 @@ export interface iInjectionRule {
 }
 
 export class NodeTransformer {
+
+  public static safeCloneNode(nodes: iBasicNode[]): iBasicNode[] {
+    if (!nodes) return [];
+
+    const cloneItem = (item: any): any => {
+      if (!item || typeof item !== "object") return item;
+      if (item instanceof HTMLElement) return item; // Jaga referensi element fisik
+
+      if (Array.isArray(item)) {
+        return item.map(cloneItem);
+      }
+
+      const clonedObj: any = {};
+      Object.keys(item).forEach((key) => {
+        const val = item[key];
+        // Jika mendeteksi fungsi (seperti onCreated), salin referensi pointer-nya secara langsung!
+        if (typeof val === "function") {
+          clonedObj[key] = val;
+        } else {
+          clonedObj[key] = cloneItem(val);
+        }
+      });
+      return clonedObj;
+    };
+
+    return nodes.map(cloneItem);
+  }
 
   public static resolveContentNode(nodeObj: iBasicNode): any {
 
@@ -27,10 +54,11 @@ export class NodeTransformer {
 
     const extractedAttrs = { ...(nodeObj.attrs || {}) };
     // 2. Kumpulkan semua atribut kustom (seperti src, href, alt) selevel tag dasar
+    const reservedKeys = ['tag', 'tagName', 'id', 'className', 'builder', 'content', 'onCreated', 'onDestroy', 'attrs', 'isRoot'];
 
     Object.keys(nodeObj).forEach(key => {
-      const isReserved = ['tag', 'tagName', 'id', 'className', 'builder', 'content', 'onCreated', 'onDestroy', 'attrs', 'isRoot'].includes(key);
       const isSystemPrivateProperty = key.startsWith("_");
+      const isReserved = reservedKeys.includes(key)
       if (!isReserved && !isSystemPrivateProperty) {
         extractedAttrs[key] = nodeObj[key];
       }
@@ -222,4 +250,117 @@ export class NodeTransformer {
   private static sanitizeKey(value: string): string {
     return value.toLowerCase().trim().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "");
   }
+
+  /**
+   * 🧙‍♂️ GLOBAL INTROSPECTOR: Scans iBasicNode or iBasicNode[] in a single-pass loop
+   * and returns a highly detailed structural metadata manifest report.
+   */
+  public static scanMetaNodes(pages: iBasicNode | iBasicNode[]): iPageMetaReport {
+    const isArray = Array.isArray(pages);
+    const nodesArray = isArray ? (pages as iBasicNode[]) : [pages as iBasicNode];
+
+    // Inisialisasi struktur dasar laporan meta awal
+    const report: iPageMetaReport = {
+      isArray,
+      totalSections: 0,
+      hasComponent: {
+        carousel: { active: false, container: "", count: 0, instances: [] },
+        accordion: { active: false, container: "", count: 0, instances: [] },
+        form: { active: false, container: "", count: 0, instances: [] },
+        "pricing-card": { active: false, container: "", count: 0, instances: [] },
+        masonry: { active: false, container: "", count: 0, instances: [] },
+        section: { active: false, container: "", count: 0, instances: [] }
+      },
+      timelinePaths: []
+    };
+
+    // Jalankan mesin pemindai rekursif tunggal
+    this.executeDeepInspection(nodesArray, "root", report);
+
+    for (const key in report.hasComponent) {
+      if (report.hasComponent.hasOwnProperty(key) && !report.hasComponent[key as keyof iBuilderRegistry]?.active) {
+        delete report.hasComponent[key as keyof iBuilderRegistry]
+      }
+    }
+
+    return report;
+  }
+
+  /**
+   * Algoritma internal single-pass deep inspection
+   */
+  private static executeDeepInspection(nodes: any[], parentSelectorPath: string, report: iPageMetaReport) {
+    if (!nodes || !Array.isArray(nodes)) return;
+    // FIX: Added .entries() to correctly unpack [index, node]
+    for (const [index, node] of nodes.entries()) {
+      if (!node || typeof node !== "object") continue; // FIX: Changed 'return' to 'continue' so it doesn't break the entire loop prematurely
+
+      // 1. Hitung total seksi makro teratas (jika berada di level root)
+      if (parentSelectorPath === "root") {
+        report.totalSections++;
+      }
+
+      // 2. Bangun koordinat selector CSS unik tempat elemen ini berada
+      const tagName = node.tagName || node.tag || "div";
+      const idToken = node.id ? `#${node.id.trim()}` : "";
+      // Ambil kelas pertama sebagai penanda selector yang rapi
+      const firstClass = node.className ? `.${node.className.trim().split(/\s+/)[0]}` : "";
+
+      const currentSelector = `${tagName}${idToken}${firstClass}`;
+      const fullSelectorPath = parentSelectorPath === "root"
+        ? currentSelector
+        : `${parentSelectorPath} > ${currentSelector}`;
+
+      // 3. DETEKSI SENSOR: Jika elemen visual ini memperalat Component Builder!
+      if (node.builder && typeof node.builder === "string") {
+        // FIX: Removed TypeScript type assertion 'as keyof iBuilderRegistry' for JavaScript compatibility
+        const bName = node.builder.toLowerCase() as keyof iBuilderRegistry;
+
+        // Jika tipe builder belum terdaftar di kamus (komponen kustom baru masa depan), buat rumah barunya dinamis
+        if (!report.hasComponent[bName]) {
+          report.hasComponent[bName] = { active: false, container: "", count: 0, instances: [] };
+        }
+
+        const compMeta = report.hasComponent[bName] as any;
+        compMeta.active = true;
+        compMeta.count++;
+        // Kunci koordinat selector kontainer pembungkusnya secara presisi!
+        compMeta.container = fullSelectorPath;
+        // Simpan data internal itemnya untuk dibaca cepat oleh tema
+        compMeta.instances.push(node.content);
+
+
+      }
+
+      // 4. KUMPULKAN JALUR TIMELINE: Ambil ID dan nama ramah untuk keperluan scroll timeline
+      if (parentSelectorPath === "root" || node.id || node.name) {
+        const sectionId = node.id || node.name?.toLowerCase().replace(/\s+/g, "-") || `section-${index}`;
+        const sectionName = node.name || node.attrs?.["data-name"] || sectionId.replace(/[-_]/g, " ").toUpperCase();
+
+        // Daftarkan ke manifes timeline jika data ID-nya belum terekam
+        if (!report.timelinePaths.some(t => t.id === sectionId)) {
+          report.timelinePaths.push({
+            id: sectionId,
+            name: sectionName,
+            type: node.builder || "standard_layout"
+          });
+        }
+      }
+
+      // 5. REKURSI: Telusuri lebih dalam ke anak-anak properti 'content' jika berupa sub-layout objek/array
+      if (node.content && typeof node.content === "object" && !(node.content instanceof HTMLElement)) {
+        const childNodes = Array.isArray(node.content) ? node.content : [node.content];
+        this.executeDeepInspection(childNodes, fullSelectorPath, report);
+      }
+
+      // Dukung penelusuran jika menulis menggunakan model Advanced Mode (String Selectors)
+      Object.keys(node).forEach(key => {
+        if ((key.includes('.') || key.includes('#')) && typeof node[key] === "object") {
+          this.executeDeepInspection([node[key]], fullSelectorPath, report);
+        }
+      });
+    }
+
+  }
+
 }

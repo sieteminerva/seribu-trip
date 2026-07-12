@@ -4,9 +4,12 @@ import type { iActionProperty, iBasicNode } from "../interface";
 export class ContactBuilder {
 
   static create(data: iBasicNode): HTMLElement {
+    // console.log("ContactBuilder", { data })
+    const content = data.content as iBasicNode;
+
     const footer = document.createElement('footer');
-    footer.id = data.id as string;
-    footer.className = data.className || "footer";
+    footer.id = content.id as string;
+    footer.className = content.className || "footer";
 
     // 1. Buat Baris Utama (Top Row)
     const topRow = document.createElement('div');
@@ -17,11 +20,11 @@ export class ContactBuilder {
     infoCol.className = 'column';
 
     const h2 = document.createElement('h2');
-    h2.textContent = data.title || '';
+    h2.textContent = content.title || '';
     infoCol.appendChild(h2);
 
     const pDesc = document.createElement('p');
-    pDesc.textContent = data.description || '';
+    pDesc.textContent = content.description || '';
     infoCol.appendChild(pDesc);
 
     topRow.appendChild(infoCol);
@@ -37,8 +40,8 @@ export class ContactBuilder {
     const ul = document.createElement('ul');
     ul.className = 'unstyled-list';
 
-    if (data.actions && Array.isArray(data.actions)) {
-      data.actions.forEach((item: iActionProperty) => {
+    if (content.actions && Array.isArray(content.actions)) {
+      content.actions.forEach((item: iActionProperty) => {
         const li = document.createElement('li');
         const a = document.createElement('a');
 
@@ -46,7 +49,7 @@ export class ContactBuilder {
         if (item.className) a.className = item.className as string;
         a.href = item.href as string || '#';
 
-        // Menggabungkan label dan data teks secara aman
+        // Menggabungkan label dan content teks secara aman
         a.textContent = `${item.label || ''} ${item.href || ''}`.trim();
 
         li.appendChild(a);
@@ -63,7 +66,7 @@ export class ContactBuilder {
     bottomRow.className = 'row bottom';
 
     const pCopy = document.createElement('p');
-    pCopy.textContent = `© ${new Date().getFullYear()} ${data.title || ''}. All rights reserved.`;
+    pCopy.textContent = `© ${new Date().getFullYear()} ${content.title || ''}. All rights reserved.`;
 
     bottomRow.appendChild(pCopy);
     footer.appendChild(bottomRow);

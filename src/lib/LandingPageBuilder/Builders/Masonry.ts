@@ -1,4 +1,5 @@
 import type { iActionProperty, iBasicNode } from "../interface";
+import "./Masonry.css";
 
 export interface iMasonrySelectors {
   // Menu Filter Kategori
@@ -129,9 +130,8 @@ export class MasonryBuilder {
     return visibleBatch.map(item => item.image).filter((img): img is string => !!img);
   }
 
-  public create(content: iBasicNode[]): HTMLElement {
-    this.items = content;
-    // console.log({ items: this.items })
+  public create(data: iBasicNode): HTMLElement {
+    this.items = data as iBasicNode[];
     this.displayedCount = 0;
 
     if (this.config.container) {

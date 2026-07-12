@@ -81,6 +81,7 @@ export class FormBuilder {
    * REFACTOR TOTAL: Merakit Form menggunakan struktur iBasicNode[] murni
    */
   public create(inputs: Array<any | HTMLElement | string> | any): HTMLElement {
+
     const randomSuffix = Math.random().toString(36).substring(7);
     const formId = this.config.id ? `form ${this.config.id}`.replace(/\s+/g, "-") : `form-${randomSuffix}`;
 
@@ -241,7 +242,7 @@ export class FormBuilder {
       if (this.submitButtonId && submitter && submitter.id !== this.submitButtonId) return;
 
       const formData = new FormData(form);
-      const data = Object.fromEntries(formData);
+      const data = Object.fromEntries(formData as any);
 
       let files = {};
       if (typeof FileUploader !== "undefined" && typeof FileUploader.getFilesForGoogleDrive === "function") {

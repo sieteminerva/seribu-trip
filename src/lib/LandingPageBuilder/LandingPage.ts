@@ -68,16 +68,15 @@ export class LandingPageBuilder {
       this.theme.attachBuilder(this);
 
       this.defaultRoute = this.normalizeRoute(config.defaultRoute || "home");
-      const initialRoute = this.resolveRouteFromHash();
-      this.currentRoute = initialRoute.route;
-      this.pendingFragment = initialRoute.fragment;
-
-      // const urlState = this.parseUrlHash();
+      const urlState = this.parseUrlHash();
+      this.currentRoute = urlState.route;
+      this.pendingFragment = urlState.fragment;
 
       // 2. 🧙‍♂️ JALUR HIBRIDA: Cek URL dulu, kalau kosong cek localStorage, kalau kosong baru pakai config default!
       this.currentThemeId = localStorage.getItem("cms_active_theme") as string || config.theme as string;
 
       window.addEventListener("hashchange", this.handleHashChange);
+
     } catch (error: any) {
       // 💡 EVENT TRIGGER: onError
       this.events.emit("onError", { message: "Failed to initialize LandingPageBuilder", error, context: "constructor" });
@@ -101,19 +100,21 @@ export class LandingPageBuilder {
 
     localStorage.setItem("cms_active_theme", themeId);
 
-    window.location.hash = `${this.currentRoute}?theme=${themeId}`;
+    const currentHash = `#${this.currentRoute}?theme=${themeId}`;
+    window.history.replaceState(null, "", currentHash);
 
     if (this.shell) {
       // 💡 EVENT TRIGGER: onThemeChanged
       this.events.emit("onThemeChanged", { themeId, shell: this.shell });
     }
-    this.render(); // Picu re-render otomatis untuk menerapkan transformasi visual tema
+    this.render(this.currentRoute); // Picu re-render otomatis untuk menerapkan transformasi visual tema
   }
 
   /**
    * REFACTOR TOTAL: Metode render menjadi super pendek dan linear!
    */
   public render(route: string = this.currentRoute): void {
+
     try {
       if (!this.shell) {
         this.shell = document.createElement("main");
@@ -128,7 +129,7 @@ export class LandingPageBuilder {
       }
 
       // 1. Ambil salinan data mentah asal rute aktif saat ini (Gunakan Deep Clone agar data asli aman)
-      let rawBlocks = JSON.parse(JSON.stringify(this.pages[this.currentRoute] || this.pages[this.defaultRoute] || []));
+      let rawBlocks = NodeTransformer.safeCloneNode(this.pages[this.currentRoute] || this.pages[this.defaultRoute] || [] as iBasicNode[]);
       let rawMenu = this.restore(this.menu as HTMLElement | null);
       let rawFooter = this.restore(this.footer as HTMLElement | null);
 
@@ -166,6 +167,7 @@ export class LandingPageBuilder {
         // JEMBATAN OTOMATIS: Deteksi apakah block menggunakan format ramah pemula
         if ("tagName" in block || ("content" in block && !Object.keys(block)[0].includes('.'))) {
           // Jika ya, konversi otomatis menjadi format core engine di balik layar
+
           DOMSchema = NodeTransformer.resolveContentNode(block as iBasicNode);
         } else {
           // Jika tidak (berarti format string selector milik senior), langsung pakai
@@ -228,26 +230,6 @@ export class LandingPageBuilder {
     return resolved || "home";
   }
 
-
-  private resolveRouteFromHash(): { route: string; fragment: string } {
-    const rawHash = window.location.hash;
-    const hash = rawHash.replace(/^#/, "");
-
-    if (!hash) {
-      return { route: this.defaultRoute, fragment: "" };
-    }
-
-    const [routePart, ...fragmentParts] = hash.split("#");
-    const route = this.normalizeRoute(routePart);
-    const fragment = fragmentParts.join("#");
-
-    if (this.pages[route]) {
-      return { route, fragment };
-    }
-
-    return { route: this.defaultRoute, fragment: hash };
-  }
-
   /**
    * Handler otomatis saat user mengetik URL baru atau klik link
    */
@@ -262,13 +244,6 @@ export class LandingPageBuilder {
 
     this.render(urlState.route);
   };
-
-  // private syncRouteFromHash(): void {
-  //   const { route, fragment } = this.resolveRouteFromHash();
-  //   this.currentRoute = route;
-  //   this.pendingFragment = fragment;
-  //   this.render(route);
-  // }
 
   private parseUrlHash(): { route: string; theme: string | null; fragment: string } {
     // Ambil string hash mentah dan bersihkan tanda # di depan

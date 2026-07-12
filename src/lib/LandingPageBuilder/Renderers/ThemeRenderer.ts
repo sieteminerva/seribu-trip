@@ -2,6 +2,8 @@ import { BuilderRegistry } from "../BuilderRegistry";
 import type { iBasicNode, iThemeModule, themeSwitcherPosition } from "../interface";
 import { NodeTransformer } from "../Utils/NodeTransformer";
 import { DOMRenderer } from "./DOMRenderer";
+import './theme-switcher.css';
+
 interface iSwitcherConfig { position: boolean | themeSwitcherPosition, duration: number | null }
 export class ThemeRenderer {
   public activeTheme: iThemeModule | null = null;
@@ -49,7 +51,9 @@ export class ThemeRenderer {
 
       if (targetTheme && typeof targetTheme.beforePageRender === "function") {
         // Jalankan fungsi perombak milik modul tema
-        const mutated = targetTheme.beforePageRender(renderPayload.pages, renderPayload.menu, renderPayload.footer);
+        // 🧙‍♂️ EMIT METADATA: Jalankan scan tunggal raksasa di awal!
+        const pageMetaReport = NodeTransformer.scanMetaNodes(renderPayload.pages);
+        const mutated = targetTheme.beforePageRender(renderPayload.pages, renderPayload.menu, renderPayload.footer, pageMetaReport);
 
         // Mutasikan langsung isi properti objek referensinya!
         renderPayload.menu = mutated.menu;
@@ -92,7 +96,7 @@ export class ThemeRenderer {
     }
 
     // 2. Dapatkan status tema yang sedang aktif saat ini
-    const currentActiveThemeId = (this.builder as any).currentThemeId;
+    const currentActiveThemeId = localStorage.getItem("cms_active_theme") || (this.builder as any).currentThemeId;
 
     // 3. Susun tombol-tombol pilihan tema secara dinamis
     const menuSchemas: iBasicNode[] = [
@@ -100,6 +104,7 @@ export class ThemeRenderer {
     ];
 
     this.themesMap.forEach((themeModule, themeId) => {
+
       const isActive = themeId === currentActiveThemeId;
 
       menuSchemas.push({
@@ -108,9 +113,10 @@ export class ThemeRenderer {
         content: themeModule.name || themeId,
         onCreated: (btnEl: HTMLElement) => {
           btnEl.addEventListener("click", () => {
-            this.resetIdleTimer(this.isSwitcherOpen, config.duration as number); // Reset hitung mundur timer setiap ada aktivitas klik
             if (!isActive) {
               this.builder.changeTheme(themeId);
+              this.isSwitcherOpen = false;
+              this.renderSwitcher()
             }
           });
         }
@@ -139,13 +145,6 @@ export class ThemeRenderer {
       onCreated: (fabEl: HTMLElement) => {
         fabEl.addEventListener("click", () => {
           this.isSwitcherOpen = !this.isSwitcherOpen;
-
-          if (this.isSwitcherOpen) {
-            this.resetIdleTimer(this.isSwitcherOpen, config.duration as number);
-          } else {
-            this.clearIdleTimer(config.duration as number);
-          }
-
           this.renderSwitcher(); // Re-render visual murni memutasi kelas CSS
         });
       }
@@ -170,23 +169,4 @@ export class ThemeRenderer {
   }
 
 
-  private resetIdleTimer(isSwitcherOpen: boolean, idleDuration: number) {
-    this.clearIdleTimer();
-
-    // Daftarkan hitung mundur baru berdasarkan durasi yang ditentukan (misal 10 detik)
-    window.setTimeout(() => {
-      if (isSwitcherOpen) {
-        console.log(`[ThemeEngine Idle] ${idleDuration as number / 1000}s Idle reached. Closing menu panel...`);
-        isSwitcherOpen = false;
-        this.renderSwitcher(); // Mengembalikan ke state awal rounded button secara otomatis
-      }
-    }, idleDuration);
-  }
-
-  private clearIdleTimer(timeoutTimer?: number) {
-    if (timeoutTimer) {
-      window.clearTimeout(timeoutTimer);
-      timeoutTimer = null as any;
-    }
-  }
 }

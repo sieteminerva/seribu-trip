@@ -36,6 +36,36 @@ export const createHomePageContent = (onOpenOrderModal: () => void): iBasicNode[
             image: "https://placehold.co/640x420/3c2554/ffffff?text=Petualangan+Seru",
             title: "Aktivitas Menyenangkan",
             description: "Snorkeling dan aktivitas air lain yang disesuaikan untuk semua umur."
+          },
+          {
+            image: "https://placehold.co/640x420/1e3a5f/ffffff?text=Kepulauan+Seribu",
+            title: "Eksplorasi Keindahan",
+            description: "Nikmati perjalanan privat yang nyaman dan tenang bersama keluarga."
+          },
+          {
+            image: "https://placehold.co/640x420/8764b5/ffffff?text=Pantai+Pasir+Putih",
+            title: "Pantai Pasir Putih",
+            description: "Menghabiskan waktu dengan pemandangan sunset yang luar biasa."
+          },
+          {
+            image: "https://placehold.co/640x420/3c2554/ffffff?text=Petualangan+Seru",
+            title: "Aktivitas Menyenangkan",
+            description: "Snorkeling dan aktivitas air lain yang disesuaikan untuk semua umur."
+          },
+          {
+            image: "https://placehold.co/640x420/1e3a5f/ffffff?text=Kepulauan+Seribu",
+            title: "Eksplorasi Keindahan",
+            description: "Nikmati perjalanan privat yang nyaman dan tenang bersama keluarga."
+          },
+          {
+            image: "https://placehold.co/640x420/8764b5/ffffff?text=Pantai+Pasir+Putih",
+            title: "Pantai Pasir Putih",
+            description: "Menghabiskan waktu dengan pemandangan sunset yang luar biasa."
+          },
+          {
+            image: "https://placehold.co/640x420/3c2554/ffffff?text=Petualangan+Seru",
+            title: "Aktivitas Menyenangkan",
+            description: "Snorkeling dan aktivitas air lain yang disesuaikan untuk semua umur."
           }
         ],
       }
@@ -49,7 +79,7 @@ export const createHomePageContent = (onOpenOrderModal: () => void): iBasicNode[
       {
         className: "column full compact",
         content: {
-          tagName: "p", className: "eyebrow", content: "Keunggulan perusahaan"
+          tagName: "p", className: "eyebrow", content: "Keunggulan perusahaan",
         }
       },
       {
@@ -112,19 +142,22 @@ export const createHomePageContent = (onOpenOrderModal: () => void): iBasicNode[
     name: "About",
     className: "row",
     tagName: "section",
+
+
     content: [
       {
         name: "Kenapa Memilih Kami",
         id: "benefits-section",
         className: "column card",
         content: [
-          { tagName: "h3", className: "title", content: "Trip privat" },
+          { tagName: "h3", className: "title", content: "Trip privat", },
           { tagName: "p", className: "description", content: "Trip privat dan tidak digabungkan dengan kelompok lain." },
           { tagName: "h3", className: "title", content: "Harga jelas" },
           { tagName: "p", className: "description", content: "Estimasi harga yang jelas sebelum pembayaran." },
           { tagName: "h3", className: "title", content: "Support penuh" },
           { tagName: "p", className: "description", content: "Tim lapangan yang siap membantu dari keberangkatan hingga kembali." },
         ],
+
       },
       {
         name: "Rencana Perjalanan",
@@ -141,6 +174,7 @@ export const createHomePageContent = (onOpenOrderModal: () => void): iBasicNode[
       },
     ]
   },
+  // advanced writing object
   {
     name: "CTA",
     'section#cta-section.section.banner': {

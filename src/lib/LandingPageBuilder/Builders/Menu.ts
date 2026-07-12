@@ -1,27 +1,31 @@
 
 import type { iActionProperty, iBasicNode } from "../interface";
+import "./Menu.css";
 
 export class MenuBuilder {
 
   static create(data: iBasicNode): HTMLElement {
-    const normalizeTheme = (theme?: string | null): 'light' | 'dark' => theme?.toLowerCase() === 'dark' ? 'dark' : 'light';
-    const getTheme = () => normalizeTheme(document.documentElement.dataset.theme);
-    const applyTheme = (theme: 'light' | 'dark') => {
-      document.documentElement.dataset.theme = theme;
+
+    const normalizeTheme = (mode?: string | null): 'light' | 'dark' => mode?.toLowerCase() === 'dark' ? 'dark' : 'light';
+    const getTheme = () => normalizeTheme(document.documentElement.dataset.mode);
+    const applyTheme = (mode: 'light' | 'dark') => {
+      document.documentElement.dataset.mode = mode;
       if (document.body) {
-        document.body.dataset.theme = theme;
+        document.body.dataset.mode = mode;
       }
-      nav.dataset.theme = theme;
-      toggleButton.classList.toggle('is-dark', theme === 'dark');
-      toggleLabel.textContent = theme === 'dark' ? 'Light' : 'Dark';
+      nav.dataset.mode = mode;
+      toggleButton.classList.toggle('is-dark', mode === 'dark');
+      toggleLabel.textContent = mode === 'dark' ? 'Light' : 'Dark';
     };
 
+    const content = data.content as iBasicNode
     // 1. Buat elemen NAV utama
     const nav = document.createElement('nav');
-    nav.id = data.id as string;
-    nav.className = data.className as string || 'nav';
+    nav.id = content.id as string;
+    nav.className = "nav";
+    if (content.className) nav.classList.add(content.className);
 
-    const items = Array.isArray(data.actions) ? data.actions : [data.actions];
+    const items = Array.isArray(content.actions) ? content.actions : [content.actions];
     const brandData = (items[0] || { label: 'Logo', href: '#' }) as iActionProperty;
     const linksData = items.slice(1);
 
@@ -83,7 +87,7 @@ export class MenuBuilder {
 
     const toggleLabel = document.createElement('span');
     toggleLabel.className = 'theme-toggle-label';
-    toggleLabel.textContent = document.documentElement.dataset.theme === 'dark' ? 'Light' : 'Dark';
+    toggleLabel.textContent = document.documentElement.dataset.mode === 'dark' ? 'Light' : 'Dark';
     toggleButton.appendChild(toggleLabel);
 
     // Hubungi Button

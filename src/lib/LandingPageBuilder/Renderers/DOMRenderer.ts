@@ -62,6 +62,8 @@ export class DOMRenderer<
     return { id, classNames, baseName };
   }
 
+  // Inside DOMRenderer.ts
+
   private buildStructure(structure: any, parentNode: HTMLElement | DocumentFragment, builder: BuilderRegistry | null) {
     for (const [key, value] of Object.entries(structure)) {
       if (!value || typeof value !== 'object') continue;
@@ -73,77 +75,109 @@ export class DOMRenderer<
       let currentElement: HTMLElement;
       let customComponentFromBuilder: HTMLElement | null = null;
 
+      // ====================================================
+      // KASUS A: Input berupa HTMLElement Hidup (Bypass Murni)
+      // ====================================================
       if ((value as any).content instanceof HTMLElement && !builderName && !isRootFlag) {
-        // 💡 SOLUSI: Bajak langsung element dari InputBuilder untuk dijadikan elemen utama!
-        // Kita singkirkan document.createElement pembungkus palsu selamanya.
         currentElement = (value as any).content;
       }
 
-      // 1. Eksekusi builder terlebih dahulu jika terdeteksi pola isRoot = true
+      // ====================================================
+      // KASUS B: Element memiliki properti BUILDER & isRoot = TRUE 👑
+      // ====================================================
       else if (builderName && isRootFlag && builder && builder.has(builderName)) {
         const builderFn = builder.get(builderName);
         if (builderFn) {
-          const nodePayload = (value as any).content;
-          const resultComponent = builderFn(nodePayload);
+          // 🧙‍♂️ AMAN & UTUH: Loloskan seluruh object value (termasuk .attrs) ke builder!
+          const resultComponent = builderFn(value);
           if (resultComponent instanceof HTMLElement) {
             customComponentFromBuilder = resultComponent;
           }
         }
+        // Jika builder mengembalikan element, jadikan elemen utama. Jika gagal, buat div fallback.
         currentElement = customComponentFromBuilder || document.createElement(baseName || 'div');
       }
-      // Fallback standard untuk deklarasi template biasa
+
+      // ====================================================
+      // KASUS C: Template visual biasa / Builder dengan isRoot = FALSE
+      // ====================================================
       else {
         const tagName = baseName || 'div';
         currentElement = document.createElement(tagName);
       }
 
-      // 3. PROSES PELEBURAN (MERGING): Gabungkan ID & Class dari wrapper ke elemen target
+      // ====================================================
+      // 💡 PROSES PELEBURAN (MERGING) ATRIBUT & CLASS
+      // ====================================================
       if (id) {
-        // Jika builder sudah melahirkan ID, wrapper akan menimpa ID tersebut jika didefinisikan kustom
         currentElement.id = id;
       }
 
       if (classNames.length > 0) {
-        // Gabungkan kelas CSS bawaan builder dengan kelas CSS kustom dari template wrapper
         const existingClasses = currentElement.className ? currentElement.className.trim().split(/\s+/) : [];
         const combinedClasses = new Set([...existingClasses, ...classNames].filter(Boolean));
         currentElement.className = Array.from(combinedClasses).join(' ');
       }
 
-      // 4. Penggabungan Atribut HTML Kustom (attrs)
+      // Gabungkan custom attributes murni dari level JSON data
       if ((value as any).attrs && typeof (value as any).attrs === 'object') {
         for (const [aName, aValue] of Object.entries((value as any).attrs)) {
-          currentElement.setAttribute(aName, String(aValue));
+          // Jaga agar tidak menimpa atribut yang sudah dipasang secara sengaja oleh internal builder
+          if (!currentElement.hasAttribute(aName)) {
+            currentElement.setAttribute(aName, String(aValue));
+          }
         }
       }
 
-      // 5. Jalankan onCreated Lifecycle hook
+      // Jalankan onCreated Lifecycle hook
       if (typeof (value as any).onCreated === 'function') {
         (value as any).onCreated(currentElement);
       }
 
-      // 6. Evaluasi Konten jika TIDAK menggunakan jalur isRoot (jalur standard fallback)
-      if (!((value as any).content instanceof HTMLElement) && !customComponentFromBuilder && (value as any).content !== undefined) {
-        const nodePayload = (value as any).content;
+      // ====================================================
+      // 💡 EVALUASI KONTEN (Anti-Infinite Loop Secure Guard)
+      // ====================================================
+      // Inside DOMRenderer.ts -> buildStructure Langkah 6 (Evaluasi Konten)
 
+      if (!customComponentFromBuilder && (value as any).content !== undefined) {
+        const nodePayload = (value as any).content; // Menargetkan anak .content asli
+
+        // A: Jalur Builder Alternatif (isRoot = false), loloskan objek VALUE seutuhnya!
         if (builderName && builder?.has(builderName)) {
           const builderFn = builder.get(builderName);
           if (builderFn) {
-            const normalComponent = builderFn(nodePayload);
-            if (normalComponent instanceof Node) currentElement.appendChild(normalComponent);
+            const normalComponent = builderFn(value);
+            // 💡 FIX SAFETY: Pastikan komponen yang dikembalikan bukan dirinya sendiri sebelum append!
+            if (normalComponent instanceof Node && normalComponent !== currentElement) {
+              currentElement.appendChild(normalComponent);
+            }
           }
-        } else if (nodePayload instanceof Node) {
-          currentElement.appendChild(nodePayload);
-        } else if (typeof nodePayload === 'object' && nodePayload !== null) {
+        }
+        // B: 👑 FIX MUTLAK ANTI-HIERARCHY ERROR: Jalur cetak Node fisik langsung
+        else if (nodePayload instanceof Node) {
+          // 💡 SENSOR PROTEKSI: Hanya lakukan append jika nodePayload BUKAN currentElement itu sendiri!
+          if (nodePayload !== currentElement && !currentElement.contains(nodePayload)) {
+            currentElement.appendChild(nodePayload);
+          } else {
+            console.log("[DOMRenderer Guard] Prevented self-append loop anomaly safely.");
+          }
+        }
+        // C: Jalur rekursif anak JSON bersarang
+        else if (typeof nodePayload === 'object' && nodePayload !== null) {
           const subFragment = document.createDocumentFragment();
           this.buildStructure(nodePayload, subFragment, builder);
           currentElement.appendChild(subFragment);
-        } else {
+        }
+        // D: Jalur injeksi string HTML/Teks biasa
+        else {
           currentElement.innerHTML = String(nodePayload);
         }
       }
 
-      // 7. Rekursi untuk child keys tetap berjalan normal (jika ada struktur bersarang di bawahnya)
+
+      // ====================================================
+      // 💡 REKURSI KEY BERSARANG KUSTOM (. atau #)
+      // ====================================================
       const reservedKeys = ['content', 'onCreated', 'onDestroy', 'builder', 'attrs', 'isRoot'];
       const childKeys = Object.keys(value).filter(k => !reservedKeys.includes(k));
 
@@ -157,9 +191,11 @@ export class DOMRenderer<
         currentElement.appendChild(subFragment);
       }
 
+      // Tempelkan elemen matang ke parent tree
       parentNode.appendChild(currentElement);
     }
   }
+
 
 
   /**

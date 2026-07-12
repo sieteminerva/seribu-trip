@@ -1,4 +1,4 @@
-import type { iBasicNode, iThemeModule } from "../interface";
+import type { iBasicNode, iPageMetaReport, iThemeModule } from "../interface";
 import "./HorizontalTheme.css";
 
 
@@ -10,12 +10,10 @@ export class HorizontalTheme implements iThemeModule {
   private menuRef: HTMLElement | null = null;
   private toggleButton: HTMLButtonElement | null = null;
   private timelineLabelElement: HTMLElement | null = null;
-
-  // Penampung array element panel untuk mempercepat pembacaan posisi scroll timeline
   private panelElementsCache: HTMLElement[] = [];
 
   /**
-   * Pembajak Roda Mouse (Berdasarkan zona radius koordinat 150px andalan Anda)
+   * Pembajak Roda Mouse Berbasis Koordinat Zona Bawah 150px
    */
   private wheelHijackListener = (e: WheelEvent) => {
     if (!this.currentShell) return;
@@ -26,15 +24,15 @@ export class HorizontalTheme implements iThemeModule {
     const bottomZoneThreshold = totalScreenHeight - 150;
 
     const activePanel = e.target as HTMLElement;
-    const closestPanel = activePanel.closest(".horizontal-panel") as HTMLElement | null;
+    const closestPanel = activePanel.closest(".horizontal") as HTMLElement | null;
 
-    // A: Zona Bawah -> Scroll Horizontal (Scroll-X)
+    // A: Zona Bawah -> Scroll Horizontal Cepat (Multiplier 15)
     if (cursorY >= bottomZoneThreshold) {
       this.currentShell.scrollLeft += e.deltaY * 15;
       return;
     }
 
-    // B: Zona Atas -> Scroll Konten Internal (Scroll-Y)
+    // B: Zona Atas -> Scroll Konten Internal Panel Vertikal (Anti-Konflik)
     if (closestPanel) {
       const scrollHeight = closestPanel.scrollHeight;
       const clientHeight = closestPanel.clientHeight;
@@ -58,12 +56,10 @@ export class HorizontalTheme implements iThemeModule {
     const totalScreenHeight = window.innerHeight;
     const bottomZoneThreshold = totalScreenHeight - 150;
 
-    // Jika kursor masuk radius 150px dari bawah layar (Area Scroll-X)
     if (cursorY >= bottomZoneThreshold) {
       this.currentShell.classList.add("show-scrollbar");
       this.timelineLabelElement.classList.add("visible");
     } else {
-      // Jika kursor naik kembali ke zona atas
       this.currentShell.classList.remove("show-scrollbar");
       this.timelineLabelElement.classList.remove("visible");
     }
@@ -79,18 +75,15 @@ export class HorizontalTheme implements iThemeModule {
     let currentActiveName = "EXPLORE";
     const viewportCenterX = window.innerWidth / 2;
 
-    // Cari seksi mana yang saat ini titik tengahnya paling dekat dengan tengah layar browser
     for (const panel of this.panelElementsCache) {
       const rect = panel.getBoundingClientRect();
-
-      // Jika panel sedang memotong area pandang tengah layar browser
+      // Deteksi seksi mana yang memotong area tengah layar browser saat ini
       if (rect.left <= viewportCenterX && rect.right >= viewportCenterX) {
         currentActiveName = panel.getAttribute("data-name") || panel.id || "SECTION";
         break;
       }
     }
 
-    // Update isi teks widget timeline secara instan tanpa berkedip
     if (this.timelineLabelElement.textContent !== currentActiveName) {
       this.timelineLabelElement.textContent = currentActiveName;
     }
@@ -100,21 +93,41 @@ export class HorizontalTheme implements iThemeModule {
    * KATEGORI 2: STRUCTURAL OVERRIDE (Pre-Render)
    * Tanam properti .name atau .id visual sebagai data-attributes HTML permanen
    */
-  public beforePageRender(pages: iBasicNode[], menu: iBasicNode | null, footer: iBasicNode | null) {
+  public beforePageRender(pages: iBasicNode[], menu: iBasicNode | null, footer: iBasicNode | null, meta?: iPageMetaReport) {
+    console.log({ meta });
     pages.forEach((block: any, index: number) => {
       const existingClass = block.className || "section row";
-      let panelTypeClass = "panel-type-standard";
+      let panelTypeClass = "panel-standard";
 
       if (block.id === "hero-section" || index === 0 || block.name === "Hero") {
-        panelTypeClass = "panel-type-hero";
+        panelTypeClass = "panel-hero";
+
+        if (meta?.hasComponent.carousel) {
+          const carouselAttrs = {
+            "data-vertical": true,
+            "data-animation": "slide-up",    // Pemicu gerak Vertical Slide Up!
+            "data-slides-per-view": 3,       // Menampilkan 2 gambar berjejer vertikal sekaligus!
+            "data-autoplay": 3500,           // Kecepatan autoplay otomatis 3.5 detik
+            "data-loop": true
+          };
+          if (Array.isArray(block.content)) {
+            block.content.forEach((node: iBasicNode) => {
+              if (node.builder && node.builder === "carousel") {
+                node.attrs = carouselAttrs;
+                node.isRoot = true;
+              }
+            })
+          }
+        }
+        console.log("Horizontal Theme", { block })
       }
       if (block.builder === "form" || (block.content && typeof block.content === "object" && !Array.isArray(block.content))) {
-        panelTypeClass = "panel-type-grouped";
+        panelTypeClass = "panel-grouped";
       }
 
-      block.className = `${existingClass} horizontal-panel ${panelTypeClass}`.trim();
+      // Gunakan penanda kelas minimalis baru pilihan Anda: .horizontal
+      block.className = `${existingClass} horizontal ${panelTypeClass}`.trim();
 
-      // 💡 PENYUNTIKAN ATRIBUT DATA: Ambil properti nama seksi untuk dibaca oleh scroll tracker
       const sectionFriendlyName = block.name || block.id || `Seksi ${index + 1}`;
       block.attrs = {
         ...(block.attrs || {}),
@@ -122,59 +135,54 @@ export class HorizontalTheme implements iThemeModule {
       };
     });
 
+    if (menu && typeof menu === "object") {
+      menu.className = "left";
+    }
+
     return { pages, menu, footer };
   }
 
   /**
    * KATEGORI 1: BEHAVIORAL ACTIVATION (Post-Render)
-   * Mengikat seluruh interaksi UX scrolling tingkat tinggi
    */
   public activate(shell: HTMLElement, elements: HTMLElement[]): void {
     this.currentShell = shell;
     shell.className = "theme-horizontal";
 
-    // 1. Ambil dan simpan cache element panel horizontal saja (Bypass element non-panel)
-    this.panelElementsCache = elements.filter(el => el.classList.contains("horizontal-panel"));
+    // 💡 FIX 2: Kalibrasi saringan cache agar murni mencari kelas baru .horizontal pilihan Anda!
+    this.panelElementsCache = elements.filter(el => el.classList.contains("horizontal"));
 
-    // 2. Buat widget teks timeline melayang secara dinamis jika belum terpasang di DOM body
-    this.timelineLabelElement = document.getElementById("horizontal-timeline-label-widget");
+    // 💡 FIX 1: Cari widget di level document luar agar terisolasi aman dari sapuan innerHTML milik shell!
+    this.timelineLabelElement = document.querySelector(".timeline.label");
     if (!this.timelineLabelElement) {
       this.timelineLabelElement = document.createElement("div");
-      this.timelineLabelElement.id = "horizontal-timeline-label-widget";
+      this.timelineLabelElement.className = "timeline label";
       this.timelineLabelElement.textContent = "EXPLORE";
-      document.body.appendChild(this.timelineLabelElement);
+
+      // Tempelkan ke document.body luar agar aman sentosa tidak ikut terhapus saat render rute baru
+      shell.appendChild(this.timelineLabelElement);
     }
 
-    // 3. Konfigurasi menu sidebar samping kustom bawaan Anda
     this.menuRef = shell.querySelector(".nav") || document.querySelector(".nav");
     if (this.menuRef) {
       this.toggleButton = document.createElement("button");
-      this.toggleButton.id = "sidebar-toggle-trigger-btn";
-      this.toggleButton.innerHTML = "☰";
-      this.toggleButton.style.cssText = "width: 100%; padding: 15px; border: none; background: #7b2cbf; color: #fff; cursor: pointer;";
+      this.toggleButton.className = "sidebar trigger";
       this.menuRef.insertBefore(this.toggleButton, this.menuRef.firstElementChild);
 
       this.toggleButton.addEventListener("click", () => {
         this.menuRef?.classList.toggle("expanded");
-        if (this.toggleButton) {
-          this.toggleButton.innerHTML = this.menuRef?.classList.contains("expanded") ? "✕" : "☰";
-        }
       });
     }
 
-    // 4. IKAT SELURUH EVENT LISTENERS STRUKTURAL UTAMA
     shell.addEventListener("wheel", this.wheelHijackListener, { passive: false });
     shell.addEventListener("mousemove", this.mouseMoveListener);
     shell.addEventListener("scroll", this.pageScrollListener);
 
-    // Picu pembacaan posisi awal sekali di awal rute halaman dimuat
     this.pageScrollListener();
-    console.log("[HorizontalTheme] Auto-hide scrollbar and Timeline tracking widget successfully engaged!");
   }
 
   /**
    * KATEGORI 5: LIFECYCLE CLEANUP (Unmount)
-   * Sapu bersih seluruh sisa-sisa interaksi agar performa memori browser tetap perawan
    */
   public deactivate(shell: HTMLElement): void {
     if (this.currentShell) {
@@ -183,7 +191,7 @@ export class HorizontalTheme implements iThemeModule {
       this.currentShell.removeEventListener("scroll", this.pageScrollListener);
     }
 
-    // Hancurkan widget label melayang dari body luar agar tidak beranak pinak saat pindah rute
+    // Hancurkan dari document.body luar secara bersih dan ksatria
     if (this.timelineLabelElement && this.timelineLabelElement.parentNode) {
       this.timelineLabelElement.parentNode.removeChild(this.timelineLabelElement);
     }
@@ -204,9 +212,10 @@ export class HorizontalTheme implements iThemeModule {
     this.toggleButton = null;
     this.timelineLabelElement = null;
     this.panelElementsCache = [];
-    console.log("[HorizontalTheme] Timeline and Scrollbar listeners detached successfully.");
+    console.log("[HorizontalTheme] Clean unmount executed. Framework is ready for the next transformation.");
   }
 }
+
 
 
 export class HorizontalTheme2 implements iThemeModule {
@@ -314,6 +323,8 @@ export class HorizontalTheme2 implements iThemeModule {
       // 2. Deteksi jenis dimensi seksi
       if (sectionId.includes("hero") || index === 0 || block.name === "Hero") {
         panelTypeClass = "panel-type-hero";
+
+
       } else if (block.builder === "form" || (block.content && typeof block.content === "object" && !Array.isArray(block.content))) {
         panelTypeClass = "panel-type-grouped";
       }

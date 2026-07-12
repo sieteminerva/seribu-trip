@@ -37,7 +37,7 @@
   background: rgba(123, 44, 191, 0.8); /* Lebih tebal saat di-drag langsung */
 }
 
-#horizontal-timeline-label-widget {
+.theme-horizontal .timeline.label {
   position: fixed;
   bottom: 35px; /* Melayang tepat di atas jalur scrollbar horizontal */
   left: 50%;
@@ -61,12 +61,12 @@
     transform 0.2s;
 }
 
-#horizontal-timeline-label-widget.visible {
+.theme-horizontal .timeline.label.visible {
   opacity: 1;
 }
 
 /* 🧭 LEFT-SIDEBAR NAVBAR COMPONENT */
-.theme-horizontal .nav {
+.theme-horizontal .nav.left {
   height: 100vh !important;
   position: fixed !important;
   top: 0;
@@ -84,15 +84,38 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  padding: 0;
+  padding-bottom: 1em;
 }
 
 /* State Saat Sidebar Di-Expand */
-.theme-horizontal .nav.expanded {
+.theme-horizontal .nav.left.expanded {
   width: 240px; /* State Terbuka */
 }
 
+.theme-horizontal .nav.left .sidebar.trigger {
+  width: 100%;
+  padding: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: #fff;
+  cursor: pointer;
+  border: none;
+}
+
+.theme-horizontal .nav.left .sidebar.trigger::before {
+  content: "☰";
+}
+
+.theme-horizontal .nav.left.expanded .sidebar.trigger::before {
+  content: "✕";
+}
+
+.theme-horizontal .nav.left .items {
+  display: block;
+}
+
 /* Link Item Navigasi Seksi Dinamis */
-.theme-horizontal .menu-sidebar-link-item {
+.theme-horizontal .nav.left .items a {
   display: block;
   color: #333333;
   text-decoration: none;
@@ -106,19 +129,36 @@
   cursor: pointer;
 }
 
-/* Munculkan teks secara halus hanya saat menu sidebar di-expand (240px) */
-.theme-horizontal .nav.expanded .menu-sidebar-link-item {
+.theme-horizontal .nav.left .actions {
+  transform: translateY(100px);
+  visibility: hidden;
+  opacity: 0;
+  transition: translate 100ms ease-in-out;
+  transition-delay: 30ms;
+  flex-direction: row;
+  flex-wrap: wrap;
+  min-width: 200px;
+}
+
+.theme-horizontal .nav.left.expanded .actions {
+  transform: translateY(0);
+  visibility: visible;
   opacity: 1;
 }
 
-.theme-horizontal .menu-sidebar-link-item:hover {
+/* Munculkan teks secara halus hanya saat menu sidebar di-expand (240px) */
+.theme-horizontal .nav.expanded .items a {
+  opacity: 1;
+}
+
+.theme-horizontal .nav.left .items a:hover {
   background: #f0eafe;
   color: #7b2cbf;
   padding-left: 16px; /* Efek dorong ke kanan saat dihover */
 }
 
 /* 🏢 MACRO SECTION LAYOUT PANELS */
-.theme-horizontal .horizontal-panel {
+.theme-horizontal .horizontal {
   flex-shrink: 0 !important;
   height: 100vh !important;
   box-sizing: border-box;
@@ -131,32 +171,38 @@
 }
 
 /* Logika Aktivasi Scrollbar Konten secara Progresif */
-.theme-horizontal .horizontal-panel:hover,
-.theme-horizontal .horizontal-panel.active-focus {
+.theme-horizontal .horizontal:hover,
+.theme-horizontal .horizontal.active-focus {
   overflow-y: auto !important;
 }
 
 /* 🧜‍♂️ INDIVIDUAL SECTION DIMENSIONS REQUESTS */
 
 /* 1. Section Hero: Lebar Penuh dikurangi Lebar Sidebar Terbuka agar tidak terpotong */
-.theme-horizontal .panel-type-hero {
+.theme-horizontal .panel-hero {
   width: calc(100vw - 240px) !important;
   background: linear-gradient(135deg, rgba(123, 44, 191, 0.03) 0%, transparent 100%);
+  margin-left: 60px;
+  transition: margin-left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+}
+
+.theme-horizontal:has(.nav.expanded) .panel-hero {
+  margin-left: 240px;
 }
 
 /* 2. Section Lainnya: Lebar Proporsional 80vw untuk kenyamanan Slide Reading */
-.theme-horizontal .panel-type-standard {
+.theme-horizontal .panel-standard {
   width: 80vw !important;
 }
 
 /* 3. Section Hasil Grouping/Fieldset Form Admin: Dipaksa Jadi 1 Halaman Penuh */
-.theme-horizontal .panel-type-grouped {
+.theme-horizontal .panel-grouped {
   width: 100vw !important;
   background: #fafafa;
 }
 
 /* Penyelarasan Footer di Akhir Jalur Flex */
-.theme-horizontal .ui-footer {
+.theme-horizontal footer {
   flex-shrink: 0 !important;
   width: 50vw !important;
   height: 100vh !important;

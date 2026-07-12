@@ -1,0 +1,67 @@
+/* ==========================================================================
+         ⚡ NEON CYBERPUNK RADICAL DESIGN TOKENS (Design System Spec)
+========================================================================== */
+.theme-cyberpunk {
+  --sys-bg: #090614 !important; /* Hitam pekat masa depan */
+  --sys-text: #00ffcc !important; /* Hijau neon cyan */
+  --sys-accent: #ff007f !important; /* Pink magenta radikal */
+
+  background-color: var(--sys-bg) !important;
+  color: var(--sys-text) !important;
+  font-family: "Courier New", Courier, monospace !important; /* Font atomik komputer */
+  transition:
+    background-color 0.4s ease,
+    color 0.4s ease;
+}
+
+/* Efek Teks Glitch & Neon Glow untuk Judul Utama */
+.theme-cyberpunk .title,
+.theme-cyberpunk h1,
+.theme-cyberpunk h2,
+.theme-cyberpunk h3 {
+  color: var(--sys-text) !important;
+  text-shadow:
+    0 0 8px rgba(0, 255, 204, 0.6),
+    0 0 20px rgba(0, 255, 204, 0.3) !important;
+  letter-spacing: 1px;
+}
+
+/* Efek Hiasan Pembatas Seksi Cyberpunk */
+.theme-cyberpunk .horizontal,
+.theme-cyberpunk section {
+  border-bottom: 2px dashed var(--sys-accent) !important;
+  border-right: 2px dashed var(--sys-accent) !important;
+  position: relative;
+}
+
+/* Elemen Dekorasi Sudut Abstrak Fungsional (Penanda Visual Masa Depan) */
+.theme-cyberpunk section::before {
+  content: "[SYS_SECURE_NODE]";
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 9px;
+  color: var(--sys-accent);
+  opacity: 0.7;
+  letter-spacing: 0.5px;
+}
+
+/* Penyelarasan Tombol-Tombol di Mode Cyberpunk */
+.theme-cyberpunk button,
+.theme-cyberpunk .button.primary {
+  background: transparent !important;
+  border: 1px solid var(--sys-text) !important;
+  color: var(--sys-text) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 204, 0.2) !important;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.theme-cyberpunk button:hover {
+  background: var(--sys-text) !important;
+  color: var(--sys-bg) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.8) !important;
+}

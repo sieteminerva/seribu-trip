@@ -1,13 +1,14 @@
 import type { iBasicNode } from "../interface";
+import "./PricingCard.css";
 
 export class PricingCardBuilder {
-  static create(content: iBasicNode[]): HTMLElement {
-    console.log(content)
+  static create(data: iBasicNode[]): HTMLElement {
+    // console.log("PricingCard", { data })
     const section = document.createElement("div");
     section.className = "row";
 
     // Loop render structural items array
-    content.forEach((item: any) => {
+    data.forEach((item: any) => {
       const column = document.createElement("div");
       column.className = "column";
 

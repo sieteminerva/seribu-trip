@@ -1,3 +1,4 @@
+import "./Tab.css";
 export interface iTabConfig {
   container?: string | HTMLElement | null;
   menuPosition: "top" | "left" | "bottom" | "right";
