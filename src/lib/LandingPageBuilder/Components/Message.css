@@ -1,0 +1,258 @@
+/* ==========================================================================
+   🏛️ VANILLA UI FRAMEWORK CORE - CORE EMBEDDED SPECIFICATION
+   Bebas jQuery, Bebas Bloatware, 100% Mengunci Transisi 120fps Premium
+   ========================================================================== */
+
+:root {
+  --ui-shadow-light: 0 1px 2px 0 rgba(34, 36, 38, 0.15);
+  --ui-shadow-modal: 0px 10px 30px rgba(0, 0, 0, 0.3);
+  --ui-border-radius: 4px;
+  --ui-font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* Semantic UI Pure Colors Re-mapped */
+  --ui-info-bg: #f8ffff;
+  --ui-info-text: #276f86;
+  --ui-info-border: #a9d5de;
+  --ui-success-bg: #fcfff5;
+  --ui-success-text: #2c662d;
+  --ui-success-border: #a3c293;
+  --ui-error-bg: #fff6f6;
+  --ui-error-text: #9f3a38;
+  --ui-error-border: #e0b4b4;
+  --ui-warning-bg: #fffaf3;
+  --ui-warning-text: #573a08;
+  --ui-warning-border: #c9ba9b;
+}
+
+/* ==========================================================================
+   🪐 1. THE STATEFUL DIALOG BACKDROP & MODAL SYSTEM (ModalBuilder)
+   ========================================================================== */
+
+/* Backdrop luar pembungkus hitam transparan */
+.dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px); /* Sentuhan mewah kaca buram modern */
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Status Gaib (Hidden State) */
+.dialog.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Kotak Modal Dalam (Inner Modal Box) */
+.dialog .modal {
+  background: #ffffff;
+  width: 100%;
+  max-width: 550px;
+  min-height: 200px;
+  border-radius: var(--ui-border-radius);
+  box-shadow: var(--ui-shadow-modal);
+  font-family: var(--ui-font-stack);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  /* Animasi Letupan Lembut (Pop-up Transition Shift) */
+  transform: scale(1) translateY(0);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Saat disembunyikan, kecilkan skalanya sedikit ke bawah agar tidak kaku */
+.dialog.hidden .modal {
+  transform: scale(0.92) translateY(15px);
+}
+
+/* Header Preset default */
+.dialog .modal .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #eeeeee;
+  background-color: #fafafa;
+}
+
+.dialog .modal .header .title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #222222;
+}
+
+/* Tombol Silang Penghancur Gila */
+.dialog .modal .header .close {
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: #999999;
+  cursor: pointer;
+  padding: 0;
+  margin-top: -4px;
+  transition: color 0.15s ease;
+}
+
+.dialog .modal .header .close:hover {
+  color: #333333;
+}
+
+/* Rahim Konten Tubuh (Modal Body) */
+.dialog .modal .modal-body-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+  max-height: 75vh; /* Amankan wilayah scroll jika form sangat panjang */
+  flex-grow: 1;
+}
+
+/* ==========================================================================
+   🪐 2. THE SOVEREIGN INSTANT TOAST ENGINE (MessageBuilder)
+   ========================================================================== */
+
+/* Kelas Pembungkus Utama Mensimulasikan Struktur Murni Semantic-UI */
+.ui.message {
+  position: relative;
+  min-height: 1em;
+  margin: 1em 0em;
+  background: #f8f8f9;
+  padding: 1em 1.5em;
+  line-height: 1.4285em;
+  color: rgba(0, 0, 0, 0.87);
+  transition:
+    opacity 0.1s ease,
+    color 0.1s ease,
+    background 0.1s ease,
+    box-shadow 0.1s ease;
+  border-radius: var(--ui-border-radius);
+  box-shadow: var(--ui-shadow-light);
+  font-family: var(--ui-font-stack);
+  font-size: 1rem;
+  border: 1px solid rgba(34, 36, 38, 0.15);
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+
+  /* Animasi Shimmy Masuk (Slide-In Slide Drop) */
+  animation: uiToastShimmy 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Jika Diatur Menempel di Pojok Kanan Atas Sebagai Toast Global Floating */
+#global-status-message,
+[id*="-toast"] {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 1001;
+  width: 100%;
+  max-width: 400px;
+  margin: 0;
+}
+
+/* Ikon Silang Pojok Kanan Atas */
+.ui.message .close.icon {
+  cursor: pointer;
+  position: absolute;
+  top: 0.75rem;
+  right: 0.5rem;
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+  font-style: normal;
+}
+
+.ui.message .close.icon:hover {
+  opacity: 1;
+}
+
+/* Layout Berbasis Kelas Icon Kiri */
+.ui.message.icon i:not(.close) {
+  flex-shrink: 0;
+  font-size: 2rem;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+}
+
+/* Rahim Konten Kanan */
+.ui.message .content {
+  flex-grow: 1;
+  padding-right: 1rem;
+}
+
+.ui.message .content .header {
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+  color: currentColor;
+}
+
+.ui.message .content p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 0.95rem;
+}
+
+/* ==========================================================================
+   🪐 3. SEMANTIC VARIANT THEMES (MUTASI WARNA REAKTIF ANDA)
+   ========================================================================== */
+
+/* Info Variant */
+.ui.info.message {
+  background-color: var(--ui-info-bg);
+  color: var(--ui-info-text);
+  border-color: var(--ui-info-border);
+}
+
+/* Success & Positive Variant */
+.ui.success.message,
+.ui.positive.message {
+  background-color: var(--ui-success-bg);
+  color: var(--ui-success-text);
+  border-color: var(--ui-success-border);
+}
+
+/* Error & Negative Variant */
+.ui.error.message,
+.ui.negative.message {
+  background-color: var(--ui-error-bg);
+  color: var(--ui-error-text);
+  border-color: var(--ui-error-border);
+}
+
+/* Warning Variant */
+.ui.warning.message {
+  background-color: var(--ui-warning-bg);
+  color: var(--ui-warning-text);
+  border-color: var(--ui-warning-border);
+}
+
+/* ==========================================================================
+   🪐 4. KEYFRAMES PERFORMANCE MOTION GRAPHICS
+   ========================================================================== */
+@keyframes uiToastShimmy {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

@@ -7,6 +7,8 @@ export class PricingCardBuilder {
     const section = document.createElement("div");
     section.className = "row";
 
+    console.log("PricingCardBuilder", { data })
+
     // Loop render structural items array
     data.forEach((item: any) => {
       const column = document.createElement("div");
@@ -39,6 +41,7 @@ export class PricingCardBuilder {
 
       const list = document.createElement("ul");
       list.className = "features";
+      // console.log("PricingCardBuilder", { item })
 
       item.body.forEach((feature: any) => {
         const li = document.createElement("li");

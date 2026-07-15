@@ -8,12 +8,14 @@ export interface iInjectionRule {
 
 export class NodeTransformer {
 
-  public static safeCloneNode(nodes: iBasicNode[]): iBasicNode[] {
-    if (!nodes) return [];
+  public static safeCloneNode<T extends iBasicNode | iBasicNode[]>(nodes: T): T {
+    // 1. Pengaman dasar jika payload kosong polos
+    if (!nodes) return nodes;
 
+    // 2. Mesin pengklon internal terisolasi (Deep Copy Core Logic)
     const cloneItem = (item: any): any => {
       if (!item || typeof item !== "object") return item;
-      if (item instanceof HTMLElement) return item; // Jaga referensi element fisik
+      if (item instanceof HTMLElement) return item; // Pertahankan referensi elemen fisik browser
 
       if (Array.isArray(item)) {
         return item.map(cloneItem);
@@ -22,7 +24,7 @@ export class NodeTransformer {
       const clonedObj: any = {};
       Object.keys(item).forEach((key) => {
         const val = item[key];
-        // Jika mendeteksi fungsi (seperti onCreated), salin referensi pointer-nya secara langsung!
+        // JALUR PENYELAMAT FUNGSIONAL: Amankan fungsi hidup agar tidak dihabisi browser!
         if (typeof val === "function") {
           clonedObj[key] = val;
         } else {
@@ -32,10 +34,26 @@ export class NodeTransformer {
       return clonedObj;
     };
 
-    return nodes.map(cloneItem);
+    // ====================================================
+    // 💡 DETEKSI POLIMORFIK ELEGAN (SOLUSI MUTLAK ANDA!)
+    // ====================================================
+    if (Array.isArray(nodes)) {
+      // Jika input berupa array, eksekusi map murni
+      return nodes.map(cloneItem) as unknown as T;
+    }
+
+    // Jika input berupa objek tunggal, langsung tembak masuk ke mesin pengklon tunggal!
+    return cloneItem(nodes) as T;
   }
 
   public static resolveContentNode(nodeObj: iBasicNode): any {
+    const selectorKey = Object.keys(nodeObj).find(o => o.includes('.') || o.includes("#"))
+    const rawPayload = nodeObj[selectorKey as string]
+
+    // JEMBATAN OTOMATIS: Deteksi apakah block menggunakan format ramah pemula
+    if (rawPayload || typeof rawPayload === "object" || rawPayload instanceof HTMLElement) {
+      return nodeObj;
+    }
 
     const tagName = nodeObj.tagName || "div";
     const idToken = nodeObj.id ? `#${nodeObj.id.trim()}` : "";
@@ -101,7 +119,7 @@ export class NodeTransformer {
   * 🧙‍♂️ ABAKADABRA: Menyisir iBasicNode[] visual secara rekursif, menerapkan aturan selektor,
   * menerapkan algoritma fallback variabel, dan LANGSUNG memutahkan skema Form Builder (Categorized Form Group).
   */
-  public static toFormNode(nodes: iBasicNode[], rules: iInjectionRule[]): any[] {
+  public static toFormNode(nodes: iBasicNode[], rules: iInjectionRule[]): any {
     const formGroupsMap = new Map<string, any[]>();
 
     // Jalankan fungsi rekursif hibrida terpadu
@@ -110,15 +128,97 @@ export class NodeTransformer {
     // Bungkus seluruh field yang terkumpul ke dalam susunan Fieldset Form Builder
     const finalizedFormSchema: any[] = [];
     formGroupsMap.forEach((fields, categoryName) => {
+
       finalizedFormSchema.push({
+
         legend: `Panel Manajemen Seksi: ${categoryName.toUpperCase()}`,
-        class: `ui segment cms-group-${categoryName}`,
+        className: `ui segment cms-group-${categoryName}`,
         group: fields
+
       });
     });
 
     return finalizedFormSchema;
   }
+
+
+  public static getBuilderNode(nodes: iBasicNode[] | iBasicNode, name: string, visited = new Set()): iBasicNode | undefined {
+    // 1. Validasi tipe data: abaikan jika bukan object atau null
+    if (typeof nodes !== 'object' || nodes === null) {
+      return undefined;
+    }
+
+    // 2. Cegah Circular Reference
+    if (visited.has(nodes)) {
+      return undefined;
+    }
+
+    // Tandai object ini sebagai 'sudah dikunjungi'
+    visited.add(nodes);
+
+    // 3. Langsung kembalikan jika nodes itu sendiri adalah builder yang dicari
+    if ('builder' in nodes && (nodes as any).builder === name) {
+      return nodes;
+    }
+
+    // 4. Proses jika nodes berbentuk Array
+    if (Array.isArray(nodes)) {
+      for (const item of nodes) {
+        const found = NodeTransformer.getBuilderNode(item, name, visited);
+        if (found) return found; // Jika ketemu, langsung return
+      }
+    }
+    // 5. Proses jika nodes berbentuk Object (nested)
+    else {
+      for (const key in nodes) {
+        if (Object.prototype.hasOwnProperty.call(nodes, key)) {
+          const found = NodeTransformer.getBuilderNode((nodes as any)[key], name, visited);
+          if (found) return found; // Jika ketemu, langsung return
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+
+
+  /**
+ * 🧙‍♂️ GLOBAL INTROSPECTOR: Scans iBasicNode or iBasicNode[] in a single-pass loop
+ * and returns a highly detailed structural metadata manifest report.
+ */
+  public static scanMetaNodes(pages: iBasicNode | iBasicNode[]): iPageMetaReport {
+    const isArray = Array.isArray(pages);
+    const nodesArray = isArray ? (pages as iBasicNode[]) : [pages as iBasicNode];
+
+    // Inisialisasi struktur dasar laporan meta awal
+    const report: iPageMetaReport = {
+      isArray,
+      totalSections: 0,
+      hasComponent: {
+        carousel: { active: false, container: "", count: 0, instances: [] },
+        accordion: { active: false, container: "", count: 0, instances: [] },
+        form: { active: false, container: "", count: 0, instances: [] },
+        "pricing-card": { active: false, container: "", count: 0, instances: [] },
+        masonry: { active: false, container: "", count: 0, instances: [] },
+        section: { active: false, container: "", count: 0, instances: [] }
+      },
+      timelinePaths: []
+    };
+
+    // Jalankan mesin pemindai rekursif tunggal
+    this._executeDeepInspection(nodesArray, "root", report);
+
+    for (const key in report.hasComponent) {
+      if (report.hasComponent.hasOwnProperty(key) && !report.hasComponent[key as keyof iBuilderRegistry]?.active) {
+        delete report.hasComponent[key as keyof iBuilderRegistry]
+      }
+    }
+
+    return report;
+  }
+
+
 
   private static deepExtractAndBuildForm(
     items: any,
@@ -133,7 +233,7 @@ export class NodeTransformer {
       // Perbarui nama group-nya secara dinamis jika ada property 'name'
       let activeGroupName = currentGroupName;
       if (node.name && typeof node.name === "string") {
-        activeGroupName = this.sanitizeKey(node.name);
+        activeGroupName = this._sanitizeKey(node.name);
       }
 
       let isFieldProcessed = false;
@@ -147,7 +247,7 @@ export class NodeTransformer {
         const [explicitGroupName, explicitFieldKey] = rawGroupKey.slice(1).split(":");
 
         if (explicitGroupName && explicitFieldKey) {
-          const finalGroup = this.sanitizeKey(explicitGroupName);
+          const finalGroup = this._sanitizeKey(explicitGroupName);
 
           if (!formGroupsMap.has(finalGroup)) formGroupsMap.set(finalGroup, []);
 
@@ -156,7 +256,7 @@ export class NodeTransformer {
             id: `admin-field-${finalGroup}-${explicitFieldKey}`,
             name: `${finalGroup}_${explicitFieldKey}`,
             title: `Sunting ${explicitFieldKey.replace(/_([a-z])/g, ' $1').toUpperCase()}`,
-            value: this.extractNodeValue(node),
+            value: this._extractNodeValue(node),
             config: {
               useLabel: true,
               ...(node.builder ? { info: `Manual Override - Component: ${node.builder}` } : { info: "Kunci Manual Override Aktif" })
@@ -173,8 +273,8 @@ export class NodeTransformer {
       // ==========================================
       if (!isFieldProcessed) {
         rules.forEach((rule) => {
-          if (this.matchSelector(node, rule.selector)) {
-            const fieldKey = this.generateFallbackFieldKey(node);
+          if (this._matchSelector(node, rule.selector)) {
+            const fieldKey = this._generateFallbackFieldKey(node);
             const formInputType = rule.inputType || "text";
 
             if (!formGroupsMap.has(activeGroupName)) {
@@ -186,7 +286,7 @@ export class NodeTransformer {
               id: `admin-field-${activeGroupName}-${fieldKey}`,
               name: `${activeGroupName}_${fieldKey}`,
               title: `Sunting ${fieldKey.replace(/_([a-z])/g, ' $1').toUpperCase()}`,
-              value: this.extractNodeValue(node),
+              value: this._extractNodeValue(node),
               config: {
                 useLabel: true,
                 ...(node.builder ? { info: `Auto Generated - Component: ${node.builder}` } : {})
@@ -213,14 +313,14 @@ export class NodeTransformer {
   /**
    * Helper: Mengekstrak isi konten secara aman dan melakukan stringify jika mendeteksi array/object data
    */
-  private static extractNodeValue(node: any): any {
+  private static _extractNodeValue(node: any): any {
     if (typeof node.content === "object" && node.content !== null && !(node.content instanceof HTMLElement)) {
       return JSON.stringify(node.content, null, 2);
     }
     return node.content;
   }
 
-  private static matchSelector(node: any, selector: string): boolean {
+  private static _matchSelector(node: any, selector: string): boolean {
     const match = selector.match(/^([a-z0-9]+)?(?:\.([a-z0-9_-]+))?$/i);
     if (!match) return false;
 
@@ -234,12 +334,12 @@ export class NodeTransformer {
     return !!(tagMatches && classMatches);
   }
 
-  private static generateFallbackFieldKey(node: any): string {
-    if (node.id) return this.sanitizeKey(node.id);
+  private static _generateFallbackFieldKey(node: any): string {
+    if (node.id) return this._sanitizeKey(node.id);
     if (node.className) {
       const firstClass = node.className.trim().split(/\s+/);
       if (firstClass && firstClass !== "column" && firstClass !== "row" && firstClass !== "section") {
-        return this.sanitizeKey(firstClass[0]);
+        return this._sanitizeKey(firstClass[0]);
       }
     }
     const fallbackTag = node.tagName || node.tag || "input";
@@ -247,49 +347,15 @@ export class NodeTransformer {
     return `${fallbackTag}_${randomHash}`;
   }
 
-  private static sanitizeKey(value: string): string {
+  private static _sanitizeKey(value: string): string {
     return value.toLowerCase().trim().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "");
   }
 
-  /**
-   * 🧙‍♂️ GLOBAL INTROSPECTOR: Scans iBasicNode or iBasicNode[] in a single-pass loop
-   * and returns a highly detailed structural metadata manifest report.
-   */
-  public static scanMetaNodes(pages: iBasicNode | iBasicNode[]): iPageMetaReport {
-    const isArray = Array.isArray(pages);
-    const nodesArray = isArray ? (pages as iBasicNode[]) : [pages as iBasicNode];
-
-    // Inisialisasi struktur dasar laporan meta awal
-    const report: iPageMetaReport = {
-      isArray,
-      totalSections: 0,
-      hasComponent: {
-        carousel: { active: false, container: "", count: 0, instances: [] },
-        accordion: { active: false, container: "", count: 0, instances: [] },
-        form: { active: false, container: "", count: 0, instances: [] },
-        "pricing-card": { active: false, container: "", count: 0, instances: [] },
-        masonry: { active: false, container: "", count: 0, instances: [] },
-        section: { active: false, container: "", count: 0, instances: [] }
-      },
-      timelinePaths: []
-    };
-
-    // Jalankan mesin pemindai rekursif tunggal
-    this.executeDeepInspection(nodesArray, "root", report);
-
-    for (const key in report.hasComponent) {
-      if (report.hasComponent.hasOwnProperty(key) && !report.hasComponent[key as keyof iBuilderRegistry]?.active) {
-        delete report.hasComponent[key as keyof iBuilderRegistry]
-      }
-    }
-
-    return report;
-  }
 
   /**
    * Algoritma internal single-pass deep inspection
    */
-  private static executeDeepInspection(nodes: any[], parentSelectorPath: string, report: iPageMetaReport) {
+  private static _executeDeepInspection(nodes: any[], parentSelectorPath: string, report: iPageMetaReport) {
     if (!nodes || !Array.isArray(nodes)) return;
     // FIX: Added .entries() to correctly unpack [index, node]
     for (const [index, node] of nodes.entries()) {
@@ -350,13 +416,13 @@ export class NodeTransformer {
       // 5. REKURSI: Telusuri lebih dalam ke anak-anak properti 'content' jika berupa sub-layout objek/array
       if (node.content && typeof node.content === "object" && !(node.content instanceof HTMLElement)) {
         const childNodes = Array.isArray(node.content) ? node.content : [node.content];
-        this.executeDeepInspection(childNodes, fullSelectorPath, report);
+        this._executeDeepInspection(childNodes, fullSelectorPath, report);
       }
 
       // Dukung penelusuran jika menulis menggunakan model Advanced Mode (String Selectors)
       Object.keys(node).forEach(key => {
         if ((key.includes('.') || key.includes('#')) && typeof node[key] === "object") {
-          this.executeDeepInspection([node[key]], fullSelectorPath, report);
+          this._executeDeepInspection([node[key]], fullSelectorPath, report);
         }
       });
     }

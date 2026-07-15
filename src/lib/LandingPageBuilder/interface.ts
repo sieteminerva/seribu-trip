@@ -77,6 +77,7 @@ export interface iHeaderProperty extends iDefaultProps {
 export interface iActionProperty extends iDefaultProps {
   label?: string;
   href?: string;
+  isActive?: boolean;
   type?: 'button' | 'submit' | 'reset';
   onClick?: (event: MouseEvent) => void;
 }
@@ -205,8 +206,10 @@ export interface iBuilderRegistry {
   masonry: iBuilderContent[];
   section: iBuilderContent[];
   form: Array<iBasicInputNode | iFormGroupNode | HTMLElement | string>;
-  menu: iBasicNode,
-  footer: iBasicNode
+  menu: iBasicNode;
+  footer: iBasicNode;
+  "fab-menu": iBasicNode;
+  "modal": iBasicNode | HTMLElement;
   // Untuk komponen baru nanti, cukup daftarkan jenis array atomnya di sini:
   // stats: iStatsProperty[];
 }

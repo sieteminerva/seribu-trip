@@ -17,21 +17,28 @@
   scroll-snap-type: x mandatory;
 }
 
+.theme-horizontal section {
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  /*scrollbar-color: black !important;
+  scrollbar-track-color: red !important; */
+}
+
 .theme-horizontal::-webkit-scrollbar {
   height: 8px; /* Ukuran tinggi scrollbar horizontal */
-  background: transparent;
+  /* background: transparent; */
   transition: all 0.3s ease;
 }
 
 .theme-horizontal::-webkit-scrollbar-thumb {
-  background: transparent; /* Awalnya transparan total (Hidden) */
+  /* background: transparent; */ /* Awalnya transparan total (Hidden) */
   border-radius: 4px;
   transition: background-color 0.3s ease;
 }
 
 /* State Saat Kursor Masuk ke Zona Bawah Layar (Show Scrollbar) */
 .theme-horizontal.show-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(123, 44, 191, 0.4); /* Berwarna violeta transparan saat kursor masuk area */
+  background: red; /* Berwarna violeta transparan saat kursor masuk area */
 }
 .theme-horizontal.show-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(123, 44, 191, 0.8); /* Lebih tebal saat di-drag langsung */

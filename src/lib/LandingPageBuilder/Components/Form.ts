@@ -1,7 +1,3 @@
-import { BuilderRegistry } from "../BuilderRegistry";
-import type { iBasicNode } from "../interface";
-import { DOMRenderer } from "../Renderers/DOMRenderer";
-import { NodeTransformer } from "../Utils/NodeTransformer";
 import { FileUploader } from "./FileUploader";
 import { InputBuilder } from "./Input";
 
@@ -28,9 +24,6 @@ export class FormBuilder {
   private submitButtonId: string | undefined = undefined;
 
   // Gunakan DOMRenderer internal khusus untuk merakit struktur form
-  private engine = new DOMRenderer();
-  private emptyRegistry = new BuilderRegistry();
-
 
   constructor(config: iFormConfig = {}) {
     const defaultConfig: Required<iFormConfig> = {
@@ -81,15 +74,19 @@ export class FormBuilder {
    * REFACTOR TOTAL: Merakit Form menggunakan struktur iBasicNode[] murni
    */
   public create(inputs: Array<any | HTMLElement | string> | any): HTMLElement {
+    // const inputs = data.content;
+    // console.log(inputs)
+    const form = document.createElement("form");
+    form.className = this.config.className;
 
     const randomSuffix = Math.random().toString(36).substring(7);
     const formId = this.config.id ? `form ${this.config.id}`.replace(/\s+/g, "-") : `form-${randomSuffix}`;
-
-    const formContentArray: iBasicNode[] = [];
+    form.id = formId;
     const inputItems = Array.isArray(inputs) ? inputs : [inputs];
 
     // Iterasi dan transformasikan setiap input secara murni
     inputItems.forEach((input: any) => {
+      // console.log(inputs)
 
       // ==========================================
       // KASUS A: Input berupa HTMLElement Hidup (Tanpa Wrapper Palsu!)
@@ -98,7 +95,7 @@ export class FormBuilder {
         this.submitButtonId = this.scanForSubmitButton(input, formId) || this.submitButtonId;
 
         // Langsung push element fisiknya ke dalam content array form
-        formContentArray.push({ content: input } as any);
+        form.append(input);
       }
 
       // ==========================================
@@ -109,113 +106,111 @@ export class FormBuilder {
         if (foundId) this.submitButtonId = foundId;
 
         // Masukkan langsung string HTML-nya agar di-parse alami oleh DOMRenderer
-        formContentArray.push({ content: input } as any);
+        form.insertAdjacentHTML("beforeend", input as any);
       }
 
       // ==========================================
       // KASUS C: Input berupa Group Node (<fieldset>)
       // ==========================================
-      else if (input && typeof input === "object" && "group" in input && Array.isArray(input.group)) {
-        const fieldsetContentArray: iBasicNode[] = [];
+      else if (input && typeof input === "object") {
+        // console.log("group", { input })
+        if ("group" in input) {
 
-        const legendText = input.legend || input.title;
-        if (legendText) {
-          fieldsetContentArray.push({ tagName: "legend", content: String(legendText) });
-        }
-        if (input.description) {
-          fieldsetContentArray.push({ tagName: "p", className: "group-desc", content: String(input.description) });
-        }
+          const fieldset = document.createElement("fieldset");
+          fieldset.className = input.class || "";
 
-        // Iterasi anak-anak di dalam group secara murni
-        input.group.forEach((innerInput: any) => {
-          if (typeof innerInput === "string") {
-            const foundId = this.scanForSubmitButton(innerInput, formId);
-            if (foundId) this.submitButtonId = foundId;
-            fieldsetContentArray.push({ isRoot: true, content: innerInput } as any);
-          } else {
-            // InputBuilder melahirkan HTMLElement murni dengan isRoot internalnya sendiri
-            const inputEl = innerInput instanceof HTMLElement ? innerInput : InputBuilder.create(innerInput);
-            const foundId = this.scanForSubmitButton(inputEl, formId);
-            if (foundId) this.submitButtonId = foundId;
-
-            // Langsung dorong element fisiknya ke dalam tumpukan fieldset
-            fieldsetContentArray.push({ content: inputEl } as any);
+          const legendText = input.legend || input.title;
+          if (legendText) {
+            const legend = document.createElement("legend")
+            legend.textContent = String(legendText)
+            fieldset.append(legend);
           }
-        });
+          if (input.description) {
+            const desc = document.createElement("p");
+            desc.className = "group-desc";
+            desc.textContent = String(input.description)
+            fieldset.append(desc);
+          }
 
-        if (input.submitButton) {
-          const btnId = `btn-${formId}-grp-${Math.random().toString(36).substring(7)}`;
-          this.submitButtonId = btnId;
-          fieldsetContentArray.push({
-            tagName: "button",
-            id: btnId,
-            className: this.config.buttonClass,
-            type: "submit",
-            form: formId,
-            content: this.config.buttonText
+          // Iterasi anak-anak di dalam group secara murni
+          input.group.forEach((innerInput: any) => {
+            // console.log({ innerInput })
+            if (typeof innerInput === "string") {
+              const foundId = this.scanForSubmitButton(innerInput, formId);
+              if (foundId) this.submitButtonId = foundId;
+              fieldset.insertAdjacentHTML("beforeend", innerInput as any);
+            } else if (typeof innerInput === "object") {
+              const inputEl = InputBuilder.create(innerInput)
+              fieldset.append(inputEl)
+            } else {
+              // InputBuilder melahirkan HTMLElement murni dengan isRoot internalnya sendiri
+              const inputEl = innerInput instanceof HTMLElement ? innerInput : InputBuilder.create(innerInput);
+              const foundId = this.scanForSubmitButton(inputEl, formId);
+              if (foundId) this.submitButtonId = foundId;
+
+              // Langsung dorong element fisiknya ke dalam tumpukan fieldset
+              fieldset.append(inputEl as any);
+            }
           });
+
+          if (input.submitButton) {
+            const btnId = `btn-${formId}-grp-${Math.random().toString(36).substring(7)}`;
+            this.submitButtonId = btnId;
+            const submitBtn = document.createElement("button");
+            submitBtn.id = btnId;
+            submitBtn.className = this.config.buttonClass;
+            submitBtn.type = "submit";
+
+            submitBtn.textContent = this.config.buttonText;
+
+            fieldset.append(submitBtn);
+          }
+
+          // const fieldset = document.createElement("fieldset");
+
+          form.appendChild(fieldset);
         }
 
-        formContentArray.push({
-          tagName: "fieldset",
-          className: input.class || "",
-          content: fieldsetContentArray
-        });
-      }
+        // ==========================================
+        // KASUS D: Input berupa Parameter Objek Basic Tunggal
+        // ==========================================
+        // else {
+        //   // InputBuilder.create() mengelola isRoot dan melahirkan <div class="input-wrapper"> murni
+        //   const inputEl = InputBuilder.create(input);
+        //   if (this.config.submitButton) {
+        //     this.submitButtonId = this.scanForSubmitButton(inputEl, formId) || this.submitButtonId;
+        //   }
 
-      // ==========================================
-      // KASUS D: Input berupa Parameter Objek Basic Tunggal
-      // ==========================================
-      else {
-        // InputBuilder.create() mengelola isRoot dan melahirkan <div class="input-wrapper"> murni
-        const inputEl = InputBuilder.create(input);
-        if (this.config.submitButton) {
-          this.submitButtonId = this.scanForSubmitButton(inputEl, formId) || this.submitButtonId;
-        }
-
-        // Dorong langsung objek elemen fisiknya ke dalam formContentArray
-        formContentArray.push({ content: inputEl } as any);
+        //   // Dorong langsung objek elemen fisiknya ke dalam formContentArray
+        //   form.append(inputEl as any);
+        // }
       }
     });
 
     // 3. Tambahkan Tombol Submit Default di akhir jika belum ada
     if (!this.submitButtonId && this.config.submitButton) {
       const defaultBtnId = `btn-${formId}`;
-      this.submitButtonId = defaultBtnId;
+      const submitBtn = document.createElement("button");
+      submitBtn.id = defaultBtnId;
+      submitBtn.className = this.config.buttonClass;
+      submitBtn.type = "submit";
+      submitBtn.style = "margin-top: 1rem; padding: 1rem; float: right;"
+      submitBtn.textContent = this.config.buttonText;
 
-      formContentArray.push({
-        tagName: "button",
-        id: defaultBtnId,
-        className: this.config.buttonClass,
-        type: "submit",
-        form: formId,
-        style: "margin-top: 1rem; padding: 1rem; float: right;", // Gunakan CSS untuk kerapihan posisi
-        content: this.config.buttonText
-      });
+      form.append(submitBtn)
     }
 
     // 4. Tambahkan elemen Footer jika didefinisikan
     if (this.config.footer) {
-      formContentArray.push({ content: this.config.footer } as any);
+      form.append(this.config.footer as any);
     }
 
-    // 5. BUNGKUS KE BLUEPRINT FORM UTAMA
-    const masterFormBlueprint: iBasicNode = {
-      tagName: "form",
-      id: formId,
-      className: this.config.className,
-      method: this.config.method as any,
-      style: `min-height: ${this.config.minHeight}; background: transparent;`,
-      ...(this.config.action ? { action: this.config.action } : {}),
+    if (this.config.createEventListener) {
+      this.attachFormListener(form)
+    }
 
-      content: formContentArray, // Diisi tumpukan element murni bebas dari div pembungkus palsu!
-
-      onCreated: (el: HTMLElement) => {
-        this.attachFormListener(el as HTMLFormElement);
-      }
-    };
-
-    return this.engine.render(NodeTransformer.resolveContentNode(masterFormBlueprint), this.emptyRegistry);
+    // console.log(form)
+    return form;
   }
 
   /**

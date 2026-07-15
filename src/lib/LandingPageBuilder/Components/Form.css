@@ -437,3 +437,20 @@ textarea:focus-visible {
 .input-wrapper:has(> select.error) label {
   color: #ff114d;
 }
+
+.form fieldset {
+  border: 1px solid rgba(183, 164, 216, 0.45);
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form fieldset .input-wrapper {
+  width: 100%;
+}
+
+.form legend {
+  padding: 0 0.35rem;
+  color: var(--secondary-text-color);
+  font-weight: 700;
+}

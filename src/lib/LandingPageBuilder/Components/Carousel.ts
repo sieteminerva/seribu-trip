@@ -109,50 +109,61 @@ export class CarouselBuilder {
    * 👑 CORE ENTRY POINT: Pintu masuk tunggal perakitan carousel
    */
   public create(data: iBasicNode): HTMLElement {
+    // console.log("[Carousel Input Check] Object received:", data);
+
+    // ====================================================
+    const secureAttributes = data?.attrs || (data as any)?.config || {};
+    // console.log("[Carousel Input Check] Locked attributes payload:", secureAttributes);
+
+    // Bersihkan state internal instance komponen secara steril
     this.destroy();
     this.currentIndex = 0;
     this.slides = [];
     this.dots = [];
     this.buttons = [];
 
-    // 1. Ambil container fisik dari DOM/system
-    this.container = this._getContainer() as HTMLElement;
-
-    // console.log({ nodeRef })
-
-    // 2. Intersep data kustom via attributes sebelum konfigurasi dikunci
-    if (data && data.attrs) {
-      this._mergeAttributesToConfig(data.attrs);
-    } else if (this.container instanceof HTMLElement) {
-      this._extractConfigFromDOM(this.container);
+    // ====================================================
+    if (Object.keys(secureAttributes).length > 0) {
+      this._mergeAttributesToConfig(secureAttributes);
     }
 
-    // 3. Kunci hasil konfigurasi akhir yang mutlak valid
-    this.rConfig = this._resolveConfig(this.config, (data.content as iBasicNode[]).length);
+    // 3. Ambil kontainer fisik dari DOM/system setelah konfigurasi dasar di memori aman
+    this.container = this._getContainer() as HTMLElement;
+    // console.log("Carousel Container Locked:", { container: this.container });
 
-    // 4. Bangun Elemen Dasar DOM Kerangka Utama
-    const carouselElement = this._buildBaseDOM(data.content as iBasicNode[]);
 
-    // 5. MODULAR ROUTER TERMINAL: Jalankan jalur penataan spesifik tanpa tambal sulam!
+    // 4. Kunci hasil konfigurasi akhir yang mutlak valid berdasarkan panjang konten gambar
+    const contentPayload = (data.content as iBasicNode[]) || [];
+    this.rConfig = this._resolveConfig(this.config, contentPayload.length);
+    // console.log("CarouselBuilder Final Resolution Config:", { config: this.rConfig });
+
+    // 5. Bangun Elemen Dasar DOM Kerangka Utama
+    const carouselElement = this._buildBaseDOM(contentPayload);
+
+    if (Object.keys(secureAttributes).length === 0 && carouselElement instanceof HTMLElement) {
+      this._extractConfigFromDOM(carouselElement);
+    }
+
+    // 6. MODULAR ROUTER TERMINAL: Jalankan jalur penataan spesifik tanpa melompat layout
     if (this.rConfig.vertical) {
       this._activateVerticalMode(carouselElement);
     } else {
       this._activateHorizontalMode(carouselElement);
     }
 
-    // 6. Pasang ke container tujuan akhir
+    // 7. Pasang ke container tujuan akhir
     if (this.config.container) {
       this.container.appendChild(carouselElement);
     } else {
       this.container = carouselElement;
     }
 
-    // 7. Nyalakan sistem pemutar otomatis
+    // 8. Nyalakan sistem pemutar otomatis secara tertib
     if (this.rConfig.autoPlay) {
       this._startAutoPlay();
     }
 
-    // 8. Bind hover events for pauseOnHover and auto controls
+    // 9. Bind hover events for pauseOnHover and auto controls (Aman Terisolasi)
     if (this.config.pauseOnHover || this.config.showControl === 'auto' || this.config.showNavigation === 'auto') {
       carouselElement.addEventListener('mouseenter', () => {
         if (this.config.pauseOnHover && this.autoPlayTimer) {
@@ -169,6 +180,7 @@ export class CarouselBuilder {
       });
     }
 
+    // Kembalikan elemen hidup yang sudah matang sempurna 100% tanpa cangkang dummy palsu!
     return this.container;
   }
 
@@ -394,33 +406,6 @@ export class CarouselBuilder {
     return carousel;
   }
 
-
-
-  private _mergeAttributesToConfig(attrs: Record<string, any>): void {
-    for (const [dataKey, rawValue] of Object.entries(attrs)) {
-      const targetKey = (AttrsConfigMap as any)[dataKey];
-      if (targetKey && targetKey in this.config) {
-        let finalValue = rawValue;
-        const defaultType = typeof (this.config as any)[targetKey];
-        if (defaultType === "boolean" && typeof rawValue === "string") {
-          finalValue = rawValue === "true";
-        } else if (defaultType === "number" && typeof rawValue === "string") {
-          finalValue = Number(rawValue);
-        } (this.config as any)[targetKey] = finalValue;
-      }
-    }
-  }
-
-  private _extractConfigFromDOM(element: HTMLElement): void {
-    const rawAttrs: Record<string, any> = {};
-    for (const attr of Array.from(element.attributes)) {
-      if (attr.name.startsWith("data-") || attr.name === "container") {
-        rawAttrs[attr.name] = attr.value;
-      }
-    }
-    this._mergeAttributesToConfig(rawAttrs);
-  }
-
   private _getContainer(): HTMLElement | null {
     if (!this.config.container) return document.createElement("div");
     return typeof this.config.container === "string" ? document.querySelector(this.config.container) : this.config.container;
@@ -481,7 +466,34 @@ export class CarouselBuilder {
     carousel.appendChild(navContainer);
   }
 
+  private _mergeAttributesToConfig(attrs: Record<string, any>): void {
+    for (const [dataKey, rawValue] of Object.entries(attrs)) {
+      const targetKey = (AttrsConfigMap as any)[dataKey];
+      if (targetKey && targetKey in this.config) {
+        let finalValue = rawValue;
+        const defaultType = typeof (this.config as any)[targetKey];
+        if (defaultType === "boolean" && typeof rawValue === "string") {
+          finalValue = rawValue === "true";
+        } else if (defaultType === "number" && typeof rawValue === "string") {
+          finalValue = Number(rawValue);
+        } (this.config as any)[targetKey] = finalValue;
+      }
+    }
+  }
+
+  private _extractConfigFromDOM(element: HTMLElement): void {
+    const rawAttrs: Record<string, any> = {};
+    for (const attr of Array.from(element.attributes)) {
+      if (attr.name.startsWith("data-") || attr.name === "container") {
+        rawAttrs[attr.name] = attr.value;
+      }
+    }
+    this._mergeAttributesToConfig(rawAttrs);
+  }
+
   private _resolveConfig(config: Partial<iCarouselConfig>, totalSlides: number): iResolvedConfig {
+
+    // console.log("main config:", this.config)
     const slidesPerView = config.slidesPerView || 1;
     let animation = config.animation || 'fade';
     const vertical = config.vertical === true;

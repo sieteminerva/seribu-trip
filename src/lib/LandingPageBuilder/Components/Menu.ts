@@ -6,9 +6,31 @@ export class MenuBuilder {
 
   static create(data: iBasicNode): HTMLElement {
 
-    const normalizeTheme = (mode?: string | null): 'light' | 'dark' => mode?.toLowerCase() === 'dark' ? 'dark' : 'light';
-    const getTheme = () => normalizeTheme(document.documentElement.dataset.mode);
-    const applyTheme = (mode: 'light' | 'dark') => {
+    const normalizeMode = (mode?: string | null): 'light' | 'dark' => mode?.toLowerCase() === 'dark' ? 'dark' : 'light';
+    const getActiveTheme = () => localStorage.getItem("active_theme") || document.documentElement.dataset.theme?.replace(/^theme-/, "") || "default";
+    const routeNames = new Set(["home", "package", "gallery", "form"]);
+    const buildHash = (href?: string | null) => {
+      const raw = (href || "#").trim();
+      const withoutHash = raw.replace(/^#/, "");
+      const [pathPart = "", ...fragmentParts] = withoutHash.split("#");
+      const fragment = fragmentParts.join("#").trim().replace(/^#/, "");
+      const [routePart = ""] = pathPart.split("?");
+      const target = routePart.trim();
+      const theme = encodeURIComponent(getActiveTheme());
+
+      if (!target || target === "#") {
+        return `#home?theme=${theme}`;
+      }
+
+      if (routeNames.has(target)) {
+        return `#${target}?theme=${theme}${fragment ? `#${fragment}` : ""}`;
+      }
+
+      return `#home?theme=${theme}#${target}${fragment ? `#${fragment}` : ""}`;
+    };
+
+    const getMode = () => normalizeMode(document.documentElement.dataset.mode);
+    const applyMode = (mode: 'light' | 'dark') => {
       document.documentElement.dataset.mode = mode;
       if (document.body) {
         document.body.dataset.mode = mode;
@@ -34,8 +56,12 @@ export class MenuBuilder {
     brandDiv.className = 'brand';
 
     const brandLink = document.createElement('a');
-    brandLink.href = brandData.href || '#';
+    brandLink.href = buildHash(brandData.href || '#');
     brandLink.textContent = brandData.label as string;
+    brandLink.addEventListener("click", (e) => {
+      if (e) e.preventDefault();
+      window.location.hash = buildHash(brandData.href || "#");
+    });
 
     brandDiv.appendChild(brandLink);
     nav.appendChild(brandDiv);
@@ -58,15 +84,20 @@ export class MenuBuilder {
 
       if (link?.id) a.id = link.id;
       if (link?.className) a.className = link.className;
-      a.href = link?.href || '#';
+      a.href = buildHash(link?.href || "#");
       a.textContent = link?.label as string;
+
+      a.addEventListener("click", (e) => {
+        if (e) e.preventDefault();
+        window.location.hash = buildHash(link?.href || "#");
+      })
 
       li.appendChild(a);
       ulItems.appendChild(li);
     });
     nav.appendChild(ulItems);
 
-    // 4. Buat elemen Actions & Theme Toggle
+    // 4. Buat elemen Actions & Mode Toggle
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'actions';
 
@@ -96,18 +127,22 @@ export class MenuBuilder {
     // karena secara native elemen <a> tidak memiliki properti .type berupa button.
     contactLink.setAttribute('type', 'button');
     contactLink.className = 'button small';
-    contactLink.href = '#contact';
+    contactLink.href = buildHash('#contact-section');
     contactLink.textContent = 'Hubungi';
+    contactLink.addEventListener("click", (e) => {
+      if (e) e.preventDefault();
+      window.location.hash = buildHash('#contact-section');
+    });
 
     actionsDiv.appendChild(toggleButton);
     actionsDiv.appendChild(contactLink);
     nav.appendChild(actionsDiv);
 
     // 5. Inisialisasi Tema & Event Listener
-    applyTheme(getTheme());
+    applyMode(getMode());
 
     toggleButton.addEventListener('click', () => {
-      applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
+      applyMode(getMode() === 'dark' ? 'light' : 'dark');
     });
 
     hamburgerBtn.addEventListener('click', () => {

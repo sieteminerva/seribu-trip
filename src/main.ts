@@ -1,29 +1,30 @@
 import './style.css';
-import './lib/LandingPageBuilder/Builders/Form.css'
+import './lib/LandingPageBuilder/Components/Form.css'
 import './overrides.css';
 
-import { createOrderModal } from './order-form';
 import { createHomePageContent, createPackagePageContent, createGalleryPageContent } from './content';
-import { ContactBuilder } from './lib/LandingPageBuilder/Builders/Contact';
-import { MenuBuilder } from './lib/LandingPageBuilder/Builders/Menu';
+import { ContactBuilder } from './lib/LandingPageBuilder/Components/Contact';
+import { MenuBuilder } from './lib/LandingPageBuilder/Components/Menu';
 import { LandingPageBuilder } from './lib/LandingPageBuilder/LandingPage';
-import { CarouselBuilder } from './lib/LandingPageBuilder/Builders/Carousel';
-import { AccordionBuilder } from './lib/LandingPageBuilder/Builders/Accordion';
-import { PricingCardBuilder } from './lib/LandingPageBuilder/Builders/PricingCard';
-import { MasonryBuilder } from './lib/LandingPageBuilder/Builders/Masonry';
-import { SectionBuilder } from './lib/LandingPageBuilder/Builders/Section';
-import { FormBuilder } from './lib/LandingPageBuilder/Builders/Form';
+import { CarouselBuilder } from './lib/LandingPageBuilder/Components/Carousel';
+import { AccordionBuilder } from './lib/LandingPageBuilder/Components/Accordion';
+import { PricingCardBuilder } from './lib/LandingPageBuilder/Components/PricingCard';
+import { MasonryBuilder } from './lib/LandingPageBuilder/Components/Masonry';
+import { SectionBuilder } from './lib/LandingPageBuilder/Components/Section';
+import { FormBuilder } from './lib/LandingPageBuilder/Components/Form';
 import { NodeTransformer } from './lib/LandingPageBuilder/Utils/NodeTransformer';
-import { VerticalTheme } from './lib/LandingPageBuilder/Themes/test';
+import { DefaultTheme } from './lib/LandingPageBuilder/Themes/DefaultTheme';
 import { HorizontalTheme } from './lib/LandingPageBuilder/Themes/HorizontalTheme';
 import type { iBasicNode } from './lib/LandingPageBuilder/interface';
 import { CyberpunkTheme } from './lib/LandingPageBuilder/Themes/CyberpunkTheme';
+import { FabMenuBuilder } from './lib/LandingPageBuilder/Components/FabMenu';
+import { ModalBuilder } from './lib/LandingPageBuilder/Components/Modal';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 
 if (app) {
-  const orderModal = createOrderModal();
-  app.appendChild(orderModal.dialog);
+  // const orderModal = createOrderModal();
+  // document.body.appendChild(orderModal.dialog);
 
   const menu: iBasicNode = {
     builder: "menu",
@@ -57,7 +58,7 @@ if (app) {
 
   };
 
-  const homePageContent = createHomePageContent(() => orderModal.open());
+  const homePageContent = createHomePageContent();
 
   const injectionRules = [
     { selector: "p.eyebrow", inputType: "text" },
@@ -69,7 +70,7 @@ if (app) {
   ];
   const reverseNode = NodeTransformer.toFormNode(homePageContent, injectionRules);
 
-  console.log({ reverseNode });
+  // console.log({ reverseNode });
 
   const builder = new LandingPageBuilder({
     menu,
@@ -90,19 +91,21 @@ if (app) {
     useMenu: true,
     useFooter: true,
     defaultRoute: 'home',
-    theme: "vertical"
+    theme: "default"
   });
 
-  builder.component?.register("accordion", (data) => AccordionBuilder.create(data))
+  builder.component?.register("accordion", (data: any) => AccordionBuilder.create(data))
+    .register("form", (data: any) => new FormBuilder().create(data.content))
     .register("carousel", (data: any) => new CarouselBuilder().create(data))
     .register("pricing-card", (data: any) => PricingCardBuilder.create(data.content))
     .register("masonry", (data: any) => new MasonryBuilder({ category: "category" }).create(data.content))
     .register("section", (data: any) => SectionBuilder.create(data, { tagName: "section" }))
-    .register("form", (data: any) => new FormBuilder().create(data.content))
     .register("menu", (data: any) => MenuBuilder.create(data))
     .register("footer", (data: any) => ContactBuilder.create(data))
+    .register("fab-menu", (data: any) => new FabMenuBuilder().create(data.content))
+    .register("modal", (el: any) => new ModalBuilder().create(el as HTMLElement) as any)
 
-  builder.theme?.register(VerticalTheme)
+  builder.theme?.register(new DefaultTheme())
     .register(new HorizontalTheme())
     .register(new CyberpunkTheme());
 
@@ -111,7 +114,8 @@ if (app) {
   builder.render();
 
   builder.events.on("onThemeChanged", (data) => {
-    console.log(data)
+    if (data) { }
+    // console.log(data)
   })
 }
 
