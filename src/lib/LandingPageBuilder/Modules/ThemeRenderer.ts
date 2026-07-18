@@ -6,7 +6,7 @@ export class ThemeRenderer {
   public activeTheme: iThemeModule | null = null;
   public themesMap = new Map<string, iThemeModule>();
 
-  private builder: any = null;
+  private page: any = null;
 
   isSwitcherOpen: boolean = false;
   switcherElement: HTMLElement | null = null;
@@ -16,8 +16,8 @@ export class ThemeRenderer {
 
   constructor() { }
 
-  public attachBuilder(builderInstance: any) {
-    this.builder = builderInstance;
+  public attachBuilder(pageInstance: any) {
+    this.page = pageInstance;
   }
 
   /**
@@ -26,7 +26,7 @@ export class ThemeRenderer {
   public register(theme: iThemeModule): this {
     this.themesMap.set(theme.themeId, theme);
 
-    if (this.builder && !this.isEventBound) {
+    if (this.page && !this.isEventBound) {
       this.initEventBindings();
       this.isEventBound = true;
     }
@@ -38,10 +38,37 @@ export class ThemeRenderer {
    * Core Event Subscription Engine
    */
   private initEventBindings() {
-    if (!this.builder) return;
+    if (!this.page) return;
+
+    this.page.events.on("beforeRender", (interceptorData: any) => {
+      const currentThemeId = (this.page as any).currentThemeId;
+      const targetTheme = this.themesMap.get(currentThemeId);
+
+      if (targetTheme && typeof targetTheme.beforePageRender === "function") {
+
+        console.log(`[ThemeEngine] Hooking on "beforePageRender" via generic event pipeline for theme: "${currentThemeId}"`);
+
+        // 💡 JALUR SAKRAL ANDA TERWUJUD: 
+        // Suapkan data dan objek secureThemeContext ke dalam beforePageRender tema!
+        const intercepted = targetTheme.beforePageRender(
+          interceptorData.pages,
+          interceptorData.menu,
+          interceptorData.footer,
+          interceptorData.context // <== Context sukses disuapkan dari ThemeRenderer murni!
+        );
+
+        // Timpa kembali pointer array-nya agar LandingPageBuilder menerima hasil mutasi kosmetiknya
+        interceptorData.pages = intercepted.pages;
+        interceptorData.menu = intercepted.menu;
+        interceptorData.footer = intercepted.footer;
+      }
+    });
+
     // 🧙‍♂️ TAHAP 1: Intercept Struktur Objek via Pass-by-Reference Mutation (Pre-Render)
-    this.builder.events.on("onReady", (eventData: any) => {
-      const currentThemeId = (this.builder as any).currentThemeId;
+    this.page.events.on("ready", (eventData: any) => {
+      console.log(`[ThemeEngine] Hooking on "ready" via generic event pipeline for theme: "${this.page.currentThemeId}"`);
+
+      const currentThemeId = (this.page as any).currentThemeId;
 
       if (this.activeTheme && this.activeTheme.themeId !== currentThemeId && this.activeTheme.deactivate) {
         this.activeTheme.deactivate(eventData.shell);
@@ -54,12 +81,12 @@ export class ThemeRenderer {
         // 💡 BENTUK AMAN: Kirim iterator array hasil values Map cloningan ke modul tema
 
         // Modul tema menerima array element hidup hasil saringan aman
-        targetTheme.activate(eventData.shell, Array.from(eventData.components.values()));
+        targetTheme.activate(eventData.shell, Array.from(eventData.elements.values()), eventData.context);
       }
 
     });
 
-    this.builder.events.on("onError", (errData: any) => {
+    this.page.events.on("error", (errData: any) => {
       console.error(`[ThemeEngine] Captured core anomaly: ${errData.message}`, errData.error);
     });
   }
@@ -71,7 +98,7 @@ export class ThemeRenderer {
       this.switcherElement.parentNode.removeChild(this.switcherElement);
     }
 
-    const currentActiveThemeId = this.builder?.currentThemeId || localStorage.getItem("active_theme");
+    const currentActiveThemeId = this.page?.currentThemeId || localStorage.getItem("active_theme");
 
     // 2. Susun kontrak data iActionProperty[] secara bersih sesuai standard baru Anda!
     const dynamicActions: iActionProperty[] = [];
@@ -87,7 +114,7 @@ export class ThemeRenderer {
           e.preventDefault();
           const el = e.currentTarget as HTMLElement;
           if (isActive) el.classList.add("active")
-          this.builder.changeTheme(themeId);
+          this.page.changeTheme(themeId);
         }
       });
     });
@@ -111,8 +138,8 @@ export class ThemeRenderer {
       }
     };
 
-    if (this.builder) {
-      const component = this.builder.component as ComponentRegistry
+    if (this.page) {
+      const component = this.page.component as ComponentRegistry
       // Cetak fisiknya secara legal lalu tempelkan ke document.body luar browser!
       this.switcherElement = component.build("fab-menu", switcherSchema);
       document.body.appendChild(this.switcherElement as HTMLElement);

@@ -1,23 +1,93 @@
+export interface iRendererLite {
+  create: () => void;
+  append: () => void;
+  remove: () => void;
+  replace: () => void;
+  text: () => void;
+  html: () => void;
+  attr: () => void;
+  class: () => void;
+}
+
+
+// ==========================================
+// Page
+// ==========================================
+
 export interface iLandingPageBuilderSource {
   menu?: HTMLElement | iBasicNode | null;
   footer?: HTMLElement | iBasicNode | null;
   pages: Record<string, iBasicNode[]>;
 }
 
-export interface iLandingPageEvents {
-  beforeRender: {
-    pages: iBasicNode[];
-    menu: iBasicNode | null;
-    footer: iBasicNode | null;
-    pageMetaReport?: iPageMetaReport
+interface iComponentEvents<T extends string = string> {
+  elementAdded: {
+    builder?: keyof iBuilderRegistry;
+    type?: T; // 💡 Tipe sub-organ menangkap token dinamis dari T secara kaku!
+    element: HTMLElement;
+    parent?: HTMLElement;
+    data?: any;
   };
-  onPageChanged: { route: string; activeNodes: HTMLElement[] };
-  onThemeChanged: { themeId: string; shell: HTMLElement };
-  onElementAdded: { element: HTMLElement; parent: HTMLElement };
-  onElementRemoved: { element: HTMLElement };
-  onReady: { shell: HTMLElement; components: Map<string, HTMLElement> };
-  onError: { message: string; error: Error; context?: string };
+  elementRemoved: {
+    element: HTMLElement;
+    builder?: keyof iBuilderRegistry;
+  };
+  themeChanged: { themeId: string; shell: HTMLElement };
+  ready: { shell: HTMLElement; elements: Map<string, HTMLElement>, context?: any };
+  error: { message: string; error: Error; context?: string };
 }
+
+export interface iPageEvents<T extends string = string> extends iComponentEvents<T> {
+  beforeRender: {
+    pages: any[]; // Sesuaikan dengan iBasicNode[] asli Anda di lokal
+    menu: any | null;
+    footer: any | null;
+    pageMetaReport?: any;
+  };
+  pageChanged: { route: string; activeNodes: HTMLElement[] };
+}
+
+// ==========================================
+// BUILDER
+// ==========================================
+export interface iBuilderConfig<TType extends string = string> {
+  themeId?: string;
+  selectors?: Record<TType, iElementProperty>
+  emit?<K extends keyof iComponentEvents<TType>>(
+    event: K,
+    data: iComponentEvents<TType>[K]
+  ): void;
+}
+
+export interface iBuilderElementContext<TType extends string = string, TData = any> {
+  type: TType;
+  element: HTMLElement;
+  data: TData;
+}
+
+export interface iBuilderRegistry {
+  carousel: iBuilderContent[];
+  accordion: iHeaderProperty[];
+  "pricing-card": iCardProperty[];
+  masonry: iBuilderContent[];
+  section: iBuilderContent[];
+  form: Array<iBasicInputNode | iFormGroupNode | HTMLElement | string>;
+  menu: iBasicNode;
+  footer: iBasicNode;
+  "fab-menu": iBasicNode;
+  "modal": iBasicNode | HTMLElement;
+  "mode-switcher": iBasicNode
+  // Untuk komponen baru nanti, cukup daftarkan jenis array atomnya di sini:
+  // stats: iStatsProperty[];
+}
+
+// Function signature constraint for allowed builders
+export type ComponentBuilderFn<Args = any> = (content: Args) => HTMLElement | null;
+
+// Registry map type contract tracking all active builder functions
+export type BuilderFunctionsMap = {
+  [K in keyof iBuilderRegistry]: ComponentBuilderFn<iBuilderRegistry[K]>;
+};
 
 
 /**
@@ -36,7 +106,7 @@ export interface iThemeModule {
     pageBlocks: iBasicNode[],
     menuBlock: iBasicNode | null,
     footerBlock: iBasicNode | null,
-    pageMetaReport?: iPageMetaReport
+    context?: Record<string, Function>
   ): {
     pages: iBasicNode[];
     menu: iBasicNode | null;
@@ -47,43 +117,48 @@ export interface iThemeModule {
    * ⚡ HOOK 2: BEHAVIORAL INTERACTION (Post-Render Lifecycle)
    * Triggered when the final elements tree is fully live on the DOM.
    */
-  activate(shell: HTMLElement, elements: HTMLElement[]): void;
+  activate(shell: HTMLElement, elements: HTMLElement[], context: { setConfig: (builderName: keyof iBuilderRegistry, newConfig: Record<string, any>) => void; }): void;
 
   /**
    * 🛑 HOOK 3: MEMORY CLEANUP (Unmount Lifecycle)
    * MUST be used to unbind custom event listeners to eliminate memory leaks.
    */
   deactivate?(shell: HTMLElement): void;
+
+  templates?(): Record<string, (typeKey: any, el: HTMLElement, payload: any, selector: any) => void>;
 }
 
 
 export type themeSwitcherPosition = "top-left" | "top-right" | "bottom-right" | "bottom-left";
 
 
-interface iDefaultProps {
+export interface iElementProperty {
   id?: string;
   className?: string;
   tagName?: string;
+  attrs?: Record<string, string>;
+  isArray?: boolean;
 }
 // ==========================================
 // 1. INDIVIDUAL ATOM PROPERTIES & DESIGN TOKENS
 // ==========================================
-export interface iHeaderProperty extends iDefaultProps {
+export interface iHeaderProperty extends iElementProperty {
   title?: string;
   eyebrow?: string;
   description?: string;
 }
 
-export interface iActionProperty extends iDefaultProps {
+export interface iActionProperty extends iElementProperty {
   label?: string;
   href?: string;
+  src?: string;
   isActive?: boolean;
   type?: 'button' | 'submit' | 'reset';
   onClick?: (event: MouseEvent) => void;
 }
 
 // Data Item khusus untuk builder bertipe 'section', 'carousel', 'masonry'
-export interface iBuilderContent extends iDefaultProps {
+export interface iBuilderContent extends iElementProperty {
   title?: string;
   description?: string;
   image?: string;
@@ -92,7 +167,7 @@ export interface iBuilderContent extends iDefaultProps {
 }
 
 // Data Item khusus untuk builder bertipe 'pricing-table'
-export interface iCardProperty extends iDefaultProps {
+export interface iCardProperty extends iElementProperty {
   header: string;
   body: { name: string; className: string }[];
   action?: iActionProperty;
@@ -196,31 +271,7 @@ export interface iPageMetaReport {
   timelinePaths: Array<{ id: string; name: string; type: string }>;
 }
 
-// ==========================================
-// 2. KONTRAK REGISTRY UTAMA (Single Source of Truth)
-// ==========================================
-export interface iBuilderRegistry {
-  carousel: iBuilderContent[];
-  accordion: iHeaderProperty[];
-  "pricing-card": iCardProperty[];
-  masonry: iBuilderContent[];
-  section: iBuilderContent[];
-  form: Array<iBasicInputNode | iFormGroupNode | HTMLElement | string>;
-  menu: iBasicNode;
-  footer: iBasicNode;
-  "fab-menu": iBasicNode;
-  "modal": iBasicNode | HTMLElement;
-  // Untuk komponen baru nanti, cukup daftarkan jenis array atomnya di sini:
-  // stats: iStatsProperty[];
-}
 
-// Function signature constraint for allowed builders
-export type ComponentBuilderFn<Args = any> = (content: Args) => HTMLElement | null;
-
-// Registry map type contract tracking all active builder functions
-export type BuilderFunctionsMap = {
-  [K in keyof iBuilderRegistry]: ComponentBuilderFn<iBuilderRegistry[K]>;
-};
 
 // ==========================================
 // 3. BASE STRUCTURAL HOOKS INTERFACE

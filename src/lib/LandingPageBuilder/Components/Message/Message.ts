@@ -1,6 +1,15 @@
-import "./Message.css"
+import type { iBuilderConfig } from "../../interface";
+import "./Message.css";
 
-export interface iMessageConfig {
+export type MessageElementType =
+  | "@message"
+  | "@message>close"
+  | "@message>content"
+  | "@message>content>header"
+  | "@message>content>desc"
+  | "@message>content>icon";
+
+export interface iMessageConfig extends iBuilderConfig<MessageElementType> {
   id?: string;                    // ID unik pelacakan di DOM agar pesan anti-menumpuk kembung
   element?: HTMLElement | string;    // Kontainer tempat menempelkan pesan (Default: document.body)
   duration?: number;              // Durasi muncul dalam milidetik (0 = menetap sampai diklik silang)
@@ -21,13 +30,24 @@ export class MessageBuilder {
    * Cukup panggil MessageBuilder.create({ ... }) untuk langsung memutahkan toast di viewport browser!
    */
   public static create(config: iMessageConfig): HTMLElement {
-    const defaultConfig = {
+    const defaultConfig: Required<iMessageConfig> = {
+      themeId: "default",
       id: "global-status-message",
       element: document.body,
       duration: 3000,
       header: "Congrats!",
       icon: "bell outline icon",
       type: "info",
+      message: "",
+      selectors: {
+        "@message": { tagName: "div", className: "message" },
+        "@message>close": { tagName: "i", className: "close" },
+        "@message>content": { tagName: "div", className: "content" },
+        "@message>content>header": { tagName: "h2", className: "header" },
+        "@message>content>desc": { tagName: "p", className: "desc" },
+        "@message>content>icon": { tagName: "i", className: "info" } // "error", "success", "info", "warning"
+      },
+      emit: () => { },
       onOpen: () => { },
       onClose: () => { }
     };
@@ -80,6 +100,7 @@ export class MessageBuilder {
     }
 
     const messageParagraph = document.createElement("p");
+    messageParagraph.className = "desc";
     messageParagraph.textContent = activeConfig.message;
     contentBox.appendChild(messageParagraph);
 

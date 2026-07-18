@@ -1,9 +1,6 @@
 import type { iBasicNode } from "./lib/LandingPageBuilder/interface";
-import type { LandingPageBuilder } from "./lib/LandingPageBuilder/LandingPage";
 
-
-
-export const createHomePageContent = (): iBasicNode[] => ([
+export const HomePageContent: iBasicNode[] = [
   {
     name: "Hero",
     tagName: "section",
@@ -184,16 +181,15 @@ export const createHomePageContent = (): iBasicNode[] => ([
       content: {
         'h2.title': { content: "Siap merancang liburan keluarga yang nyaman?" },
         'div.actions': {
-          onCreated: (el: HTMLElement, _render: LandingPageBuilder["compile"], build: (name: string, data: any) => HTMLElement | null) => {
+          onCreated: (el: HTMLElement, _render: any, build: (name: string, data: any) => HTMLElement | null) => {
             const btn = document.createElement("button");
             btn.className = "button primary";
             btn.textContent = "Pesan Sekarang";
 
-            const form = build("form", orderFormSchema);
+            const form = build("form", OrderFormSchema);
             const modal = build("modal", form);
 
             btn.addEventListener("click", () => {
-              // console.log({ form, modal })
               if (modal) {
                 (modal as any).open()
               }
@@ -234,9 +230,9 @@ export const createHomePageContent = (): iBasicNode[] => ([
       }
     ]
   }
-]);
+];
 
-const orderFormSchema = {
+const OrderFormSchema = {
   id: "order-form",
   builder: "form",
   content: [
@@ -412,7 +408,7 @@ const orderFormSchema = {
 }
 
 
-export const createPackagePageContent = [
+export const PackagePageContent = [
   {
     name: "package",
     content: [
@@ -484,7 +480,7 @@ export const createPackagePageContent = [
   }
 ];
 
-export const createGalleryPageContent = [
+export const GalleryPageContent = [
   {
     name: "Gallery",
 

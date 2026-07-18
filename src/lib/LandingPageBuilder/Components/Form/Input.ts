@@ -1,5 +1,5 @@
 
-import type { iBasicInputNode, InputBuilderSelectorOption } from "../interface";
+import type { iBasicInputNode, InputBuilderSelectorOption } from "../../interface";
 
 export class InputBuilder {
 

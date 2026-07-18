@@ -73,10 +73,10 @@
   font-weight: bold;
 }
 
-.card.pricing .footer {
+.card.pricing .actions {
   margin-top: auto;
   padding-top: 1rem;
 }
-.card.pricing .footer .button {
+.card.pricing .actions .button {
   width: 100%;
 }

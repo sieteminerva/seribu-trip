@@ -1,9 +1,16 @@
-import type { iBasicNode, iActionProperty } from "../interface";
+import type { iBasicNode, iActionProperty, iBuilderConfig } from "../../interface";
 import "./FabMenu.css";
 
 export type fabPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right" | "middle";
 
-export interface iFabConfig {
+export type FabMenuElementType =
+  | "@fab"
+  | "@fab>panel"
+  | "@fab>panel>title"
+  | "@fab>panel>item"
+  | "@fab>panel>trigger";
+
+export interface iFabMenuConfig extends iBuilderConfig<FabMenuElementType> {
   container: string | HTMLElement | null;
   duration: number | null;
   position: fabPosition;
@@ -13,7 +20,7 @@ export interface iFabConfig {
 }
 
 export class FabMenuBuilder {
-  private config: Required<iFabConfig>;
+  public config: Required<iFabMenuConfig>;
   private isMenuOpen = false;
   private idleTimer: number | undefined;
 
@@ -26,14 +33,23 @@ export class FabMenuBuilder {
   private cachedTitle: string = "";
   private cachedItems: iActionProperty[] = [];
 
-  constructor(config: Partial<iFabConfig> = {}) {
-    const defaultConfig: Required<iFabConfig> = {
+  constructor(config: Partial<iFabMenuConfig> = {}) {
+    const defaultConfig: Required<iFabMenuConfig> = {
+      themeId: "default",
       container: null,
       position: "bottom-left",
       closeOnSelected: true,
       duration: 10000,
       closeIcon: "✕",
       displayIcon: "⚙️",
+      selectors: {
+        "@fab": { tagName: "div", className: "fab" },
+        "@fab>panel": { tagName: "div", className: "panel", isArray: true },
+        "@fab>panel>title": { tagName: "span", className: "title" },
+        "@fab>panel>item": { tagName: "button", className: "item" },
+        "@fab>panel>trigger": { tagName: "button", className: "trigger" },
+      },
+      emit: () => { }
     };
     this.config = { ...defaultConfig, ...config };
   }

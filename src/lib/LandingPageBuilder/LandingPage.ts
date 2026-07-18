@@ -22,7 +22,7 @@ export class LandingPageBuilder {
   private container!: HTMLElement;
   public shell: HTMLElement | null = null;
 
-  private menu: HTMLElement | iBasicNode | null = null;
+  private _menuData: iBasicNode | null = null;
   private footer: HTMLElement | iBasicNode | null = null;
   private pages: Record<string, (iNodeContent<any> | iBasicNode)[]> = {};
   private renderedNodesMap = new Map<string, HTMLElement>();
@@ -30,7 +30,7 @@ export class LandingPageBuilder {
   /* ROUTE */
   private defaultRoute!: string;
   private currentRoute!: string;
-  private pendingFragment: string = "";
+  public pendingFragment: string = "";
 
   /* CONFIG */
   private useMenu!: boolean;
@@ -43,6 +43,8 @@ export class LandingPageBuilder {
   public router!: HashRouter;
   public theme: ThemeRenderer | null = null;
   public events = new EventEmitter();
+
+  _isInternalRendering!: boolean;
 
   constructor(
     source: iLandingPageBuilderSource,
@@ -72,12 +74,12 @@ export class LandingPageBuilder {
       this.defaultRoute = this.normalizeRoute(config.defaultRoute || "home");
       const persistedTheme = localStorage.getItem("active_theme");
 
-      this.router = new HashRouter(this.defaultRoute, persistedTheme || (config.theme as string) || "default", (state: iRouteState) => {
+      this.router = new HashRouter(this.defaultRoute, persistedTheme || (config.theme as string) || "default", Object.keys(this.pages), (state: iRouteState) => {
         // Callback otomatis ter-trigger setiap kali URL hash berubah!
         if (state.theme && state.theme !== this.currentThemeId) {
           this.currentThemeId = state.theme;
           localStorage.setItem("active_theme", state.theme);
-          this.events.emit("onThemeChanged", { themeId: state.theme, shell: this.shell! });
+          this.events.emit("themeChanged", { themeId: state.theme, shell: this.shell! });
         }
 
         this.pendingFragment = state.fragment;
@@ -92,11 +94,52 @@ export class LandingPageBuilder {
 
     } catch (error: any) {
       // 💡 EVENT TRIGGER: onError
-      this.events.emit("onError", { message: "Failed to initialize LandingPageBuilder", error, context: "constructor" });
+      this.events.emit("error", { message: "Failed to initialize LandingPageBuilder", error, context: "constructor" });
     }
   }
 
-  // gimana kalau kita buat module router daripada cuma patching - patching ga berujung
+  public get menu(): HTMLElement | iBasicNode | null {
+    return this._menuData;
+  }
+
+  public set menu(newMenuBlueprint: HTMLElement | iBasicNode | null) {
+    this._menuData = newMenuBlueprint;
+
+    // 💡 LIVE HOT-SWAP SINKRONUS:
+    // Jika shell sudah terpasang di DOM dan renderedNodesMap sudah memegang navbar lama,
+    // langsung eksekusi pencetakan ulang menu baru tanpa perlu re-render seluruh halaman!
+    if (this.shell && (this as any).useMenu) {
+      console.log("[Reactive Menu Setter] Menu blueprint changed. Hot-swapping navbar element in live DOM...");
+
+      // 1. Jalankan restorasi dan kompilasi JIT murni satu kali di luar buildStructure
+      const resolvedMenu = this._menuData ? NodeTransformer.resolveContentNode(this._menuData) : null;
+      const cleanMenuBlueprint = (this as any).restore(resolvedMenu);
+
+      if (cleanMenuBlueprint) {
+        // Ambil element navbar fisik lama yang sedang menempel di layar
+        const oldNavbarElement = (this as any).renderedNodesMap.get("system-navbar");
+
+        // Bakar blueprint baru menjadi HTMLElement hidup lewat pintu utama .compile() Anda
+        const newNavbarElement = this.compile(cleanMenuBlueprint);
+
+        if (newNavbarElement && oldNavbarElement && this.shell.contains(oldNavbarElement)) {
+          // 🧙‍♂️ ABAKADABRA: Tukar fisiknya secara instan di layar menggunakan native DOM API!
+          this.shell.replaceChild(newNavbarElement, oldNavbarElement);
+          (this as any).renderedNodesMap.set("system-navbar", newNavbarElement);
+        } else if (newNavbarElement) {
+          // Jika sebelumnya tidak ada menu tapi useMenu diaktifkan, langsung prepend di atas
+          this.shell.prepend(newNavbarElement);
+          (this as any).renderedNodesMap.set("system-navbar", newNavbarElement);
+        }
+      } else {
+        // Jika menu di-set menjadi null, copot fisiknya dari layar
+        const oldNavbarElement = (this as any).renderedNodesMap.get("system-navbar");
+        if (oldNavbarElement) oldNavbarElement.remove();
+        (this as any).renderedNodesMap.delete("system-navbar");
+      }
+    }
+  }
+
 
   private restore(target: HTMLElement | null): iBasicNode | null {
     if (!target) return null;
@@ -127,18 +170,22 @@ export class LandingPageBuilder {
 
     this.currentRoute = this.normalizeRoute(route);
 
+    this._isInternalRendering = true;
+
     const payload = await this.prepare();
+
+    this._isInternalRendering = false;
 
     if (this.shell.parentElement !== this.container) {
       this.container.appendChild(this.shell);
-      this.events.emit("onElementAdded", { element: this.shell, parent: this.container });
+      this.events.emit("elementAdded", { element: this.shell, parent: this.container });
     }
 
     (this.shell as HTMLElement).innerHTML = "";
     this.renderedNodesMap.clear();
 
     // Pancarkan sebelum render untuk kebutuhan plugin luar, data sudah 100% matang ter-hydrate!
-    this.events.emit("beforeRender", payload as any);
+    // this.events.emit("beforeRender", payload as any);
 
     // console.log(payload)
     // 1. Jalankan Kompilasi & Penempelan Navbar Menu
@@ -169,14 +216,16 @@ export class LandingPageBuilder {
       }
     }
 
-    // ====================================================
-    // SIKLUS SCROLL ANCHOR & ONREADY
-    // ====================================================
-    this._handleScrollSection()
+    // SCROLL ANCHOR & ONREADY
+    window.setTimeout(() => {
+      // console.log(`[Lifecycle Scroll Lock] Invoking smooth glide animation to section anchor: #${this.pendingFragment}`);
+      this._handleScrollSection();
+    });
 
-    this.events.emit("onReady", {
+    this.events.emit("ready", {
       shell: this.shell as HTMLElement,
-      components: new Map(this.renderedNodesMap)
+      elements: new Map(this.renderedNodesMap),
+      context: payload?.context
     });
   }
 
@@ -193,10 +242,23 @@ export class LandingPageBuilder {
     };
   }
 
-  private async prepare(): Promise<{ pages: any, menu: any, footer: any } | undefined> {
+  private async prepare(): Promise<{ pages: any, menu: any, footer: any, context: any } | undefined> {
     try {
       // 1. Amankan snapshot memori imutabel (Data master murni)
       const snapshot = this._prepareDataSnapshot();
+
+      const context = {
+        /** Fungsi live penimpa konfigurasi internal builder */
+        setConfig: (builderName: keyof iBuilderRegistry, newConfig: Record<string, any>) => {
+          if (this.component && typeof this.component.setConfig === "function") {
+            this.component.setConfig(builderName, newConfig);
+          }
+        },
+        /** Fungsi penjemput data laporan metadata halaman */
+        getMeta: () => {
+          return metaReport;
+        }
+      };
 
       // 💡 SANGAT SUCI: Hilangkan semua panggilan NodeTransformer.resolveContentNode di sini!
       // Biarkan data mengalir polos, tebal, dan jujur sesuai takdir format aslinya.
@@ -216,24 +278,21 @@ export class LandingPageBuilder {
         this.shell.className = "page";
       }
 
-      // 3. JALANKAN SIKLUS SIRAMAN INTERSEP TEMA
-      if (this.theme && this.theme.themesMap.has(this.currentThemeId)) {
-        const targetTheme = this.theme.themesMap.get(this.currentThemeId);
-        if (targetTheme && typeof targetTheme.beforePageRender === "function") {
-          const intercepted = targetTheme.beforePageRender(rawBlocks, rawMenu, rawFooter, metaReport);
-          rawBlocks = intercepted.pages;
-          rawMenu = intercepted.menu;
-          rawFooter = intercepted.footer;
-        }
+      const payload = {
+        pages: rawBlocks,
+        menu: rawMenu,
+        footer: rawFooter,
+        context
       }
+
+      this.events.emit("beforeRender", payload);
 
 
       // // 4. EMBARK FINAL RENDERING COMPILER PIPELINE
-      // this.render(this.currentRoute, { pages: rawBlocks, menu: rawMenu, footer: rawFooter });
-      return { pages: rawBlocks, menu: rawMenu, footer: rawFooter }
+      return payload;
 
     } catch (error: any) {
-      this.events.emit("onError", { message: "Pipeline preparation cycle crash", error, context: "prepare" });
+      this.events.emit("error", { message: "Pipeline preparation cycle crash", error, context: "prepare" });
     }
   }
 
@@ -275,8 +334,8 @@ export class LandingPageBuilder {
     // ====================================================
     const renderedElement = this.factory?.render(resolvedBlueprint, this.compile.bind(this), buildComponent as any);
 
-    if (renderedElement instanceof HTMLElement) {
-      this.events.emit("onElementAdded", { element: renderedElement, parent: this.shell! });
+    if (renderedElement instanceof HTMLElement && this.shell instanceof HTMLElement) {
+      this.events.emit("elementAdded", { element: renderedElement, parent: this.shell });
       return renderedElement;
     }
 
@@ -330,7 +389,7 @@ export class LandingPageBuilder {
               value.content = liveDomElement;
             }
 
-            this.events.emit("onElementAdded", { element: liveDomElement, parent: this.shell! });
+            this.events.emit("elementAdded", { element: liveDomElement, parent: this.shell! });
           }
         } else {
           scanAndBuild(value); // Terus menyelam mencari builder bersarang di tingkat terdalam
@@ -346,7 +405,7 @@ export class LandingPageBuilder {
     // window.removeEventListener("hashchange", this.handleHashChange);
     if (this.shell && this.shell.parentElement) {
       this.shell.parentElement.removeChild(this.shell);
-      this.events.emit("onElementRemoved", { element: this.shell });
+      this.events.emit("elementRemoved", { element: this.shell });
     }
     this.events.clear(); // Bersihkan seluruh memory listeners
     this.container.innerHTML = "";

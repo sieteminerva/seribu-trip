@@ -1,10 +1,48 @@
-import type { iActionProperty, iBasicNode } from "../interface";
+import type { iActionProperty, iBasicNode, iBuilderConfig } from "../../interface";
+
+export type FooterElementType =
+  | "@footer"
+  | "@footer>row"
+  | "@footer>row>column"
+  | "@footer>row>column>header"
+  | "@footer>row>column>desc"
+  | "@footer>row>column>list"
+  | "@footer>row>column>list>item"
+  | "@footer>copyright"
+
+export interface iFooterConfig extends iBuilderConfig<FooterElementType> {
+  useCopyright: boolean,
+  useContact: boolean
+}
 
 
-export class ContactBuilder {
+export class FooterBuilder {
+  public config!: Required<iFooterConfig>
 
-  static create(data: iBasicNode): HTMLElement {
-    // console.log("ContactBuilder", { data })
+  constructor(_config: Partial<iFooterConfig>) {
+    const defaultConfig: Required<iFooterConfig> = {
+      themeId: "default",
+      useContact: true,
+      useCopyright: true,
+      selectors: {
+        "@footer": { tagName: "footer", className: "footer" },
+        "@footer>row": { tagName: "div", className: "row" },
+        "@footer>row>column": { tagName: "div", className: "column" },
+        "@footer>row>column>header": { tagName: "div", className: "header" },
+        "@footer>row>column>desc": { tagName: "div", className: "desc" },
+        "@footer>row>column>list": { tagName: "ul", className: "unstyled-list" },
+        "@footer>row>column>list>item": { tagName: "li", className: "item" },
+        "@footer>copyright": { tagName: "div", className: "row" }
+      },
+      emit: () => { }
+    };
+
+    this.config = { ...defaultConfig, ..._config, ...defaultConfig.selectors, ..._config.selectors }
+
+  }
+
+  static create(data: iBasicNode, _config: Partial<iFooterConfig> = {}): HTMLElement {
+    // console.log("FooterBuilder", { data })
     const content = data.content as iBasicNode;
 
     const footer = document.createElement('footer');
@@ -20,6 +58,7 @@ export class ContactBuilder {
     infoCol.className = 'column';
 
     const h2 = document.createElement('h2');
+    h2.className = "header"
     h2.textContent = content.title || '';
     infoCol.appendChild(h2);
 
@@ -43,6 +82,7 @@ export class ContactBuilder {
     if (content.actions && Array.isArray(content.actions)) {
       content.actions.forEach((item: iActionProperty) => {
         const li = document.createElement('li');
+        li.className = "item";
         const a = document.createElement('a');
 
         if (item.id) a.id = item.id as string;

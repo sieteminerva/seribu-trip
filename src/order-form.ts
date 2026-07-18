@@ -1,4 +1,4 @@
-import { FormBuilder } from "./lib/LandingPageBuilder/Components/Form";
+import { FormBuilder } from "./lib/LandingPageBuilder/Components/Form/Form";
 
 const orderFormSchema = [
   {

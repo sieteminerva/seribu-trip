@@ -1,7 +1,18 @@
-import type { iBasicNode } from "../interface";
+import type { iBasicNode, iBuilderConfig } from "../../interface";
 import "./Carousel.css";
 
-export interface iCarouselConfig {
+export type CarouselElementType =
+  | "@carousel"
+  | "@carousel>control"
+  | "@carousel>navigations"
+  | "@carousel>navigations>button"
+  | "@carousel>track"
+  | "@carousel>track>slide"
+  | "@carousel>track>slide>slide-inner"
+  | "@carousel>track>slide>slide-inner>img-fluid"
+  | "@carousel>track>slide>slide-inner>caption"
+
+export interface iCarouselConfig extends iBuilderConfig<CarouselElementType> {
   container?: null | string | HTMLElement;
   showControl?: boolean | "auto";
   showNavigation?: boolean | "auto";
@@ -78,7 +89,7 @@ export class CarouselBuilder {
   private autoPlayTimer: number | undefined;
 
   private rConfig!: iResolvedConfig;
-  private config: iCarouselConfig;
+  public _config!: iCarouselConfig;
 
   // Element References
   private container!: HTMLElement;
@@ -89,7 +100,17 @@ export class CarouselBuilder {
 
 
   constructor(config: Partial<iCarouselConfig> = {}) {
+    this.config = config;
+  }
+
+
+  public get config(): any {
+    return this._config;
+  }
+
+  public set config(newConfig: any) {
     const defaultConfig: Required<iCarouselConfig> = {
+      themeId: "default",
       container: null,
       showNavigation: true,
       showControl: "auto",
@@ -100,15 +121,38 @@ export class CarouselBuilder {
       loop: true,
       pauseOnHover: true,
       slideHeight: "",
-      slideWidth: ""
+      slideWidth: "",
+      selectors: {
+        "@carousel": { tagName: "div", className: "carousel" },
+        "@carousel>control": { tagName: "button" },
+        "@carousel>navigations": { tagName: "div" },
+        "@carousel>navigations>button": { tagName: "button" },
+        "@carousel>track": { tagName: "div", className: "track", isArray: true },
+        "@carousel>track>slide": { tagName: "div", className: "slide" },
+        "@carousel>track>slide>slide-inner": { tagName: "div", className: "slide-inner" },
+        "@carousel>track>slide>slide-inner>caption": { tagName: "div", className: "caption" },
+        "@carousel>track>slide>slide-inner>img-fluid": { tagName: "img", className: "img-fluid" }
+      },
+      emit: () => { }
     };
-    this.config = { ...defaultConfig, ...config };
+    this._config = {
+      ...defaultConfig,
+      ...newConfig
+    };
+
+    // 💡 LIVE RE-RETRIGGER SIKLUS: 
+    // Jika komponen lama Anda punya fungsi internal untuk memperbarui kecepatan geser (e.g. this.updateSliderSpeed()), 
+    // Anda bisa memicunya langsung dari dalam setter ini secara live reaktif!
+    if (typeof (this as any).updateSliderSpeed === "function") {
+      (this as any).updateSliderSpeed();
+    }
   }
+
 
   /**
    * 👑 CORE ENTRY POINT: Pintu masuk tunggal perakitan carousel
    */
-  public create(data: iBasicNode): HTMLElement {
+  public create(data: iBasicNode, config?: iCarouselConfig): HTMLElement {
     // console.log("[Carousel Input Check] Object received:", data);
 
     // ====================================================
@@ -121,6 +165,14 @@ export class CarouselBuilder {
     this.slides = [];
     this.dots = [];
     this.buttons = [];
+
+    if (data.config) {
+      this.config = data.config;
+      console.log("carousel config: Updated from data params")
+    } else if (config) {
+      this.config = config;
+      console.log("carousel config: Updated from config params")
+    }
 
     // ====================================================
     if (Object.keys(secureAttributes).length > 0) {
@@ -143,6 +195,8 @@ export class CarouselBuilder {
     if (Object.keys(secureAttributes).length === 0 && carouselElement instanceof HTMLElement) {
       this._extractConfigFromDOM(carouselElement);
     }
+
+
 
     // 6. MODULAR ROUTER TERMINAL: Jalankan jalur penataan spesifik tanpa melompat layout
     if (this.rConfig.vertical) {
@@ -451,7 +505,7 @@ export class CarouselBuilder {
 
   private _attachNavigation(carousel: HTMLElement, navigableSlides: HTMLElement[]): void {
     const navContainer = document.createElement("div");
-    navContainer.className = `navigation ${this.rConfig.vertical ? "vertical-dots" : "horizontal-dots"}`;
+    navContainer.className = `navigations ${this.rConfig.vertical ? "vertical-dots" : "horizontal-dots"}`;
     navigableSlides.forEach((_, index) => {
       const dot = document.createElement("button");
       dot.className = "dot";

@@ -122,17 +122,17 @@ export class NodeTransformer {
   public static toFormNode(nodes: iBasicNode[], rules: iInjectionRule[]): any {
     const formGroupsMap = new Map<string, any[]>();
 
-    // Jalankan fungsi rekursif hibrida terpadu
+    // Jalankan fungsi rekursif hibrida terpaduss
     this.deepExtractAndBuildForm(nodes, "generic", rules, formGroupsMap);
 
-    // Bungkus seluruh field yang terkumpul ke dalam susunan Fieldset Form Builder
+    // Bungkus seluruh field yang terkumpul ke dalam susunan Fieldset Form Builderssss
     const finalizedFormSchema: any[] = [];
     formGroupsMap.forEach((fields, categoryName) => {
 
       finalizedFormSchema.push({
 
-        legend: `Panel Manajemen Seksi: ${categoryName.toUpperCase()}`,
-        className: `ui segment cms-group-${categoryName}`,
+        legend: `Panel: ${categoryName.toUpperCase()}`,
+        className: `segment group-${categoryName}`,
         group: fields
 
       });

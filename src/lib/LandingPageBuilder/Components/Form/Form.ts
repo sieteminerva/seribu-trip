@@ -217,7 +217,7 @@ export class FormBuilder {
    * Logika Listener asinkronus (FileUploader, Event submit, CustomEvent) tetap aman terisolasi di sini
    */
   private attachFormListener(form: HTMLFormElement): void {
-    console.log("Form Listeners Attached")
+    // console.log("Form Listeners Attached")
 
     if (typeof FileUploader !== "undefined" && typeof FileUploader.initAll === "function") {
       FileUploader.initAll(form);

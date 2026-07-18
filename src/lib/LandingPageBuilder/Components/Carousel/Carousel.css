@@ -178,26 +178,26 @@
 /* ==========================================================================
    DOT NAVIGATION
    ========================================================================== */
-.carousel .navigation {
+.carousel .navigations {
   position: absolute;
   z-index: 10;
   display: flex;
 }
-.carousel .navigation.horizontal-dots {
+.carousel .navigations.horizontal-dots {
   bottom: 1rem;
   left: 50%;
   transform: translateX(-50%);
   flex-direction: row;
   gap: 0.5rem;
 }
-.carousel .navigation.vertical-dots {
+.carousel .navigations.vertical-dots {
   right: 1rem;
   top: 50%;
   transform: translateY(-50%);
   flex-direction: column;
   gap: 0.5rem;
 }
-.carousel .navigation .dot {
+.carousel .navigations .dot {
   width: 12px;
   height: 12px;
   border-radius: 50%;
@@ -208,7 +208,7 @@
     background 0.3s ease,
     transform 0.3s ease;
 }
-.carousel .navigation .dot.active {
+.carousel .navigations .dot.active {
   background: #ffffff;
   transform: scale(1.2);
 }
@@ -217,7 +217,7 @@
    AUTO-CONTROLS (Hover to show)
    ========================================================================== */
 .carousel.auto-controls .control,
-.carousel.auto-controls .navigation {
+.carousel.auto-controls .navigations {
   opacity: 0;
   visibility: hidden;
   transition:
@@ -228,7 +228,7 @@
 }
 
 .carousel.auto-controls.hovering .control,
-.carousel.auto-controls.hovering .navigation {
+.carousel.auto-controls.hovering .navigations {
   opacity: 1;
   visibility: visible;
 }

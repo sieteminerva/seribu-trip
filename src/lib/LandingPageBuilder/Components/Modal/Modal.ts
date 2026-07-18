@@ -1,6 +1,10 @@
+import type { iBuilderConfig } from "../../interface";
 import "./Modal.css";
 
-export interface iModalConfig {
+export type ModalElementType =
+  | "@modal";
+
+export interface iModalConfig extends iBuilderConfig<ModalElementType> {
   id: string;                  // Kunci pelacakan instansiasi tunggal di DOM agar anti-kembung
   title?: string;              // Judul modal bawaan halaman preset default
   destroyOnClose: boolean;     // True = hancur total saat tutup, False = sembunyikan saja di DOM
@@ -16,11 +20,16 @@ export class ModalBuilder {
 
   constructor(config: Partial<iModalConfig> = {}) {
     const defaultConfig: Required<iModalConfig> = {
+      themeId: "default",
       id: "modal-",
       className: "",
       title: "Notification",
       modalClass: "",
       destroyOnClose: false,
+      selectors: {
+        "@modal": {}
+      },
+      emit: () => { },
       onClose: () => { },
       onOpen: () => { }
     };

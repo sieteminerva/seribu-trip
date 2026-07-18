@@ -117,12 +117,12 @@
   content: "✕";
 }
 
-.theme-horizontal .nav.left .items {
+.theme-horizontal .nav.left .navigations {
   display: block;
 }
 
 /* Link Item Navigasi Seksi Dinamis */
-.theme-horizontal .nav.left .items a {
+.theme-horizontal .nav.left .navigations a {
   display: block;
   color: #333333;
   text-decoration: none;
@@ -154,11 +154,11 @@
 }
 
 /* Munculkan teks secara halus hanya saat menu sidebar di-expand (240px) */
-.theme-horizontal .nav.expanded .items a {
+.theme-horizontal .nav.expanded .navigations a {
   opacity: 1;
 }
 
-.theme-horizontal .nav.left .items a:hover {
+.theme-horizontal .nav.left .navigations a:hover {
   background: #f0eafe;
   color: #7b2cbf;
   padding-left: 16px; /* Efek dorong ke kanan saat dihover */

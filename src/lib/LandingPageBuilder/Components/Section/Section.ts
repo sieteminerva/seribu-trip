@@ -1,4 +1,4 @@
-import type { iActionProperty, iBasicNode } from "../interface";
+import type { iActionProperty, iBasicNode } from "../../interface";
 
 export class SectionBuilder {
 

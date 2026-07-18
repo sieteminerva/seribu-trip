@@ -1,5 +1,16 @@
-import type { iActionProperty, iBasicNode } from "../interface";
+import type { iActionProperty, iBasicNode } from "../../interface";
 import "./Masonry.css";
+
+export type MasonryElementType =
+  | "@masonry"
+  | "@masonry>filter"
+  | "@masonry>filter>item"
+  | "@masonry>filter>slider"
+  | "@masonry>item"
+  | "@masonry>item>title"
+  | "@masonry>item>desc"
+  | "@masonry>actions"
+  | "@masonry>modal"
 
 export interface iMasonrySelectors {
   // Menu Filter Kategori

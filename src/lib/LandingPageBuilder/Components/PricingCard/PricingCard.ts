@@ -1,13 +1,64 @@
-import type { iBasicNode } from "../interface";
+import type { iBasicNode, iBuilderConfig } from "../../interface";
 import "./PricingCard.css";
 
+export type PricingCardElementType =
+  | "@row"
+  | "@column"
+  | "@card"
+  | "@card>header"
+  | "@card>header>eyebrow"
+  | "@card>divider"
+  | "@card>body"
+  | "@card>body>features"
+  | "@card>body>features>item"
+  | "@card>actions"
+  | "@card>actions>button"
+
+interface iPricingCardConfig extends iBuilderConfig<PricingCardElementType> {
+  // selectors: Record<PricingCardElementType, iActionProperty>;
+}
+
 export class PricingCardBuilder {
-  static create(data: iBasicNode[]): HTMLElement {
-    // console.log("PricingCard", { data })
+
+  private _config!: Required<iPricingCardConfig>
+
+  constructor(_config: Partial<iPricingCardConfig>) {
+
+  }
+
+  get config() {
+    return this._config;
+  }
+
+  set config(_config: Partial<iPricingCardConfig>) {
+    const defaultConfig: Required<iPricingCardConfig> = {
+      themeId: "default",
+      emit: () => { },
+      selectors: {
+        "@row": { tagName: "div", className: "row" },
+        "@column": { tagName: "div", className: "column" },
+        "@card": { tagName: "div", className: "card" },
+        "@card>header": { tagName: "div", className: "header" },
+        "@card>header>eyebrow": { tagName: "div", className: "eyebrow" },
+        "@card>divider": { tagName: "div", className: "devider" },
+        "@card>body": { tagName: "div", className: "body" },
+        "@card>body>features": { tagName: "div", className: "row", isArray: true },
+        "@card>body>features>item": { tagName: "div", className: "item" },
+        "@card>actions": { tagName: "div", className: "actions" },
+        "@card>actions>button": { tagName: "button", className: "button" }
+      },
+    };
+
+    this._config = { ...defaultConfig, ..._config, ...defaultConfig.selectors, ..._config.selectors };
+
+  }
+
+  static create(data: iBasicNode[], _config?: Partial<iPricingCardConfig>): HTMLElement {
+
     const section = document.createElement("div");
     section.className = "row";
 
-    console.log("PricingCardBuilder", { data })
+    // console.log("PricingCardBuilder", { data })
 
     // Loop render structural items array
     data.forEach((item: any) => {
@@ -45,6 +96,7 @@ export class PricingCardBuilder {
 
       item.body.forEach((feature: any) => {
         const li = document.createElement("li");
+        li.className = "item"
         li.textContent = feature.name;
         if (feature.className) {
           li.classList.add(...feature.className.split(" "));
@@ -57,8 +109,8 @@ export class PricingCardBuilder {
 
       // 4. Action Button Footer Handler
       if (item.action) {
-        const footerDiv = document.createElement("div");
-        footerDiv.className = "footer";
+        const actionsDiv = document.createElement("div");
+        actionsDiv.className = "actions";
 
         const btn = document.createElement("button");
         btn.type = "button";
@@ -78,8 +130,8 @@ export class PricingCardBuilder {
           btn.addEventListener("click", item.action.onClick);
         }
 
-        footerDiv.append(btn);
-        card.append(footerDiv);
+        actionsDiv.append(btn);
+        card.append(actionsDiv);
       }
 
       column.append(card);

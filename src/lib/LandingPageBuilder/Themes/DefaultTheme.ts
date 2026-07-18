@@ -10,9 +10,10 @@ export class DefaultTheme implements iThemeModule {
    * KATEGORI 2: STRUCTURAL OVERRIDE (Pre-Render)
    * Menyiramkan nama kelas tema ke level objek teratas tanpa merusak HTML dengan style inline kotor
    */
-  public beforePageRender(pages: iBasicNode[], menu: iBasicNode | null, footer: iBasicNode | null, meta?: any) {
-    if (meta) {
-      console.log("Default Theme meta", meta)
+  public beforePageRender(pages: iBasicNode[], menu: iBasicNode | null, footer: iBasicNode | null, context?: any) {
+
+    if (context && typeof context?.getMeta === "function") {
+      // console.log("Default Theme meta", { meta: context.getMeta() });
     }
     // Suntikkan kelas .theme-cyberpunk ke seluruh blok halaman utama
     pages.forEach((block: any) => {

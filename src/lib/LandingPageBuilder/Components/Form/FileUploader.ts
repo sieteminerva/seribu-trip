@@ -1,4 +1,4 @@
-import { truncateText } from "../../helper";
+import { truncateText } from "../../../helper";
 import './FileUploader.css';
 
 interface FileUploaderConfigMessages {

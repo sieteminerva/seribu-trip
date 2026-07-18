@@ -1,4 +1,4 @@
-import type { iBasicNode, iPageMetaReport, iThemeModule } from "../interface";
+import type { iBasicNode, iThemeModule } from "../interface";
 import "./HorizontalTheme.css";
 
 
@@ -93,8 +93,8 @@ export class HorizontalTheme implements iThemeModule {
    * KATEGORI 2: STRUCTURAL OVERRIDE (Pre-Render)
    * Tanam properti .name atau .id visual sebagai data-attributes HTML permanen
    */
-  public beforePageRender(pages: iBasicNode[], menu: iBasicNode | null, footer: iBasicNode | null, meta?: iPageMetaReport) {
-    console.log("HorizontalTheme:beforePageRender:", { meta });
+  public beforePageRender(pages: iBasicNode[], menu: iBasicNode | null, footer: iBasicNode | null, context?: any) {
+    console.log("HorizontalTheme:beforePageRender:", { meta: context.getMeta() });
     pages.forEach((block: any, index: number) => {
       const existingClass = block.className || "section row";
       let panelTypeClass = "panel-standard";
@@ -102,24 +102,31 @@ export class HorizontalTheme implements iThemeModule {
       if (block.id === "hero-section" || index === 0 || block.name === "Hero") {
         panelTypeClass = "panel-hero";
 
-        if (meta?.hasComponent.carousel) {
-          const carouselAttrs = {
-            "data-vertical": true,
-            "data-animation": "slide-up",    // Pemicu gerak Vertical Slide Up!
-            "data-slides-per-view": 3,       // Menampilkan 2 gambar berjejer vertikal sekaligus!
-            "data-autoplay": 3500,           // Kecepatan autoplay otomatis 3.5 detik
-            "data-loop": true
-          };
-          if (Array.isArray(block.content)) {
-            block.content.forEach((node: iBasicNode) => {
-              if (node.builder && node.builder === "carousel") {
-                node.attrs = carouselAttrs;
-                // node.isRoot = true;
-              }
-            })
-          }
+        if (context && typeof context?.getMeta === "function" ? context.getMeta().hasComponent.carousel : false) {
+          // const carouselAttrs = {
+          //   "data-vertical": true,
+          //   "data-animation": "slide-up",    // Pemicu gerak Vertical Slide Up!
+          //   "data-slides-per-view": 3,       // Menampilkan 2 gambar berjejer vertikal sekaligus!
+          //   "data-autoplay": 3500,           // Kecepatan autoplay otomatis 3.5 detik
+          //   "data-loop": true
+          // };
+          // if (Array.isArray(block.content)) {
+          //   block.content.forEach((node: iBasicNode) => {
+          //     if (node.builder && node.builder === "carousel") {
+          //       node.attrs = carouselAttrs;
+          //       // node.isRoot = true;
+          //     }
+          //   })
+          // }
+          context.setConfig("carousel", {
+            vertical: true,
+            animation: "slide-up",
+            slidesPerView: 3,
+            autoplay: 3000,
+            loop: true
+          })
         }
-        console.log("Horizontal Theme", { block })
+        // console.log("Horizontal Theme", { block })
       }
 
       if (block.builder === "form" || (block.content && typeof block.content === "object" && !Array.isArray(block.content))) {
