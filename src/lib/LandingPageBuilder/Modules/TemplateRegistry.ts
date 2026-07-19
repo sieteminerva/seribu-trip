@@ -1,5 +1,5 @@
-export type TemplateHandler = (
-  typeKey: string,
+export type TemplateHandler<T extends string = string> = (
+  typeKey: T,
   element: HTMLElement,
   payload: any,
   selector: any
@@ -7,12 +7,12 @@ export type TemplateHandler = (
 
 export class TemplateRegistry {
   // 💡 USULAN 1 AGENT: Gunakan tipe data kontrak yang kaku agar kebal dari sabotase memori
-  private static _templates = new Map<string, TemplateHandler>();
+  private static _templates = new Map<string, TemplateHandler<any>>();
 
   /**
    * Mendaftarkan fungsi template dari luar (Theme / Plugin API)
    */
-  public static register(id: string, handler: TemplateHandler): void {
+  public static register(id: string, handler: TemplateHandler<any>): void {
     this._templates.set(id, handler);
   }
 
@@ -28,7 +28,7 @@ export class TemplateRegistry {
    * 🧙‍♂️ THE DYNAMIC CASCADE RESOLVER 
    * Menjaga Inversion of Control: Builder tidak peduli siapa yang merender!
    */
-  public static resolve(themeId: string, selectorKey: string, defaultHandler: TemplateHandler): TemplateHandler {
+  public static resolve(themeId: string, selectorKey: string, defaultHandler: TemplateHandler<any>): TemplateHandler<any> {
     const primaryKey = `${themeId}${selectorKey}`;
 
     if (this._templates.has(primaryKey)) {

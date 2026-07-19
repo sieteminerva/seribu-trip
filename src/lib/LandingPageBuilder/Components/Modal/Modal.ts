@@ -56,7 +56,6 @@ export class ModalBuilder {
       return wrapper.firstElementChild instanceof HTMLElement ? wrapper.firstElementChild : wrapper;
     }
 
-    // 🧙‍♂️ SOLUSI AGUNG JEMBATAN INDEPENDEN ANDA:
     // Jika user menyuapkan fungsi kustom (callback), eksekusi fungsinya 
     // dan biarkan fungsi luar tersebut yang mengembalikan HTMLElement matang!
     if (typeof content === "function") {

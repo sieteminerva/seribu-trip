@@ -1,8 +1,23 @@
+import type { iBuilderConfig, iElementProperty } from "../../interface";
 import "./Tab.css";
-export interface iTabConfig {
+
+export type TabElementType =
+  | "@tab"
+  | "@tab>menu"
+  | "@tab>menu>item"
+  | "@tab>menu>item>label"
+  | "@tab>menu>item>title"
+  | "@tab>body"
+  | "@tab>panel"
+  | "@tab>panel>content"
+  | "@tab>panel>content>eyebrow"
+  | "@tab>panel>content>title"
+  | "@tab>panel>content>desc"
+  | "@tab>footer";
+
+export interface iTabConfig extends iBuilderConfig<TabElementType> {
   container?: string | HTMLElement | null;
   menuPosition: "top" | "left" | "bottom" | "right";
-  selectors: iTabSelectors;
   lazyload: boolean;
   minHeight: string;
 }
@@ -58,21 +73,39 @@ export class TabBuilder {
       tabFooter: "tab-footer"
     };
 
+    const defaultTabSelectors: Required<Record<TabElementType, iElementProperty>> = {
+      "@tab": { tagName: "div", className: "tab" },
+      "@tab>menu": { tagName: "div", className: "menu" },
+      "@tab>menu>item": { tagName: "button", className: "button" },
+      "@tab>menu>item>label": { tagName: "span", className: "label" },
+      "@tab>menu>item>title": { tagName: "span", className: "title" },
+      "@tab>body": { tagName: "div", className: "" },
+      "@tab>panel": { tagName: "div", className: "" },
+      "@tab>panel>content": { tagName: "div", className: "" },
+      "@tab>panel>content>eyebrow": { tagName: "div", className: "" },
+      "@tab>panel>content>title": { tagName: "div", className: "" },
+      "@tab>panel>content>desc": { tagName: "div", className: "" },
+      "@tab>footer": { tagName: "div", className: "footer" }
+
+    }
+
     const defaultConfig: Required<iTabConfig> = {
+      themeId: "default",
       container: null,
       menuPosition: "top",
-      selectors: defaultSelectors,
       lazyload: true,
-      minHeight: "400px"
+      minHeight: "400px",
+      selectors: defaultTabSelectors,
+      emit: () => { }
     };
 
     this.config = {
       ...defaultConfig,
       ...config,
-      selectors: { ...defaultSelectors, ...config?.selectors }
+      selectors: { ...config?.selectors, ...defaultConfig.selectors }
     };
 
-    this.selector = this.config.selectors as Required<iTabSelectors>;
+    this.selector = defaultSelectors;
   }
 
   // SETTER PUSAT: Mengamankan data dari manipulasi pihak ketiga

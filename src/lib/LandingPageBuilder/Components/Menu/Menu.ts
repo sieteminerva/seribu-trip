@@ -1,7 +1,7 @@
 
 import type { iActionProperty, iBasicNode, iBuilderConfig } from "../../interface";
-import { Builder } from "../Base";
-import { TemplateRegistry, type TemplateHandler } from "../../Modules/TemplateRegistry";
+import { BuilderRenderer, type iBuilder } from "../../Modules/BuilderRenderer";
+import { type TemplateHandler } from "../../Modules/TemplateRegistry";
 import "./Menu.css";
 
 export type MenuElementType =
@@ -16,7 +16,7 @@ export interface iMenuConfig extends iBuilderConfig<MenuElementType> {
   /** 
    * TOTAL EXTRACTED SELECTORS (Semua elemen diekstrak utuh ke sini!)
    */
-  selectors: Record<string, iActionProperty>;
+  selectors: Record<MenuElementType, iActionProperty>;
 
   /** Default route */
   defaultRoute?: string;
@@ -33,25 +33,26 @@ export class MenuBuilderLegacy {
   readonly name: string = "menu";
   readonly stylesheet: string = "";
 
-  readonly config: Required<iMenuConfig>;
+  public config: Required<iMenuConfig>;
   protected isMenuOpened: boolean = false;
 
   constructor(config: Partial<iMenuConfig> = {}) {
     // DEFAULT SELECTORS PRESET
-    const defaultSelectors: Record<string, iActionProperty> = {
+    const defaultSelectors: Record<MenuElementType, iActionProperty> = {
       "@menu": { tagName: "nav", className: "nav" },
       "@menu>brand": { tagName: "div", className: "brand", src: "" },
       "@menu>hamburger": { tagName: "button", className: "hamburger-btn" },
       "@menu>navigations": { tagName: "ul", className: "navigations" },
+      "@menu>navigations>item": { tagName: "li", className: "item" },
       "@menu>actions": { tagName: "div", className: "actions" }
     };
 
-    const mergedSelectors = { ...defaultSelectors };
+    const mergedSelectors = { ...defaultSelectors } as Record<MenuElementType, iActionProperty>;
 
     for (const key in config.selectors) {
-      mergedSelectors[key] = {
-        ...mergedSelectors[key],
-        ...config.selectors[key]
+      mergedSelectors[key as MenuElementType] = {
+        ...mergedSelectors[key as MenuElementType],
+        ...config.selectors[key as MenuElementType]
       };
     }
 
@@ -310,323 +311,11 @@ export class MenuBuilderLegacy {
 
 }
 
-export class MenuBuilder2 {
-  readonly builderId = "menu";
-  readonly name: string = "menu";
-  readonly stylesheet: string = "";
-  readonly config: Required<iMenuConfig>;
-
-  protected isMenuOpened: boolean = false;
-  protected rawDataNode: any = null;
-
-  protected readonly defaultTemplate: TemplateHandler = this.template.bind(this);
-
-  constructor(config: Partial<iMenuConfig> = {}) {
-    // 💡 DEKLARASI DEKLARATIF TERTIZZ: Tambahkan 'isArray: true' sesuai instruksi cerdas Anda!
-    // Ini menandakan bahwa elemen setelah tanda '>' adalah cetakan loop dinamis.
-    const defaultSelectors: Record<MenuElementType, iActionProperty> = {
-      "@menu": { tagName: "nav", className: "nav" },
-      "@menu>brand": { tagName: "div", className: "brand", src: "" },
-      "@menu>hamburger": { tagName: "button", className: "hamburger-btn", attrs: { "aria-label": "Toggle menu" } },
-      "@menu>navigations": { tagName: "ul", className: "navigations", isArray: true }, // 💡 Penanda Loop Dinamis!
-      "@menu>navigations>item": { tagName: "li", className: "item" }, // Otomatis dilewati Phase 1 karena induknya isArray!
-      "@menu>actions": { tagName: "div", className: "actions" }
-    };
-
-    const mergedSelectors = { ...defaultSelectors };
-    if (config.selectors) {
-      for (const key in config.selectors) {
-        if (Object.prototype.hasOwnProperty.call(config.selectors, key)) {
-          mergedSelectors[key as MenuElementType] = { ...mergedSelectors[key as MenuElementType], ...config.selectors[key] };
-        }
-      }
-    }
-
-    this.config = {
-      selectors: mergedSelectors,
-      defaultRoute: "home",
-      routes: ["home", "package", "gallery", "form"],
-      emit: undefined,
-      onNavigate(href?: string) { return href ? true : false; },
-      ...config
-    } as Required<iMenuConfig>;
-  }
-
-  //==================================================
-  // 👑 PIPELINE LIFECYCLE V2 (MURNI METAMORFORSIS ALUR)
-  //==================================================
-
-  public create(content: iBasicNode): HTMLElement {
-    if (!content || typeof content !== "object") return document.createElement(this.config.selectors["@menu"].tagName || "nav");
-    this.rawDataNode = content;
-
-    // 1. Pembuatan Element secara murni Generic
-    const renderedNodes = this.createElements();
-
-    // 2. Perakitan Pohon Hierarki secara murni Generic
-    this.attachHierarchy(renderedNodes);
-
-    // 3. Penyuntikan Konten & Logika Bisnis (Hydration Zone)
-    this.hydrate(renderedNodes, content);
-
-    const rootElement = renderedNodes.get("@menu") as HTMLElement;
-
-    // 4. Pemancaran Event Daur Hidup Terpisah
-    this.emitElements(renderedNodes);
-
-    // 5. Pengikatan Event Interaksi Runtime
-    this.initialize(rootElement);
-
-    return rootElement;
-  }
-
-  // ====================================================
-  // 🧱 GENERIC PLATFORM CORE METHODS (BAKAL CALON UTAMA BUILDERBASE)
-  // ====================================================
-
-  /**
-   * PHASE 1: Membuat HTMLElement statis secara murni generic
-   */
-  protected createElements(): Map<string, HTMLElement> {
-    const renderedNodes = new Map<string, HTMLElement>();
-
-    Object.entries(this.config.selectors).forEach(([key, selector]: [string, any]) => {
-      // 🧙‍♂️ SENSOR INTELLIGENT LINEAGE ISARRAY (RADIKAL DAN AMAN!)
-      // Pecah kuncinya. Cari tahu apakah induknya memiliki properti 'isArray: true'?
-      const pathParts = key.split(">");
-      if (pathParts.length > 1) {
-        const parentKey = pathParts.slice(0, -1).join(">");
-        const parentSelector = this.config.selectors[parentKey];
-        // 🚨 JIKA INDUKNYA ISARRAY, MAKA ELEMEN INI ADALAH TEMPLATE LOOP DINAMIS! 
-        // Stop, dilarang keras dicetak di Phase 1 karena harus menunggu semburan data database Sheets!
-        if (parentSelector && parentSelector.isArray) return;
-      }
-
-      const el = document.createElement(selector.tagName || "div");
-      if (selector.id) el.id = selector.id;
-      if (selector.className) el.className = selector.className;
-      if (selector.innerHTML) el.innerHTML = selector.innerHTML;
-      if (selector.attrs) {
-        Object.entries(selector.attrs).forEach(([aKey, aValue]) => el.setAttribute(aKey, String(aValue)));
-      }
-      renderedNodes.set(key, el);
-    });
-
-    return renderedNodes;
-  }
-
-  /**
-   * PHASE 2: Menyusun silsilah penempelan pohon DOM secara murni generic
-   */
-  protected attachHierarchy(renderedNodes: Map<string, HTMLElement>): void {
-    renderedNodes.forEach((el, key) => {
-      const pathParts = key.split(">");
-      if (pathParts.length > 1) {
-        const parentKey = pathParts.slice(0, -1).join(">");
-        renderedNodes.get(parentKey)?.appendChild(el);
-      }
-    });
-  }
-
-  /**
-   * PHASE 4: Memancarkan event daur hidup secara terpusat setelah seluruh DOM matang
-   */
-  protected emitElements(renderedNodes: Map<string, HTMLElement>): void {
-    renderedNodes.forEach((el, key) => {
-      this.config.emit?.("elementAdded", { builder: this.builderId, type: key as MenuElementType, element: el, data: this.rawDataNode });
-    });
-  }
-
-  // ====================================================
-  // 🧙‍♂️ PHASE 3: THE HYDRATE ORCHESTRATOR (MURNI HANYA PENGATUR DATA)
-  // Menghancurkan total semua if-else pengecekan string kaku! 
-  // Murni hanya memetakan payload dan mengalirkan proses ke rahim .template()!
-  // ====================================================
-  protected hydrate(renderedNodes: Map<string, HTMLElement>, content: any): void {
-    const payloadMap = this.resolvePayload(content);
-
-    // Tarik nilai identitas tema live dari level dataset dokumen HTML asli peramban
-    renderedNodes.forEach((el, key) => {
-      const selector = this.config.selectors[key];
-      const payloadData = payloadMap[key];
-
-      if (selector && selector.isArray) {
-        const childTemplateKey = `${key}>item`;
-        const itemTemplateSelector = this.config.selectors[childTemplateKey];
-        const standardLinks = (payloadData as iActionProperty[]).filter(link => link.className !== "button" && !link.href?.includes("tel:"));
-
-        standardLinks.forEach((linkItemData) => {
-          const childLi = document.createElement(itemTemplateSelector.tagName || "li");
-          if (itemTemplateSelector.className) childLi.className = itemTemplateSelector.className;
-          if (itemTemplateSelector.attrs) {
-            Object.entries(itemTemplateSelector.attrs).forEach(([k, v]) => childLi.setAttribute(k, String(v)));
-          }
-
-          // 💡 SINKRONISASI CACHED: Panggil this.defaultTemplate secara hemat memori!
-          const activeHandler = TemplateRegistry.resolve(this.config.themeId, childTemplateKey, this.defaultTemplate);
-          activeHandler(childTemplateKey, childLi, linkItemData, itemTemplateSelector);
-
-          el.appendChild(childLi);
-        });
-      }
-      else {
-        // 💡 SINKRONISASI CACHED: Panggil this.defaultTemplate secara hemat memori!
-        const activeHandler = TemplateRegistry.resolve(this.config.themeId, key, this.defaultTemplate);
-        activeHandler(key, el, payloadData, selector);
-      }
-    });
-  }
-
-  protected resolvePayload(content: any): Record<string, any> {
-    const actionsArray: iActionProperty[] = Array.isArray(content.actions) ? content.actions : content.actions ? [content.actions] : [];
-    return {
-      "@menu": content,
-      "@menu>brand": actionsArray || { label: "Brand", href: "#home" },
-      "@menu>hamburger": {},
-      "@menu>navigations": actionsArray,
-      "@menu>navigations>item": {},
-      "@menu>actions": actionsArray
-    };
-  }
-
-  // ====================================================
-  // 🧙‍♂️ THE SOVEREIGN META-TEMPLATE FACTORY (IDE BERLIAN ANDA!)
-  // Wadah satu pintu tempat merakit isi perut HTML secara spesifik (Sementara di-hardcoding)
-  // Menghilangkan 100% polusi perkondisian di dalam metode hydrate()!
-  // ====================================================
-  /**
- * 🏗️ ADAPTASI SAKRAL 2: THE IMMUTABLE DEFAULT STRUCTURAL FACTORY
- * Mengunci logika bisnis default komponen Menu dengan asupan bentuk objek yang 100% selaras!
- */
-  protected template(typeKey: string, el: HTMLElement, payload: any, selector: any): void {
-
-    // 🧪 KASUS A: KONTAINER UTAMA NAVBAR (@menu)
-    if (typeKey === "@menu") {
-      if (payload.id) el.id = payload.id;
-      if (payload.className) el.classList.add(payload.className);
-    }
-
-    // 🧪 KASUS B: LOGO BRAND (@menu>brand)
-    else if (typeKey === "@menu>brand") {
-      const link = document.createElement("a");
-      link.href = payload.href || "#home";
-
-      if (selector.src) {
-        const img = document.createElement("img");
-        img.src = selector.src;
-        img.alt = payload.label || "logo";
-        link.appendChild(img);
-      } else {
-        link.textContent = payload.label || "Brand";
-      }
-
-      this.bindNavigation(link, link.href);
-      el.appendChild(link);
-    }
-
-    // 🧪 KASUS C: TOMBOL HAMBURGER (@menu>hamburger)
-    else if (typeKey === "@menu>hamburger") {
-      if (selector.tagName?.toLowerCase() === "button") (el as HTMLButtonElement).type = "button";
-      if (!el.innerHTML) {
-        el.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>';
-      }
-    }
-
-    // 🧪 KASUS D: BARIS BUTIR ITEM NAVIGASI LOOPING (@menu>navigations>item)
-    // 💡 FIX SAKRAL: Sekarang payload dijamin 100% bertipe objek item tunggal hasil semburan loop dari hydrate()!
-    else if (typeKey === "@menu>navigations>item") {
-      const a = document.createElement("a");
-      if (payload.id) a.id = payload.id;
-      if (payload.className) a.className = payload.className;
-
-      a.href = payload.href || "#";
-      a.textContent = payload.label || "";
-
-      this.bindNavigation(a, a.href);
-      el.appendChild(a); // Tempelkan tag <a> ke dalam kulit <li> hantaran parameter el
-    }
-
-    // 🧪 KASUS E: TOMBOL AKSEN HUBUNGI KANAN (@menu>actions)
-    else if (typeKey === "@menu>actions") {
-      const actionsList = Array.isArray(payload) ? payload : [];
-      // Saring secara akurat untuk mencari tombol CTA di dalam array hantaran resolvePayload
-      const ctaPayload = actionsList.find(link => link.className === "button" || link.href?.includes("tel:"));
-
-      if (ctaPayload) {
-        const btn = document.createElement("a");
-        btn.className = ctaPayload.className || "button small";
-        btn.href = ctaPayload.href || "#form";
-        btn.textContent = ctaPayload.label || "Hubungi";
-
-        if (ctaPayload.id) btn.id = ctaPayload.id;
-
-        this.bindNavigation(btn, btn.href);
-        el.appendChild(btn);
-      }
-    }
-  }
-
-  //==================================================
-  // 🪐 REQUIRED PUBLIC APIS (TIDAK BERUBAH)
-  //==================================================
-
-  public initialize(nav: HTMLElement): void {
-    const hamburgerSel = this.config.selectors["@menu>hamburger"];
-    const itemsSel = this.config.selectors["@menu>navigations"];
-
-    const hamburgerBtn = nav.querySelector(`.${hamburgerSel.className!.split(" ")[0]}`) as HTMLElement;
-    const itemsList = nav.querySelector(`.${itemsSel.className!.split(" ")[0]}`) as HTMLElement;
-
-    if (hamburgerBtn && itemsList) {
-      hamburgerBtn.addEventListener("click", () => {
-        this.isMenuOpened = !this.isMenuOpened;
-        let isDefaultPrevented = false;
-
-        this.config.emit?.("builder:menu-toggle" as any, {
-          opened: this.isMenuOpened, element: hamburgerBtn, preventDefault: () => { isDefaultPrevented = true; }
-        });
-
-        if (isDefaultPrevented) return;
-        itemsList.classList.toggle("active", this.isMenuOpened);
-        hamburgerBtn.classList.toggle("open", this.isMenuOpened);
-      });
-    }
-  }
-
-
-  public navigate(href?: string): void {
-    if (href) window.location.hash = href.replace(/^#/, "");
-  }
-
-  protected bindNavigation(element: HTMLAnchorElement, href?: string): void {
-    let rawTargetHref = (href || element.getAttribute("href") || this.config.defaultRoute || "home").trim();
-    if (rawTargetHref.includes(window.location.origin) || rawTargetHref.includes(window.location.host)) {
-      if (rawTargetHref.includes("#")) {
-        rawTargetHref = rawTargetHref.split("#").filter(Boolean).filter(part => !part.includes("://") && !part.includes("localhost") && !part.includes(".com")).join("#").trim();
-      }
-    } element.href = rawTargetHref.startsWith("#") ? rawTargetHref : `#${rawTargetHref}`;
-    element.addEventListener("click", (e: MouseEvent) => {
-      e.preventDefault();
-      if (!rawTargetHref.includes("://") && !rawTargetHref.startsWith("//") && !rawTargetHref.startsWith("www.")) {
-        let cleanRoute: string = String(rawTargetHref).replace(/^#/, "").trim();
-        if (cleanRoute.includes(":")) cleanRoute = String(cleanRoute.split(":")[0]).trim();
-        if (cleanRoute.includes("?")) cleanRoute = String(cleanRoute.split("?")[0]).trim();
-        const finalRouteString = cleanRoute || "home";
-        const handled = this.config.onNavigate(finalRouteString);
-        if (handled === true) return; this.navigate(finalRouteString);
-      } else {
-        window.open(rawTargetHref, "_blank");
-      }
-    });
-  }
-}
-
-
-export class MenuBuilder extends Builder {
+export class MenuBuilder implements iBuilder<MenuElementType> {
   readonly builderId = "menu";
   readonly name = "menu";
-  readonly stylesheet = "";
-  readonly config: Required<iMenuConfig>;
+  readonly stylesheet = "./Menu.css";
+  public config!: Required<iMenuConfig>;
 
   // Caching internal bind(this) hemat memori
   protected readonly defaultTemplate: TemplateHandler = this.template.bind(this);
@@ -634,11 +323,8 @@ export class MenuBuilder extends Builder {
   protected isMenuOpened: boolean = false;
   protected rawDataNode: any = null;
 
-
   constructor(config: Partial<iMenuConfig> = {}) {
-    super(); // Wajib mengetuk pintu rahim induk BuilderBase
-
-    const defaultSelectors: Record<MenuElementType, any> = {
+    const defaultSelectors: Record<MenuElementType, iActionProperty> = {
       "@menu": { tagName: "nav", className: "nav" },
       "@menu>brand": { tagName: "div", className: "brand", src: "" },
       "@menu>hamburger": { tagName: "button", className: "hamburger-btn", attrs: { "aria-label": "Toggle menu" } },
@@ -647,35 +333,26 @@ export class MenuBuilder extends Builder {
       "@menu>actions": { tagName: "div", className: "actions" }
     };
 
-    const mergedSelectors = { ...defaultSelectors };
-    if (config.selectors) {
-      for (const key in config.selectors) {
-        if (Object.prototype.hasOwnProperty.call(config.selectors, key)) {
-          mergedSelectors[key as MenuElementType] = { ...mergedSelectors[key as MenuElementType], ...config.selectors[key] };
-        }
-      }
-    }
-
-    this.config = {
-      selectors: mergedSelectors,
+    const defaultConfig: Required<iMenuConfig> = {
+      themeId: "default",
+      selectors: defaultSelectors,
       defaultRoute: "home",
       routes: ["home", "package", "gallery", "form"],
-      emit: undefined,
+      emit: () => { },
       onNavigate(href?: string) { return href ? true : false; },
       ...config
-    } as Required<iMenuConfig>;
+    };
+
+
+    this.config = BuilderRenderer.resolveConfig<iMenuConfig>(defaultConfig, config);
+
   }
 
-  // ====================================================
-  // 🧙‍♂️ OVERRIDE 1: ABSTRAKSI PETA DATA (MURNI KHUSUS UNTUK DATA MENU)
-  // ====================================================
-  // Inside MenuBuilder.ts
+  create(content: iBasicNode, config?: Partial<iBuilderConfig<MenuElementType>> | undefined): HTMLElement {
+    this.config = BuilderRenderer.resolveConfig<iMenuConfig>(this.config, config);
+    return BuilderRenderer.compile(this as any, content);
+  }
 
-  /**
-   * 🏗️ RE-ENGINEERING DATA RESOLVER (PERBAIKAN KUNCI UTAMA ANDA!)
-   * Memotong, mengiris (slice), dan memisahkan data linear Sheets menjadi 3 seksi bersih.
-   * Menjamin level TemplateRegistry dan Tema Kustom murni hanya menerima data yang sudah matang!
-   */
   protected resolvePayload(content: any): Record<string, any> {
     const actionsArray: iActionProperty[] = Array.isArray(content.actions)
       ? content.actions
@@ -703,7 +380,6 @@ export class MenuBuilder extends Builder {
       "@menu>actions": ctaPayload              // 🟢 Sudah berupa Objek CTA Tunggal Bersih (atau null)!
     };
   }
-
 
   // ====================================================
   // 🧙‍♂️ OVERRIDE 2: PERAKIT STRUKTUR CONTENT DEFAULT FALLBACK KOMPONEN MENU
@@ -826,4 +502,5 @@ export class MenuBuilder extends Builder {
       }
     });
   }
+
 }

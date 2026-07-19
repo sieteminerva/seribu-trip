@@ -1,4 +1,6 @@
 import type { iBasicNode, iBuilderConfig } from "../../interface";
+import { BuilderRenderer, type iBuilder } from "../../Modules/BuilderRenderer";
+import type { TemplateHandler } from "../../Modules/TemplateRegistry";
 import "./Accordion.css";
 
 export type AccordionElementType =
@@ -10,9 +12,14 @@ export type AccordionElementType =
 
 export interface iAccordionConfig extends iBuilderConfig<AccordionElementType> { }
 
-export class AccordionBuilder {
+export class AccordionBuilder implements iBuilder<AccordionElementType> {
+  readonly builderId = "accordion";
+  readonly name = "accordion";
+  readonly stylesheet = "./Accordion.css";
 
   public config!: Required<iAccordionConfig>;
+
+  readonly defaultTemplate: TemplateHandler<AccordionElementType> = this.template.bind(this);
 
   constructor(config: Partial<iAccordionConfig> = {}) {
     const defaultConfig: Required<iAccordionConfig> = {
@@ -27,15 +34,12 @@ export class AccordionBuilder {
       emit: () => { }
     }
 
-    this.config = {
-      ...defaultConfig,
-      ...config,
-      ...defaultConfig.selectors,
-      ...config.selectors
-    };
+    this.config = BuilderRenderer.resolveConfig<iAccordionConfig>(defaultConfig, config);
   }
 
   create(data: iBasicNode, _config: Partial<iAccordionConfig> = {}): HTMLElement {
+    this.config = BuilderRenderer.resolveConfig<iAccordionConfig>(this.config, _config);
+
     const selector = this.config.selectors;
     // create Accordion
     const containerSel = selector["@accordion"]
@@ -66,5 +70,45 @@ export class AccordionBuilder {
     })
 
     return accordionContainer;
+  }
+
+  public initialize(root: HTMLElement): void {
+    console.log(`[Section Runtime Active] Section DOM tree with ID "${root.id}" successfully mounted and initialized.`);
+  }
+
+  protected resolvePayload(payload: iBasicNode): Partial<Record<AccordionElementType, any>> {
+    const items = Array.isArray(payload.content) ? payload.content : [payload.content];
+    console.log("Accordion resolvePayload", { items })
+    return {
+      "@accordion": items,
+      "@accordion>details": {},
+      "@accordion>details>summary": {},
+      "@accordion>details>content": {},
+      "@accordion>details>content>desc": {},
+    }
+  }
+
+  protected template(typeKey: AccordionElementType, el: HTMLElement, payload: any, _selector: any): void {
+    const selector = this.config.selectors[typeKey];
+
+    if (typeKey === "@accordion") {
+      console.log("@accordion", { payload })
+    }
+
+    if (typeKey === "@accordion>details") {
+      console.log("@accordion>details", { payload })
+    }
+
+    if (typeKey === "@accordion>details>summary") {
+      console.log("@accordion>details>summary", { payload })
+    }
+
+    if (typeKey === "@accordion>details>content") {
+      console.log("@accordion>details>content", { payload })
+    }
+
+    if (typeKey === "@accordion>details>content>desc") {
+      console.log("@accordion>details>content>desc", { payload })
+    }
   }
 }
