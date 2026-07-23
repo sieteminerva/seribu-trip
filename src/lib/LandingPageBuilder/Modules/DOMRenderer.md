@@ -2,6 +2,10 @@
 
 `DOMRenderer` is the absolute mechanical heart (_core template compilation engine_) of your custom framework. This stateless utility module is architected to ingest high-level declarative schema mappings (`iNodeContent`) driven by semantic string tokens (`#` for IDs, `.` for ClassNames, and `>` for Flat Lineage Traversal) and translate them instantly into live, state-bound browser `HTMLElement` trees.
 
+```txt
+  "JSON Data + CSS Selector as Key = HTML Structure"
+```
+
 ---
 
 ## 🚀 Core Architectural Capabilities

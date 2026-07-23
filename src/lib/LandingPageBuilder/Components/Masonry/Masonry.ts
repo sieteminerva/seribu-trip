@@ -1,61 +1,55 @@
-import type { iActionProperty, iBasicNode } from "../../interface";
+import type { iActionProperty, iBasicNode, iBuilderConfig, iBuilderRegistry } from "../../interface";
+import { Builder } from "../Base";
 import "./Masonry.css";
 
 export type MasonryElementType =
+  | "@container"
+
   | "@masonry"
   | "@masonry>filter"
   | "@masonry>filter>item"
   | "@masonry>filter>slider"
+
   | "@masonry>item"
+  | "@masonry>item>image"
   | "@masonry>item>title"
   | "@masonry>item>desc"
-  | "@masonry>actions"
+  | "@masonry>item>actions"
+
   | "@masonry>modal"
+  | "@masonry>modal>close"
+  | "@masonry>modal>next"
+  | "@masonry>modal>previous"
 
-export interface iMasonrySelectors {
-  // Menu Filter Kategori
-  filterMenu?: string;    // Default: 'filter menu'
-  filterItem?: string;    // Default: 'item'
-  filterActive?: string;  // Default: 'active'
-  filterSlider?: string;  // Default: 'slider'
+  | "@masonry>spinner"
+  | "@masonry>trigger"
+  | "@masonry>sentinel"
 
-  // Grid & Konten
-  grid?: string;          // Default: 'grid'
-  item?: string;          // Default: 'item'
-  itemFadeIn?: string;    // Default: 'fade-in'
-  itemTitle?: string;     // Default: 'title'
-  itemDesc?: string;      // Default: 'desc'
-  itemActions?: string;   // Default: 'actions'
-  actionBtn?: string;     // Default: 'btn'
-
-  // Pagination & Loading
-  spinner?: string;       // Default: 'spinner'
-  sentinel?: string;      // Default: 'sentinel'
-  loadMoreBtn?: string;   // Default: 'more'
-}
-
-export interface iMasonryConfig {
+export interface iMasonryConfig extends iBuilderConfig<MasonryElementType> {
   container?: string | HTMLElement | null; // if defined will be the root container to replace <section>
   column: number; // how many column will be displayed on init
   lazyload: boolean; // lazyload the image / content
   maxDisplayed: number; // if content > maxDisplayed will create `more / next` button, and the loadMore will check the remaining content and load at maxDisplayed limit, and so on
   useLoadButton?: boolean;
   category: string | null;
-  selectors?: Partial<iMasonrySelectors>
+
+  loadFn?: null | ((page: number, category: string | null) => Promise<any[]>); // Default untuk load data baru dari GAS Server
+  onScrollEnd?: null | (() => void);      // Meletup saat user menyentuh lantai terbawah dokumen bodi HTML
+  onLoadTriggered?: null | ((page: number) => void); // Meletup tepat saat hitmundur loading data baru dimulai
 }
 
-export class MasonryBuilder {
-  private config: iMasonryConfig;
-  private selector!: Required<iMasonrySelectors>;
+export class MasonryBuilder extends Builder<MasonryElementType, iMasonryConfig> {
+  readonly builderId: keyof iBuilderRegistry = "masonry";
+  readonly name: keyof iBuilderRegistry = "masonry";
+  readonly stylesheet: string = "./Masonry.css";
+
   #items: (iBasicNode | HTMLElement)[] = [];
   private displayedCount = 0;
   private selectedCategory: string | null = null;
 
-  private rootElement!: HTMLElement;
-  private gridElement!: HTMLElement;
-  private filterMenuElement?: HTMLElement;
-  private triggerElement?: HTMLElement;
-  private spinnerElement?: HTMLElement;
+  private currentPage = 1;      // Penunjuk halaman untuk Apps Script Pagination
+  private isServerFetching = false; // Flag pelindung agar tidak terjadi double-fetch tabrakan
+
   private modal!: {
     show: (index: number) => void;
     updateNavigation: () => void;
@@ -63,38 +57,45 @@ export class MasonryBuilder {
   };
   private observer?: IntersectionObserver;
 
+  constructor(config: Partial<iMasonryConfig> = {}) {
+    super();
 
-
-  constructor(config?: Partial<iMasonryConfig>) {
-
-    const defaultSelectors: Required<iMasonrySelectors> = {
-      filterMenu: 'filter menu',
-      filterItem: 'item',
-      filterActive: 'active',
-      filterSlider: 'slider',
-      grid: 'grid',
-      item: 'item',
-      itemFadeIn: 'fade-in',
-      itemTitle: 'title',
-      itemDesc: 'desc',
-      itemActions: 'actions',
-      actionBtn: 'btn',
-      spinner: 'spinner',
-      sentinel: 'sentinel',
-      loadMoreBtn: 'more'
+    const defaultSelectors = {
+      "@container": { tagName: "section", className: "masonry gallery" },
+      "@masonry": { tagName: "div", className: "grid" },
+      "@masonry>filter": { tagName: "div", className: "filter menu" },
+      "@masonry>filter>item": { tagName: "button", className: "item" },
+      "@masonry>filter>slider": { tagName: "span", className: "slider" },
+      "@masonry>item": { tagName: "div", className: "item fade-in" },
+      "@masonry>item>image": { tagName: "img", className: "img-fluid" },
+      "@masonry>item>title": { tagName: "h3", className: "title" },
+      "@masonry>item>desc": { tagName: "p", className: "desc" },
+      "@masonry>item>actions": { tagName: "div", className: "actions" },
+      "@masonry>modal": { tagName: "div", className: "modal hidden" },
+      "@masonry>modal>close": { tagName: "div", className: "close" },
+      "@masonry>modal>next": { tagName: "div", className: "next" },
+      "@masonry>modal>previous": { tagName: "div", className: "previous" },
+      "@masonry>spinner": { tagName: "div", className: "spinner hidden" },
+      "@masonry>sentinel": { tagName: "div", className: "sentinel" },
+      "@masonry>trigger": { tagName: "button", className: "more" },
     };
 
     const defaultConfig: Required<iMasonryConfig> = {
+      themeId: "default",
       container: null,
       column: 3,
       lazyload: true,
       maxDisplayed: 4,
       useLoadButton: true,
       category: null,
-      selectors: defaultSelectors
+      selectors: defaultSelectors,
+      loadFn: null, // Default untuk load data baru dari GAS Server
+      onScrollEnd: null,    // Meletup saat user menyentuh lantai terbawah dokumen bodi HTML
+      onLoadTriggered: null, // Meletup tepat saat hitmundur loading data baru dimulai
+      emit: null
     };
-    this.config = { ...defaultConfig, ...config, selectors: { ...defaultSelectors, ...config?.selectors } };
-    (this.selector as iMasonrySelectors) = this.config.selectors as iMasonrySelectors;
+
+    this.config = this.resolveConfig(defaultConfig, config);
   }
 
   /**
@@ -141,66 +142,107 @@ export class MasonryBuilder {
     return visibleBatch.map(item => item.image).filter((img): img is string => !!img);
   }
 
-  public create(data: iBasicNode): HTMLElement {
-    this.items = data as iBasicNode[];
-    this.displayedCount = 0;
+  public prepare(data: any, _config?: Partial<iMasonryConfig>): HTMLElement {
 
-    if (this.config.container) {
-      if (typeof this.config.container === 'string') {
-        this.rootElement = document.querySelector(this.config.container) || document.createElement('div');
-      } else {
-        this.rootElement = this.config.container;
-      }
-    } else {
-      this.rootElement = document.createElement('div');
+    let normalizedData = data;
+    if (Array.isArray(data)) {
+      normalizedData = {
+        id: this.config.container instanceof HTMLElement ? this.config.container.id : "masonry-legacy-root",
+        className: "section masonry gallery",
+        content: data // Alirkan array lama ke saku content standar v2
+      };
     }
 
-    this.rootElement.innerHTML = '';
-    this.rootElement.className = 'section masonry gallery';
+    // Pasok data array murni ksatria Anda ke Immutable Setter Tracker
+    this.items = normalizedData.content || [];
+    this.displayedCount = 0;
+    this.currentPage = 1; // Reset nomor halaman awal
 
-    // 2. Ekstrak Kategori Unik di Level create() untuk validasi awal
+    const rootContainer = this.render("@container", normalizedData);
+
     const categoriesSet = new Set<string>();
-
     this.#items.forEach(item => {
-      if (!(item instanceof HTMLElement) && item.category) {
-        categoriesSet.add(item.category.trim());
-      }
+      if (!(item instanceof HTMLElement) && item.category) categoriesSet.add(item.category.trim());
     });
-
     const categories = Array.from(categoriesSet);
 
-    // 3. Tentukan State Kategori Aktif Awal (Gunakan dari config, fallback ke categories[0], atau null jika kosong)
+    this.selectedCategory = categories.length > 0 ? categories[0] : null;
+
     if (categories.length > 0) {
-      this.selectedCategory = categories[0]; // Jadikan indeks pertama sebagai default jika config tidak diisi
-    } else {
-      this.selectedCategory = null; // Kembali ke opsi 'All' jika tidak ada data kategori
+      const filterMenuElement = this._renderFilterMenu(categories, this.selectedCategory as string);
+      rootContainer?.appendChild(filterMenuElement!);
     }
 
-    // 4. Render Menu Filter Kategori jika datanya ada
-    if (categories.length > 0) {
-      this.filterMenuElement = this._renderFilterMenu(categories, this.selectedCategory as string);
-      this.rootElement.appendChild(this.filterMenuElement as HTMLElement);
-    }
-
-    this.gridElement = document.createElement('div');
-    this.gridElement.className = this.selector.grid;
-    this.gridElement.style.setProperty('--init-columns', this.config.column.toString());
-    this.rootElement.appendChild(this.gridElement);
-    // console.log({ allImages: this.allImages })
+    const gridElement = this.render("@masonry", data);
+    rootContainer?.appendChild(gridElement!);
 
     this.modal = this._initModal();
 
+    // Jalankan penyaringan & pemuatan batch pagination pertama kali
+    this._applyFilter(this.selectedCategory as string);
 
-    this._applyFilter(this.selectedCategory as string)
-
-    return this.rootElement;
+    return this.load("@container") as HTMLElement;
   }
 
-  /**
-   * Fungsi Pembersih (Sangat Penting untuk Production)
-   * Memastikan tidak ada sisa event listener yang menyangkut di memori browser
-   */
-  public destroy(): void {
+  protected template(typeKey: MasonryElementType, el: HTMLElement, payload?: any): void {
+    switch (typeKey) {
+      case "@container":
+        if (this.config.container instanceof HTMLElement) {
+          el.id = this.config.container.id || el.id;
+          el.className = `${this.config.container.className} ${el.className}`.trim();
+        } else if (typeof this.config.container === 'string') {
+          const target = document.querySelector(this.config.container);
+          if (target) el.id = target.id;
+        }
+        break;
+
+      case "@masonry":
+        el.style.setProperty("--init-columns", this.config.column.toString());
+        break;
+
+      case "@masonry>filter>item":
+        el.textContent = payload?.label || "";
+        if (payload?.active) el.classList.add("active");
+        (el as any)._categoryToken = payload?.label;
+        break;
+
+      case "@masonry>item>title":
+        el.textContent = payload?.title || "";
+        break;
+
+      case "@masonry>item>desc":
+        el.textContent = payload?.description || "";
+        break;
+
+      case "@masonry>modal>close":
+        el.innerHTML = "&times;";
+        break;
+
+      case "@masonry>modal>next":
+        el.innerHTML = "&#10095;"; // ❯
+        break;
+
+      case "@masonry>modal>previous":
+        el.innerHTML = "&#10094;"; // ❮
+        break;
+
+      case "@masonry>trigger":
+        el.textContent = "Load More";
+        break;
+    }
+  }
+
+  public initialize(): void {
+    const activeBtn = (this.load("@masonry>filter") as HTMLElement)?.querySelector(".item.active") as HTMLButtonElement;
+    if (activeBtn) {
+      // Browser sudah sukses menggambar ukuran piksel, hitung slider koordinat dengan presisi 100%!
+      requestAnimationFrame(() => this._updateSlider(activeBtn, true));
+    }
+    console.log("[Masonry Lifecycle] Advanced photo gallery layout synchronized successfully.");
+  }
+
+  public unmount(): void {
+    // Panggil logika pembersih aseli bawaan Anda tanpa ada yang ketinggalan
     if (this.observer) {
       this.observer.disconnect();
       this.observer = undefined;
@@ -208,39 +250,96 @@ export class MasonryBuilder {
     if (this.modal && typeof this.modal.destroy === 'function') {
       this.modal.destroy();
     }
-    this.triggerElement?.remove();
-    this.spinnerElement?.remove();
-    this.filterMenuElement?.remove();
+
+    this.remove("@masonry>trigger", "@masonry>spinner")
+
+    // Hancurkan saku Map dan likuidasi RAM via destroy base class terpusat!
+    this.destroy();
   }
 
   private _initPaginationTrigger(root: HTMLElement): void {
     if (this.config.useLoadButton) {
-      const button = document.createElement('button');
-      button.className = this.selector.loadMoreBtn;
-      button.textContent = 'Load More';
-      button.onclick = () => this._loadNextBatch();
-      this.triggerElement = button;
 
-      root.insertBefore(button, this.spinnerElement || null);
-      this._loadNextBatch();
+      const button = (this.load("@masonry>trigger") || this.render("@masonry>trigger")) as HTMLButtonElement;
+      button.onclick = () => this._handleNextBatchTrigger();
+      root.append(button);
+      // this._handleNextBatchTrigger();
     } else {
-      const sentinel = document.createElement('div');
-      sentinel.className = this.selector.sentinel;
-      this.triggerElement = sentinel;
-
-      root.insertBefore(sentinel, this.spinnerElement || null);
+      const sentinel = (this.load("@masonry>sentinel") || this.render("@masonry>sentinel")) as HTMLElement;
+      root.insertBefore(sentinel!, this.load("@masonry>spinner") as HTMLElement || null);
 
       this.observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-          if (entry.isIntersecting && this.displayedCount < this.#items.filter(item => { if (item instanceof HTMLElement) return false; return this.selectedCategory === null || item.category === this.selectedCategory; }).length) {
-            this._loadNextBatch();
+          const totalInActiveCat = this.#items.filter(item => {
+            if (item instanceof HTMLElement) return false;
+            return this.selectedCategory === null || item.category === this.selectedCategory;
+          }).length;
+
+          if (entry.isIntersecting && this.displayedCount < totalInActiveCat) {
+            this._handleNextBatchTrigger();
           }
         });
-      }, {
-        rootMargin: '200px' // Diperlebar ke 200px agar load terasa lebih seamless di landing page
-      });
+      }, { rootMargin: '200px' });
 
-      this.observer.observe(sentinel);
+      this.observer.observe(sentinel!);
+    }
+    this._handleNextBatchTrigger();  // <= panggil dulu supaya first load ga kosong
+  }
+
+  private async _handleNextBatchTrigger(): Promise<void> {
+    const filteredPool = this.#items.filter(item => this.selectedCategory === null || (item as any).category === this.selectedCategory);
+
+    // 💡 Skenario A: Jika data lokal masih ada, suntikkan langsung brik fotonya ke layar
+    if (this.displayedCount < filteredPool.length) {
+      this._loadNextBatch();
+      return;
+    }
+
+    // 💡 Skenario B: Jika data lokal sudah habis, tembak server JIT via loadFn andalan Anda!
+    if (typeof this.config.loadFn === "function" && !this.isServerFetching) {
+      this.isServerFetching = true;
+      this.currentPage++;
+
+      // Letupkan callback laporan waktu tunggu loading dimulai
+      if (this.config.onLoadTriggered && typeof this.config.onLoadTriggered === "function") { this.config.onLoadTriggered(this.currentPage); }
+      (this.load("@masonry>spinner") as HTMLElement)?.classList.remove('hidden');
+
+      try {
+        console.log(`🚀 [GAS Data Stream] Querying page ${this.currentPage} for category: ${this.selectedCategory}`);
+        const freshServerItems = await this.config.loadFn(this.currentPage, this.selectedCategory);
+
+        if (freshServerItems && freshServerItems.length > 0) {
+          // ====================================================
+          // 🔒 RAM LEAK PROTECTION SYSTEM (MANAJEMEN NEGATIVE MEMORY TRACKING)
+          // Jika Galeri Anda super raksasa (ribuan foto), kita kuras array element 
+          // angkatan paling lama dari dalam tabel _nodes pusat sebelum memasukkan yang baru!
+          // ====================================================
+          const itemNodesRecord = this.load("@masonry>item", "all");
+          if (itemNodesRecord && (itemNodesRecord as HTMLElement[]).length > 24) {
+            console.log(`🧹 [RAM Shield]: Flushing past batch elements to optimize physical RAM memory.`);
+            // Potong dan hapus 8 elemen fisik pertama dari layar dokumen browser
+            for (let i = 0; i < 8; i++) {
+              const garbageNode = (itemNodesRecord as HTMLElement[]).shift();
+              garbageNode?.remove();
+            }
+          }
+
+          // Gabungkan data baru hantaran server ke dalam saku internal #items ksatria Anda!
+          this.#items = [...this.#items, ...freshServerItems];
+          // Semburkan angkatan baru tersebut langsung ke dinding grid
+          this._loadNextBatch();
+        } else {
+          // Jika server memutahkan array kosong [], tandanya data di database GAS habis total!
+          console.log(`🏁 [GAS Data Stream] Reach end of server rows database table.`);
+          if (this.config.onScrollEnd && typeof this.config.onScrollEnd === "function") this.config.onScrollEnd(); // Letupkan callback penanda lantai terbawah
+          this._killPaginationControls();
+        }
+      } catch (streamError) {
+        console.error(`[GAS Data Stream Error]:`, streamError);
+      } finally {
+        this.isServerFetching = false;
+        (this.load("@masonry>spinner") as HTMLElement)?.classList.add('hidden');
+      }
     }
   }
 
@@ -256,10 +355,11 @@ export class MasonryBuilder {
 
     if (start >= end) return;
 
-    this.spinnerElement?.classList.remove('hidden');
-    const fragment = document.createDocumentFragment();
+    const spinner = this.load("@masonry>spinner") as HTMLElement;
+    spinner?.classList.remove('hidden');
 
-    let imageIndexCounter = this.currentVisibleImages.length;
+    const fragment = document.createDocumentFragment();
+    let imageIndexCounter = ((this.load("@masonry>item", "all") as HTMLElement[]) || []).length;
     let batchIndex = 0;
 
     for (let i = start; i < end; i++) {
@@ -278,68 +378,67 @@ export class MasonryBuilder {
       fragment.appendChild(item);
     }
 
-    this.gridElement.appendChild(fragment);
+    (this.load("@masonry") as HTMLElement).appendChild(fragment);
     this.displayedCount = end;
 
     this.modal.updateNavigation();
 
+    // Jika seluruh data (lokal + server hantaran baru) sudah benar-benar habis, matikan kontroler
+    if (this.displayedCount >= filtered.length && !this.config.loadFn) { this._killPaginationControls(); }
+
     setTimeout(() => {
-      this.spinnerElement?.classList.add('hidden');
+      spinner?.classList.add('hidden');
     }, 200);
 
     if (this.displayedCount >= filtered.length) {
       if (this.observer) this.observer.disconnect();
-      this.triggerElement?.remove();
-      this.spinnerElement?.remove();
+      this.remove("@masonry>spinner")
     }
+  }
+
+  private _killPaginationControls(): void {
+    if (this.observer) this.observer.disconnect();
+    this.remove("@masonry>trigger", "@masonry>spinner");
   }
 
   private _renderFilterMenu(categories: string[], selectedCategory: string) {
 
-    const menu = document.createElement('div');
-    menu.className = this.selector.filterMenu;
+    const menu = this.render("@masonry>filter");
 
     let activeBtnElement: HTMLButtonElement | null = null;
 
-    const allBtn = document.createElement('button');
-    allBtn.className = selectedCategory === null ? `${this.selector.filterItem} ${this.selector.filterActive}` : this.selector.filterItem;
-    allBtn.textContent = 'All';
-    allBtn.onclick = () => this._handleCategoryChange(null, allBtn);
-    menu.appendChild(allBtn);
+    const allBtn = this.render("@masonry>filter>item", { label: "All", active: selectedCategory === null }, true);
+    allBtn!.onclick = () => this._handleCategoryChange(null, allBtn as HTMLButtonElement);
+    menu!.appendChild(allBtn!);
 
     if (selectedCategory === null) {
-      activeBtnElement = allBtn;
+      activeBtnElement = allBtn as HTMLButtonElement;
     }
 
     categories.forEach((catName) => {
-      const btn = document.createElement('button');
       const isSelected = selectedCategory === catName;
-      btn.className = isSelected ? `${this.selector.filterItem} ${this.selector.filterActive}` : this.selector.filterItem;
-      btn.textContent = catName.charAt(0).toUpperCase() + catName.slice(1); // Kapital huruf pertama
-
-      btn.onclick = () => this._handleCategoryChange(catName, btn);
-      menu.appendChild(btn);
+      const btn = this.render("@masonry>filter>item", { label: catName, active: isSelected }, true); // 🟢 Multiple true!
+      btn!.onclick = () => this._handleCategoryChange(catName, btn as HTMLButtonElement);
+      menu?.appendChild(btn!);
 
       if (isSelected) {
-        activeBtnElement = btn;
+        activeBtnElement = btn as HTMLButtonElement;
       }
     });
 
-    const slider = document.createElement('div');
-    slider.className = this.selector.filterSlider;
-    menu.appendChild(slider);
+    const slider = this.render("@masonry>filter>slider");
+    menu?.appendChild(slider!);
 
     if (activeBtnElement) {
       requestAnimationFrame(() => this._updateSlider(activeBtnElement!, true));
     }
 
-    return menu
+    return this.load("@masonry>filter") as HTMLElement
   }
 
   private _updateSlider = (activeBtn: HTMLButtonElement, isInit = false) => {
     // console.log(activeBtn)
-    const sliderClass = this.selector.filterSlider.split(' ')[0];
-    const slider = this.filterMenuElement?.querySelector(`.${sliderClass}`) as HTMLElement;
+    const slider = this.load("@masonry>filter>slider") as HTMLElement;
     if (!slider || !activeBtn) return;
 
     if (activeBtn.offsetWidth === 0 && isInit) {
@@ -380,10 +479,9 @@ export class MasonryBuilder {
   private _handleCategoryChange(category: string | null, activeBtn: HTMLButtonElement): void {
 
     // Update class active pada tombol menu
-    const splitActive = this.selector.filterActive.split(' ')[0];
-    const splitItem = this.selector.filterItem.split(' ')[0];
+    const splitActive = "active";
 
-    this.filterMenuElement?.querySelectorAll(`.${splitItem}`).forEach(btn => {
+    (this.load("@masonry>filter") as HTMLElement)?.querySelectorAll(".item").forEach(btn => {
       btn.classList.remove(splitActive);
     });
     activeBtn.classList.add(splitActive);
@@ -401,29 +499,44 @@ export class MasonryBuilder {
       this.observer.disconnect();
       this.observer = undefined;
     }
-    this.triggerElement?.remove();
-    this.spinnerElement?.remove();
-    this.gridElement.innerHTML = '';
+
+
+    (this.load("@masonry") as HTMLElement).innerHTML = '';
+
+    // Bersihkan buffer antrean memori brik lama dari _nodes pusat agar sinkronisasi index modal tidak kacau!
+    this.remove(
+      "@masonry>item",
+      "@masonry>item>actions",
+      "@masonry>item>image",
+      "@masonry>item>title",
+      "@masonry>item>desc",
+      "@masonry>spinner",
+      "@masonry>trigger",
+    )
+
+    const grid = this.load("@masonry") as HTMLElement;
+    grid.innerHTML = '';
 
     this.displayedCount = 0;
+    this.currentPage = 1;
     this.selectedCategory = category;
 
     // Sinkronisasi ulang navigasi modal
     this.modal.updateNavigation();
 
-    this._createSpinner(this.rootElement);
-    this._initPaginationTrigger(this.rootElement);
+    const container = this.load("@container") as HTMLElement
+    this._createSpinner(container);
+    this._initPaginationTrigger(container);
   }
 
   private _createSpinner(root: HTMLElement): void {
-    this.spinnerElement = document.createElement('div');
-    this.spinnerElement.className = `${this.selector.spinner} hidden`;
-    root.appendChild(this.spinnerElement);
+    const spinner = (this.load("@masonry>spinner") || this.render("@masonry>spinner"));
+    root.appendChild(spinner as HTMLElement);
   }
 
   private _createItem(content: iBasicNode | HTMLElement, modalIndex: number): HTMLElement {
-    const card = document.createElement('div');
-    card.className = `${this.selector.item} ${this.selector.itemFadeIn}`;
+
+    const card = this.render("@masonry>item", content, true);
 
     // SAFE CLASS REMOVAL: Menggunakan setTimeout untuk melepas class animasi tanpa risiko bug macet
     // setTimeout(() => {
@@ -431,23 +544,22 @@ export class MasonryBuilder {
     // }, 400);
 
     // USE `animationend` listener CLASS REMOVAL
-    card.addEventListener('animationend', () => {
-      card.classList.remove(this.selector.itemFadeIn);
+    card?.addEventListener('animationend', () => {
+      card.classList.remove("fade-in");
     }, { once: true });
 
     if (content instanceof HTMLElement) {
-      card.appendChild(content);
-      return card;
+      card?.appendChild(content);
+      return card!;
     }
 
     const item = content;
-    if (item.className) card.classList.add(...item.className.split(' '));
-    if (item.id) card.id = item.id;
+    if (item.className) card?.classList.add(...item.className.split(' '));
+    if (item.id) card!.id = item.id;
 
     if (item.image) {
 
-      const img = document.createElement('img');
-      img.className = 'img-fluid';
+      const img = this.render("@masonry>item>image", item, true) as HTMLImageElement;
       img.src = encodeURI(item.image);
       img.alt = item.title || 'Gallery image';
 
@@ -460,7 +572,7 @@ export class MasonryBuilder {
         img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://w3.org" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23222"/><text x="50" y="50" font-family="sans-serif" font-size="10" fill="%23666" text-anchor="middle" dominant-baseline="middle">Image Error</text></svg>';
       };
 
-      card.appendChild(img);
+      card?.appendChild(img);
       img.style.cursor = 'pointer';
       img.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -471,38 +583,33 @@ export class MasonryBuilder {
     }
 
     if (item.title) {
-      const h2 = document.createElement('h2');
-      h2.className = this.selector.itemTitle;
-      h2.textContent = item.title;
-      card.appendChild(h2);
+      const h2 = this.render("@masonry>item>title", item, true);
+      card?.appendChild(h2!);
     }
 
     if (item.description) {
-      const p = document.createElement('p');
-      p.className = this.selector.itemDesc;
-      p.textContent = item.description;
-      card.appendChild(p);
+      const p = this.render("@masonry>item>desc", item, true);
+      card?.appendChild(p!);
     }
 
     if (item.actions && Array.isArray(item.actions)) {
       const actionsEl = this._createAction(item.actions);
       if (actionsEl) {
-        card.appendChild(actionsEl);
+        card?.appendChild(actionsEl);
       }
     }
 
-    return card;
+    return card!;
   }
 
-  private _createAction(actions: iActionProperty[]): HTMLElement | null {
-    if (!actions.length) return null;
+  private _createAction(content: iActionProperty[]): HTMLElement | null {
+    if (!content.length) return null;
 
-    const container = document.createElement('div');
-    container.className = this.selector.itemActions;
+    const actions = this.render("@masonry>item>actions", null, true);
 
-    actions.forEach(action => {
+    content.forEach(action => {
       const btn = action.href ? document.createElement('a') : document.createElement('button');
-      btn.className = action.className || this.selector.actionBtn;
+      // btn.className = action.className || this.selector.actionBtn;
       if (action.id) btn.id = action.id;
 
       if (btn instanceof HTMLAnchorElement && action.href) {
@@ -515,61 +622,42 @@ export class MasonryBuilder {
         btn.addEventListener('click', (e) => action.onClick!(e as MouseEvent));
       }
 
-      container.appendChild(btn);
+      actions?.appendChild(btn);
     });
 
-    return container;
+    return actions!;
   }
 
-
   private _initModal() {
-    // State Internal Modal (Terisolasi sempurna di dalam scope fungsi)
     let currentIndex = 0;
     let isModalOpen = false;
-
-    // Pembentukan Elemen DOM Modal
-    const modalEl = document.createElement('div');
-    modalEl.className = 'modal hidden';
-    modalEl.tabIndex = -1;
-    modalEl.style.outline = 'none';
-
+    // 🟢 ABSOLUT TOKENIZED MODAL: Lahirkan seluruh suku cadangnya lewat render() pusat!
+    const modalEl = this.render("@masonry>modal");
     const modalImg = document.createElement('img');
+    // Gambar dinamis murni injeksi RAM loader
     modalImg.className = 'img';
+    const closeBtn = this.render("@masonry>modal>close") as HTMLButtonElement;
+    const nextBtn = this.render("@masonry>modal>next") as HTMLButtonElement;
+    const prevBtn = this.render("@masonry>modal>previous") as HTMLButtonElement;
 
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'close';
-    closeBtn.innerHTML = '&times;';
+    modalEl?.append(prevBtn, modalImg, nextBtn, closeBtn);
+    (this.load("@container") as HTMLElement)!.appendChild(modalEl!);
 
-    const nextBtn = document.createElement('button');
-    nextBtn.className = 'next';
-    nextBtn.innerHTML = '❯';
-
-    const prevBtn = document.createElement('button');
-    prevBtn.className = 'prev';
-    prevBtn.innerHTML = '❮';
-
-    modalEl.append(prevBtn, modalImg, nextBtn, closeBtn);
-    this.rootElement.appendChild(modalEl);
-
-    // Fungsi Kontrol Internal
     const show = (index: number) => {
-      // Membaca data dinamis ter-render dari Getter pusat
       const activeImages = this.currentVisibleImages;
       if (!activeImages.length) return;
-
       currentIndex = (index + activeImages.length) % activeImages.length;
       modalImg.src = activeImages[currentIndex];
-      modalEl.classList.remove('hidden');
+      modalEl?.classList.remove('hidden');
       isModalOpen = true;
-      setTimeout(() => modalEl.focus(), 50);
+      setTimeout(() => modalEl?.focus(), 50);
     };
 
     const hide = () => {
-      modalEl.classList.add('hidden');
+      modalEl?.classList.add('hidden');
       isModalOpen = false;
     };
 
-    // Sinkronisasi Fungsi Tombol Klik Navigasi (Dipanggil setiap kali filter berubah)
     const updateNavigation = () => {
       nextBtn.onclick = () => show(currentIndex + 1);
       prevBtn.onclick = () => show(currentIndex - 1);
@@ -577,30 +665,28 @@ export class MasonryBuilder {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isModalOpen) return;
-      if (e.key === 'ArrowRight') { e.preventDefault(); show(currentIndex + 1); }
-      if (e.key === 'ArrowLeft') { e.preventDefault(); show(currentIndex - 1); }
-      if (e.key === 'Escape') { e.preventDefault(); hide(); }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault(); show(currentIndex + 1);
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault(); show(currentIndex - 1);
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault(); hide();
+      }
     };
 
-    // Event Listener Binding
     closeBtn.onclick = hide;
-    modalEl.addEventListener('click', (e) => {
+    modalEl?.addEventListener('click', (e) => {
       if (e.target === modalEl) hide();
     });
-    document.addEventListener('keydown', handleKeyDown);
 
-    // Fungsi Destroy Pembersih Memori
+    document.addEventListener('keydown', handleKeyDown);
     const destroy = () => {
       document.removeEventListener('keydown', handleKeyDown);
-      modalEl.remove();
+      modalEl?.remove();
     };
-
-    // Mengembalikan Nested Object / Fungsi Kontrol khusus untuk Modal
-    return {
-      show,
-      updateNavigation,
-      destroy
-    };
+    return { show, updateNavigation, destroy };
   }
 }
 

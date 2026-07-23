@@ -11,7 +11,7 @@ Setiap komponen Builder adalah sebuah **Headless Sovereign Logical Shell** (Komp
 1. **NO APPBUILDER IMPORT:** Dilarang keras mengimpor `AppBuilder` atau `LandingPageBuilder`. Komponen harus sepenuhnya _portable_ dan _stand-alone_.
 2. **NO ROUTER IMPORT:** Dilarang keras mengimpor modul `HashRouter` atau `Router`. Tugas penunjuk arah wajib dialirkan keluar secara pasif.
 3. **NO WINDOW ACCESS EXCEPT FALLBACK:** Dilarang keras memanipulasi objek global `window` atau `document.location` secara langsung, kecuali jika parameter _callback_ luar kosong murni (_fallback rescue_).
-4. **NO DOM CREATION IN MAIN METHOD:** Dilarang keras menulis `document.createElement()` secara berserakan di dalam metode `create()`.
+4. **NO DOM CREATION IN MAIN METHOD:** Dilarang keras menulis `document.createElement()` secara berserakan di dalam metode `prepare()`.
 5. **NO HARDCODED TAGS & CLASSES:** Dilarang keras menulis tag HTML (`nav`, `div`, `button`) atau kelas CSS secara kaku di dalam fungsi jika elemen tersebut bersifat _configurable_ untuk desainer visual.
 
 ---
@@ -47,10 +47,10 @@ this.config.emit?.("event-name", payload);
 
 ### 4. Ekstraksi Element Melalui Sub-Routines (Orchestration Create)
 
-Metode `create()` murni hanya bertindak sebagai konduktor orkestrasi yang mengalirkan pemicu panggilan sub-rutin fungsi pembangun di bawahnya secara linear:
+Metode `prepare()` murni hanya bertindak sebagai konduktor orkestrasi yang mengalirkan pemicu panggilan sub-rutin fungsi pembangun di bawahnya secara linear:
 
 ```text
-create() → createContainer() → createBrand() → createItems() → createActions() → initialize()
+prepare() → createContainer() → createBrand() → createItems() → createActions() → initialize()
 ```
 
 ### 5. Wajib Menyemburkan Stream Emitter (onElementAdded)

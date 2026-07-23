@@ -109,12 +109,15 @@
   z-index: 5;
 }
 
-.carousel .caption h3 {
+.carousel .caption h3.title {
+  color: rgb(255, 236, 69);
   margin: 0;
   margin-bottom: 8px;
+  font-size: 1.6rem;
 }
 
-.carousel .caption p {
+.carousel .caption p.desc {
+  color: rgb(190, 190, 190);
   margin: 0;
 }
 

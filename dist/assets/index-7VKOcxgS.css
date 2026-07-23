@@ -1062,12 +1062,15 @@ textarea:focus-visible {
   z-index: 5;
 }
 
-.carousel .caption h3 {
+.carousel .caption h3.title {
+  color: rgb(255, 236, 69);
   margin: 0;
   margin-bottom: 8px;
+  font-size: 1.6rem;
 }
 
-.carousel .caption p {
+.carousel .caption p.desc {
+  color: rgb(190, 190, 190);
   margin: 0;
 }
 
@@ -1497,7 +1500,10 @@ textarea:focus-visible {
 }
 .gallery .modal .close,
 .gallery .modal .next,
-.gallery .modal .prev {
+.gallery .modal .previous {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: absolute;
   background: rgba(255, 255, 255, 0.1);
   color: white;
@@ -1505,23 +1511,23 @@ textarea:focus-visible {
   border-radius: 50%;
   width: 3rem;
   height: 3rem;
-  font-size: 1.5rem;
+  line-height: 1.6rem;
+  text-align: center;
+  font-size: 1.3rem;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   transition: background 0.3s ease;
 }
 .gallery .modal .close:hover,
 .gallery .modal .next:hover,
-.gallery .modal .prev:hover {
+.gallery .modal .previous:hover {
   background: rgba(255, 255, 255, 0.3);
 }
 .gallery .modal .close {
+  color: red;
   top: 1.5rem;
   right: 1.5rem;
 }
-.gallery .modal .prev {
+.gallery .modal .previous {
   left: 1.5rem;
 }
 .gallery .modal .next {
@@ -2420,12 +2426,13 @@ textarea:focus-visible {
 }
 
 .modal .close {
+  text-align: center;
   width: 2.3rem;
   height: 2.3rem;
   border-radius: 999px;
   background: rgba(91, 63, 134, 0.1);
   color: red;
-  font-size: 1.3rem;
+  font-size: 1.42rem;
   border: none;
   cursor: pointer;
 }

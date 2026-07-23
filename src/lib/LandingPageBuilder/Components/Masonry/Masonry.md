@@ -46,7 +46,7 @@ const galleryContent: iSectionContent = {
 // Render and append onto the UI DOM root
 const appContainer = document.getElementById("app");
 if (appContainer) {
-  const renderedComponent = masonry.create(galleryContent);
+  const renderedComponent = masonry.prepare(galleryContent);
   appContainer.appendChild(renderedComponent);
 }
 ```
@@ -71,7 +71,7 @@ To prevent memory pollution, security leaks, or unwanted modifications from exte
 
 ```ts
 const builder = new MasonryBuilder(config);
-builder.create(contentData);
+builder.prepare(contentData);
 // ❌ ANTI-PATTERN: This will not impact internal application state
 builder.items.push({ image: "corrupted-payload.png" });
 // EXTERNAL STATE OVERRIDES (Safe Data Re-assignment)// When fetching clean content asynchronously from an external API, feed it directly into the setter:

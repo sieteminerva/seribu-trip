@@ -175,8 +175,8 @@ export class FormBuilder {
         // KASUS D: Input berupa Parameter Objek Basic Tunggal
         // ==========================================
         // else {
-        //   // InputBuilder.create() mengelola isRoot dan melahirkan <div class="input-wrapper"> murni
-        //   const inputEl = InputBuilder.create(input);
+        //   // InputBuilder.prepare() mengelola isRoot dan melahirkan <div class="input-wrapper"> murni
+        //   const inputEl = InputBuilder.prepare(input);
         //   if (this.config.submitButton) {
         //     this.submitButtonId = this.scanForSubmitButton(inputEl, formId) || this.submitButtonId;
         //   }

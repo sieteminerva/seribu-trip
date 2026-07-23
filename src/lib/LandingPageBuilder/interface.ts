@@ -29,8 +29,9 @@ interface iComponentEvents<T extends string = string> {
     data?: any;
   };
   elementRemoved: {
-    element: HTMLElement;
+    element?: HTMLElement;
     builder?: keyof iBuilderRegistry;
+    data?: any
   };
   themeChanged: { themeId: string; shell: HTMLElement };
   ready: { shell: HTMLElement; elements: Map<string, HTMLElement>, context?: any };
@@ -50,13 +51,16 @@ export interface iPageEvents<T extends string = string> extends iComponentEvents
 // ==========================================
 // BUILDER
 // ==========================================
+
+export type iBuilderSelectorsConfig<TType extends string = string> = Record<TType, iActionProperty>;
+
 export interface iBuilderConfig<TType extends string = string> {
   themeId?: string;
-  selectors?: Record<TType, iElementProperty>
-  emit?<K extends keyof iComponentEvents<TType>>(
+  selectors?: iBuilderSelectorsConfig<TType>;
+  emit?: (<K extends keyof iComponentEvents<TType>>(
     event: K,
     data: iComponentEvents<TType>[K]
-  ): void;
+  ) => void) | null;
 }
 
 export interface iBuilderElementContext<TType extends string = string, TData = any> {
@@ -76,7 +80,10 @@ export interface iBuilderRegistry {
   footer: iBasicNode;
   "fab-menu": iBasicNode;
   "modal": iBasicNode | HTMLElement;
-  "mode-switcher": iBasicNode
+  "mode-switcher": iBasicNode;
+  "message": iBasicNode;
+  "rating": any;
+  "article": any;
   // Untuk komponen baru nanti, cukup daftarkan jenis array atomnya di sini:
   // stats: iStatsProperty[];
 }
@@ -138,6 +145,7 @@ export interface iElementProperty {
   tagName?: string;
   attrs?: Record<string, string>;
   isArray?: boolean;
+  wrapper?: string;
 }
 // ==========================================
 // 1. INDIVIDUAL ATOM PROPERTIES & DESIGN TOKENS

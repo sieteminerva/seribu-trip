@@ -1,4 +1,5 @@
-import type { iBuilderConfig } from "../../interface";
+import type { iBuilderConfig, iBuilderRegistry } from "../../interface";
+import { Builder } from "../Base";
 import "./Message.css";
 
 export type MessageElementType =
@@ -9,156 +10,189 @@ export type MessageElementType =
   | "@message>content>desc"
   | "@message>content>icon";
 
+export interface iMessageContent {
+  header?: string;                // Judul pesan dari preset Semantic-UI
+  message: string;                // Isi pesan utama
+  icon?: string;                  // Kelas ikon kustom (e.g., "check circle icon")
+  type?: string;                  // Tipe pesan ("success" | "error" | "info" | "positive")
+}
+
 export interface iMessageConfig extends iBuilderConfig<MessageElementType> {
   id?: string;                    // ID unik pelacakan di DOM agar pesan anti-menumpuk kembung
   element?: HTMLElement | string;    // Kontainer tempat menempelkan pesan (Default: document.body)
   duration?: number;              // Durasi muncul dalam milidetik (0 = menetap sampai diklik silang)
-  header?: string;                // Judul pesan dari preset Semantic-UI
-  message: string;                // Isi pesan utama
-  icon?: string;                  // Kelas ikon kustom (e.g., "check circle icon")
-  type?: string;                  // Tipe pesan Semantic-UI ("success" | "error" | "info" | "positive")
+  persist?: boolean;               // TODO Harus manual ditutup, tidak menggunakan timer dan merender closeButton
   onOpen?: (el: HTMLElement) => void;  // Callback saat pesan meletup keluar
   onClose?: (el: HTMLElement) => void; // Callback saat pesan padam dihancurkan
 }
 
-export class MessageBuilder {
-  // 🧙‍♂️ MEMORY ANCHOR: Menyimpan pointer timer asinkronus agar bisa di-reset secara statik lintas klik!
-  private static _activeTimers = new Map<string, number>();
+export class MessageBuilder extends Builder<MessageElementType, iMessageConfig> {
+  readonly builderId: keyof iBuilderRegistry = "message";
+  readonly name: keyof iBuilderRegistry = "message";
+  readonly stylesheet: string = "./Message.css";
 
-  /**
-   * 👑 INSTANT STATIC DECLARATION API (Pilihan Cerdas Anda!)
-   * Cukup panggil MessageBuilder.create({ ... }) untuk langsung memutahkan toast di viewport browser!
-   */
-  public static create(config: iMessageConfig): HTMLElement {
+  public config: Required<iMessageConfig>;
+  private _activeTimers = new Map<string, number>();
+
+  constructor(config: Partial<iMessageConfig> = {}) {
+    super();
+    const defaultSelectors = {
+      "@message": { tagName: "div", className: "message" },
+      "@message>close": { tagName: "i", className: "close" },
+      "@message>content": { tagName: "div", className: "content" },
+      "@message>content>header": { tagName: "h2", className: "header" },
+      "@message>content>desc": { tagName: "p", className: "desc" },
+      "@message>content>icon": { tagName: "i", className: "info" } // "error", "success", "info", "warning"
+    };
     const defaultConfig: Required<iMessageConfig> = {
       themeId: "default",
       id: "global-status-message",
       element: document.body,
       duration: 3000,
-      header: "Congrats!",
-      icon: "bell outline icon",
-      type: "info",
-      message: "",
-      selectors: {
-        "@message": { tagName: "div", className: "message" },
-        "@message>close": { tagName: "i", className: "close" },
-        "@message>content": { tagName: "div", className: "content" },
-        "@message>content>header": { tagName: "h2", className: "header" },
-        "@message>content>desc": { tagName: "p", className: "desc" },
-        "@message>content>icon": { tagName: "i", className: "info" } // "error", "success", "info", "warning"
-      },
+      selectors: defaultSelectors,
+      persist: false,
       emit: () => { },
       onOpen: () => { },
       onClose: () => { }
     };
 
-    // Peleburan konfigurasi instan
-    const activeConfig = { ...defaultConfig, ...config };
-
-    // ====================================================
-    // 💡 POTENSI ANTI-KEMBUNG SEJATI (SINGLE-INSTANCE TRACKING)
-    // ====================================================
-    const existingDOMElement = document.getElementById(activeConfig.id) as HTMLDivElement;
-
-    if (existingDOMElement) {
-      console.log(`[Message Static Engine] Hydrating active element #${activeConfig.id} and resetting timer...`);
-
-      // Update teks paragraf pesan secara dinamis
-      const contentTextEl = existingDOMElement.querySelector(".content p");
-      if (contentTextEl) contentTextEl.textContent = activeConfig.message;
-
-      // Update teks header secara dinamis
-      const headerTextEl = existingDOMElement.querySelector(".content .header");
-      if (headerTextEl) headerTextEl.innerHTML = activeConfig.header;
-
-      // Nyalakan kembali hitung mundur waktu tunggu dari nol!
-      this._startTimeoutCounter(activeConfig.id, activeConfig.duration, existingDOMElement, activeConfig.onClose);
-      return existingDOMElement;
-    }
-
-    // 1. Bangun Kulit Terluar Kotak Pesan Semantic-UI
-    const messageElement = document.createElement("div");
-    messageElement.id = activeConfig.id;
-    messageElement.className = `ui visible ${activeConfig.type} ${activeConfig.icon ? "icon" : ""} message`.trim();
-    messageElement.style.boxShadow = "0 1px 2px 0 rgba(34, 36, 38, .15)";
-
-    // 2. Bangun Tombol Silang Penghancur Fisik Elemen
-    const closeIcon = document.createElement("i");
-    closeIcon.className = "red close icon";
-    closeIcon.style.cursor = "pointer";
-    closeIcon.addEventListener("click", () => this.destroy(activeConfig.id, activeConfig.onClose));
-
-    // 3. Bangun Struktur Rahim Konten Dalam (.content)
-    const contentBox = document.createElement("div");
-    contentBox.className = "content";
-
-    if (activeConfig.header) {
-      const headerEl = document.createElement("div");
-      headerEl.className = "header";
-      headerEl.innerHTML = activeConfig.header;
-      contentBox.appendChild(headerEl);
-    }
-
-    const messageParagraph = document.createElement("p");
-    messageParagraph.className = "desc";
-    messageParagraph.textContent = activeConfig.message;
-    contentBox.appendChild(messageParagraph);
-
-    // 4. Bangun Ikon Utama Kiri (Prepend Slot)
-    const leadingIcon = document.createElement("i");
-    leadingIcon.className = activeConfig.icon;
-
-    // Rangkai organ anatomi fisik pesan secara tertib
-    messageElement.append(closeIcon, leadingIcon, contentBox);
-
-    // 5. Ingestion Target Container Selection
-    let containerElement: HTMLElement | null = null;
-    if (typeof activeConfig.element === "string") {
-      containerElement = document.getElementById(activeConfig.element);
-    } else {
-      containerElement = activeConfig.element;
-    }
-
-    if (!containerElement) containerElement = document.body;
-
-    // Selipkan pesan di baris teratas (prepend) kontainer secara instan
-    containerElement.prepend(messageElement);
-
-    // Pemicu callback siklus hidup buka
-    activeConfig.onOpen(messageElement);
-
-    // Jalankan hitung mundur pemusnahan otomatis statik
-    this._startTimeoutCounter(activeConfig.id, activeConfig.duration, messageElement, activeConfig.onClose);
-
-    return messageElement;
+    this.config = this.resolveConfig(defaultConfig, config);
   }
 
-  /**
-   * 💣 STATIC DESTRUCTOR: Cabut fisik elemen dari DOM koordinat mana pun dan bersihkan sisa timer
-   */
-  public static destroy(id: string, onCloseCallback?: (el: HTMLElement) => void): void {
-    // Bersihkan sisa timer di latar belakang memori agar tidak meletup liar
+  public prepare(content: Partial<iMessageContent>, _config: Partial<iMessageConfig> = {}): HTMLElement {
+    if (_config) this.config = this.resolveConfig(this.config, _config);
+
+    const defaultContent = {
+      header: "Congrats!",
+      icon: "bell outline icon",
+      type: "info",
+      message: "",
+    };
+    const messageContent = { ...defaultContent, ...content };
+
+    // ====================================================
+    // 🧙‍♂️ THE DESTROY-AND-RECREATE ENGINE (IDE RADIKAL JENIUS ANDA!)
+    // Jika notifikasi lama masih nangkring di bodi halaman web, eksekusi mati detik ini juga!
+    // Mematikan total kebutuhan mengetik querySelector pembaruan teks secara kotor!
+    // ====================================================
+    const existingDOMElement = document.getElementById(this.config.id);
+    if (existingDOMElement) {
+      console.log(`[Message Engine] Active notification #${this.config.id} detected. Executing instant unmount bypass...`);
+      this.unmount(this.config.id, this.config.onClose);
+    }
+
+    // 1. Lahirkan Cangkang Makro Terluar Boks Notifikasi (@message)
+    const messageElement = this.render("@message", messageContent);
+
+    // 2. Lahirkan Tombol Silang Penutup JIT
+    const closeIcon = this.render("@message>close", messageContent);
+
+    // 3. Lahirkan Ikon Penuntun Utama Kiri
+    const leadingIcon = this.render("@message>content>icon", messageContent);
+
+    // 4. Lahirkan Boks Konten Kanan beserta Judul & Paragraf Deskripsi
+    const contentBox = this.render("@message>content", messageContent);
+    const headerEl = this.render("@message>content>header", messageContent);
+    const messageParagraph = this.render("@message>content>desc", messageContent);
+
+    // ====================================================
+    // 🎢 THE PERFECT VANILLA WEAVING (JAHIT STRUKTUR DOM)
+    // ====================================================
+    if (headerEl && messageContent.header) contentBox?.appendChild(headerEl);
+    if (messageParagraph) contentBox?.appendChild(messageParagraph);
+
+    if (messageElement) {
+      if (closeIcon && !this.config.persist) messageElement.appendChild(closeIcon);
+      if (leadingIcon && messageContent.icon) messageElement.appendChild(leadingIcon);
+      if (contentBox) messageElement.appendChild(contentBox);
+    }
+
+    // 5. Cari kontainer penempelan (document.body vs custom element ID)
+    let containerElement: HTMLElement | null = null;
+    if (typeof this.config.element === "string") {
+      containerElement = document.getElementById(this.config.element);
+    } else {
+      containerElement = this.config.element;
+    }
+    if (!containerElement) containerElement = document.body;
+
+    // Masukkan ke posisi baris teratas kontainer terarah
+    containerElement.prepend(messageElement!);
+
+    this.config.onOpen(messageElement!);
+    this._startTimeoutCounter(this.config.id, this.config.duration, messageElement!, this.config.onClose);
+
+    return this.load("@message") as HTMLElement;
+  }
+
+  protected template(typeKey: MessageElementType, el: HTMLElement, payload?: any): void {
+    if (!payload) return;
+
+    switch (typeKey) {
+      case "@message":
+        el.id = this.config.id;
+        // Suntikkan kelas jenis notifikasi secara dinamis (e.g., "message visible success icon")
+        el.className = `visible ${payload.type || "info"} ${payload.icon ? "icon" : ""} ${el.className || ""}`.trim();
+        el.style.boxShadow = "0 1px 2px 0 rgba(34, 36, 38, .15)";
+        break;
+
+      case "@message>close":
+        el.style.cursor = "pointer";
+        break;
+
+      case "@message>content>icon":
+        // Tempelkan kelas ikon ikon standard (e.g., "check circle icon") hantaran Sheets
+        if (payload.icon) el.className = payload.icon;
+        break;
+
+      case "@message>content>header":
+        // 🔒 SUPER AMAN DARI XSS: Ganti innerHTML kaku menjadi textContent suci!
+        el.textContent = payload.header || "";
+        break;
+
+      case "@message>content>desc":
+        el.textContent = payload.message || "";
+        break;
+    }
+  }
+
+  public initialize(): void {
+
+    const closeIcon = this.load("@message>close") as HTMLElement
+
+    if (closeIcon) {
+      closeIcon.addEventListener("click", () => {
+        this.unmount(this.config.id, this.config.onClose);
+      });
+      console.log("[Message Lifecycle] Toast close button attached securely.");
+    }
+  }
+
+
+  protected unmount(id: string, onCloseCallback?: (el: HTMLElement) => void): void {
     const activeTimer = this._activeTimers.get(id);
     if (activeTimer) {
       window.clearTimeout(activeTimer);
       this._activeTimers.delete(id);
     }
 
-    const targetElement = document.getElementById(id);
+    const targetElement = this.load("@message") as HTMLElement ?? document.getElementById(id);
+
     if (targetElement) {
       if (typeof onCloseCallback === "function") {
         onCloseCallback(targetElement);
       }
-      targetElement.remove(); // Hancurkan dari halaman web
-      console.log(`[Message Static Engine] Instance #${id} wiped out from DOM successfully.`);
+
+      targetElement.remove(); // Penggal dari live DOM Tree bodi web
+
+      // 🔒 LIQUIDASI TOTAL: Kuras saku Map Map agar RAM bersih 0B leak!
+
+      console.log(`[Message Engine] Instance #${id} wiped out from DOM and memory stacks successfully.`);
     }
   }
 
-  /**
-   * Pengontrol internal hitung mundur pemusnahan otomatis tingkat statik
-   */
-  private static _startTimeoutCounter(id: string, duration: number, el: HTMLElement, onCloseCallback?: (el: HTMLElement) => void): void {
-    // Stop dan hapus antrean timer lama dengan ID yang sama jika sedang berjalan
+
+  private _startTimeoutCounter(id: string, duration: number, el: HTMLElement, onCloseCallback?: (el: HTMLElement) => void): void {
     if (el) {
       const activeTimer = this._activeTimers.get(id);
       if (activeTimer) {
@@ -166,12 +200,11 @@ export class MessageBuilder {
         this._activeTimers.delete(id);
       }
 
-      if (duration && duration > 0) {
+      if (duration && duration > 0 && !this.config.persist) {
         const newTimer = window.setTimeout(() => {
-          this.destroy(id, onCloseCallback);
+          this.unmount(id, onCloseCallback);
         }, duration);
 
-        // Amankan reference timer baru ke dalam static Map tracker!
         this._activeTimers.set(id, newTimer);
       }
     }

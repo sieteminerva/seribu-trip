@@ -62,12 +62,13 @@
 }
 
 .modal .close {
+  text-align: center;
   width: 2.3rem;
   height: 2.3rem;
   border-radius: 999px;
   background: rgba(91, 63, 134, 0.1);
   color: red;
-  font-size: 1.3rem;
+  font-size: 1.42rem;
   border: none;
   cursor: pointer;
 }

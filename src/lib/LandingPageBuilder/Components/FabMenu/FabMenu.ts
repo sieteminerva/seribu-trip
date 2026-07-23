@@ -1,7 +1,8 @@
-import type { iBasicNode, iActionProperty, iBuilderConfig } from "../../interface";
+import type { iBasicNode, iBuilderConfig, iBuilderRegistry } from "../../interface";
+import { Builder } from "../Base";
 import "./FabMenu.css";
 
-export type fabPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right" | "middle";
+export type FabPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right" | "middle";
 
 export type FabMenuElementType =
   | "@fab"
@@ -13,27 +14,31 @@ export type FabMenuElementType =
 export interface iFabMenuConfig extends iBuilderConfig<FabMenuElementType> {
   container: string | HTMLElement | null;
   duration: number | null;
-  position: fabPosition;
+  position: FabPosition;
   closeOnSelected: boolean;
   closeIcon: string;
   displayIcon: string;
 }
 
-export class FabMenuBuilder {
+export class FabMenuBuilder extends Builder<FabMenuElementType, iFabMenuConfig> {
+  readonly builderId: keyof iBuilderRegistry = "fab-menu";
+  readonly name: keyof iBuilderRegistry = "fab-menu";
+  readonly stylesheet: string = "./FabMenu.css";
+
   public config: Required<iFabMenuConfig>;
   private isMenuOpen = false;
   private idleTimer: number | undefined;
 
-  // Element References Utama untuk Manajemen State
-  private currentDOMElement!: HTMLElement;
-  private panelElement!: HTMLElement;
-  private triggerButton!: HTMLButtonElement;
-
-  // Cache parameter data untuk keperluan re-render internal state
-  private cachedTitle: string = "";
-  private cachedItems: iActionProperty[] = [];
-
   constructor(config: Partial<iFabMenuConfig> = {}) {
+    super();
+    const defaultSelectors = {
+      "@fab": { tagName: "div", className: "fab" },
+      "@fab>panel": { tagName: "div", className: "panel" },
+      "@fab>panel>title": { tagName: "span", className: "title" },
+      "@fab>panel>item": { tagName: "button", className: "item option" },
+      "@fab>panel>trigger": { tagName: "button", className: "trigger" },
+    };
+
     const defaultConfig: Required<iFabMenuConfig> = {
       themeId: "default",
       container: null,
@@ -42,17 +47,112 @@ export class FabMenuBuilder {
       duration: 10000,
       closeIcon: "✕",
       displayIcon: "⚙️",
-      selectors: {
-        "@fab": { tagName: "div", className: "fab" },
-        "@fab>panel": { tagName: "div", className: "panel", isArray: true },
-        "@fab>panel>title": { tagName: "span", className: "title" },
-        "@fab>panel>item": { tagName: "button", className: "item" },
-        "@fab>panel>trigger": { tagName: "button", className: "trigger" },
-      },
+      selectors: defaultSelectors,
       emit: () => { }
     };
-    this.config = { ...defaultConfig, ...config };
+
+    this.config = this.resolveConfig(defaultConfig, config);
   }
+
+
+
+  public prepare(content: iBasicNode, _config?: Partial<iFabMenuConfig>): HTMLElement {
+
+    this._clearIdleTimer();
+    this.isMenuOpen = false;
+
+    const fab = this.render("@fab", content);
+    const panel = this.render("@fab>panel", content);
+    const title = this.render("@fab>panel>title", content);
+    if (title && panel) panel.appendChild(title);
+
+    const actions = Array.isArray(content.actions) ? content.actions : [];
+    for (const item of actions) {
+      const btn = this.render("@fab>panel>item", item, true);
+      if (btn && panel) panel.appendChild(btn);
+    }
+
+    const trigger = this.render("@fab>panel>trigger", content);
+
+    if (this.config.position.startsWith("bottom")) {
+      if (panel) fab?.appendChild(panel);
+      if (trigger) fab?.appendChild(trigger);
+    } else {
+      if (trigger) fab?.appendChild(trigger);
+      if (panel) fab?.appendChild(panel);
+    }
+
+    return this.load("@fab") as HTMLElement;
+  }
+
+
+
+  /**
+   * 👑 THE SEPARATED HYDRATION VALVE
+   */
+  protected template(typeKey: FabMenuElementType, el: HTMLElement, payload?: any): void {
+    if (!payload) return;
+
+    switch (typeKey) {
+      case "@fab":
+        el.className = `fab ${this.config.position} ${payload.className || ""}`.trim();
+        break;
+
+      case "@fab>panel>title":
+        el.textContent = (payload.title || "MENU").toUpperCase();
+        break;
+
+      case "@fab>panel>item": {
+        const btn = el as HTMLButtonElement;
+        btn.type = payload.type || "button";
+        btn.textContent = payload.label || "Option";
+        if (payload.id) btn.id = payload.id;
+
+        if (payload.isActive) btn.classList.add("active");
+
+        if (payload.className) btn.className = `${btn.className} ${payload.className}`.trim();
+
+        // Listener
+        btn.onclick = (e: MouseEvent) => {
+          if (payload.onClick) payload.onClick(e);
+
+          if (this.config.closeOnSelected) {
+            this.close();
+          } else {
+            this._resetIdleTimer();
+          }
+        };
+        break;
+      }
+
+      case "@fab>panel>trigger": {
+        const btn = el as HTMLButtonElement;
+        btn.className = "trigger";
+        btn.title = "Click for switching options";
+        btn.textContent = this.config.displayIcon;
+        break;
+      }
+    }
+  }
+
+  public initialize(): void {
+    const triggerBtn = this.load("@fab>panel>trigger") as HTMLButtonElement;
+
+    if (triggerBtn) {
+      triggerBtn.onclick = () => {
+        if (this.isMenuOpen) {
+          this.close();
+        } else {
+          this.open();
+        }
+      };
+      console.log("[FAB Lifecycle] Trigger button listener attached securely.");
+    }
+  }
+
+  // ==============
+  // Private Helper
+  // ==============
 
   /**
    * 🔓 STATE MANAGEMENT: Membuka panel menu secara reaktif
@@ -61,10 +161,13 @@ export class FabMenuBuilder {
     if (this.isMenuOpen) return;
     this.isMenuOpen = true;
 
-    this.panelElement.classList.add("is-open");
-    this.triggerButton.textContent = this.config.closeIcon;
+    const panel = this.load("@fab>panel") as HTMLElement;
+    const trigger = this.load("@fab>panel>trigger") as HTMLButtonElement;
 
-    this.resetIdleTimer();
+    if (panel) panel.classList.add("is-open");
+    if (trigger) trigger.textContent = this.config.closeIcon;
+
+    this._resetIdleTimer();
   }
 
   /**
@@ -74,118 +177,26 @@ export class FabMenuBuilder {
     if (!this.isMenuOpen) return;
     this.isMenuOpen = false;
 
-    this.panelElement.classList.remove("is-open");
-    this.triggerButton.textContent = this.config.displayIcon;
+    const panel = this.load("@fab>panel") as HTMLElement;
+    const trigger = this.load("@fab>panel>trigger") as HTMLButtonElement;
 
-    this.clearIdleTimer();
+    if (panel) panel.classList.remove("is-open");
+    if (trigger) trigger.textContent = this.config.displayIcon;
+
+    this._clearIdleTimer();
   }
 
-  /**
-   * 🧙‍♂️ CORE PUBLIC API: Perakitan DOM Manufaktur Manual Prosedural
-   * Mematuhi penuh standardisasi hantaran iBasicNode dari DOMRenderer
-   */
-  public create(data: iBasicNode): HTMLElement {
-    // console.log("FabMenuBuilder", { data })
-    this.destroy(); // Reset state & timer jika ada sisa eksekusi lama
-    this.isMenuOpen = false;
-    // console.log("FabMenuBuilder", { data });
+  public unmount(): void {
+    this._clearIdleTimer();
+    const trigger = this.load("@fab>panel>trigger") as HTMLButtonElement;
+    if (trigger) trigger.onclick = null;
 
-    this.cachedTitle = data.title || "MENU";
-    this.cachedItems = (data.actions as iActionProperty[]) || [];
-
-    // 1. Bangun Kontainer Master Terluar
-    this.currentDOMElement = document.createElement("div");
-    this.currentDOMElement.className = `fab ${this.config.position}`;
-
-    // 2. Bangun Kotak Panel Menu Kontrol (.panel)
-    this.panelElement = document.createElement("div");
-    this.panelElement.className = "panel";
-
-    // Sisipkan Judul Widget internal
-    const titleSpan = document.createElement("span");
-    titleSpan.className = "title";
-    titleSpan.textContent = this.cachedTitle.toUpperCase();
-    this.panelElement.appendChild(titleSpan);
-
-    // 3. Cetak Baris Tombol Opsi Pilihan secara Manual Prosedural
-    this.cachedItems.forEach((item) => {
-      const itemBtn = document.createElement("button");
-      itemBtn.type = item.type || "button";
-
-      // Gabungkan kelas visual kustom bawaan properti data jika ada
-      itemBtn.className = `item option ${item.isActive ? "active" : ""} ${item.className || ""}`.trim();
-      if (item.id) itemBtn.id = item.id;
-
-      itemBtn.textContent = item.label || "Option";
-
-      // Ikat fungsionalitas interaksi klik murni di memori
-      itemBtn.onclick = (e: MouseEvent) => {
-        if (item.onClick) {
-          item.onClick(e); // Semburkan callback asli (e.g., ganti tema)
-        }
-
-        // SINKRONISASI CONFIGURATION ACTION
-        if (this.config.closeOnSelected) {
-          this.close();
-        } else {
-          this.resetIdleTimer(); // Perpanjang nafas waktu tunggu jika tetap terbuka
-        }
-      };
-
-      this.panelElement.appendChild(itemBtn);
-    });
-
-    // 4. Bangun Tombol Lingkaran FAB Utama (.trigger)
-    this.triggerButton = document.createElement("button");
-    this.triggerButton.className = "trigger";
-    this.triggerButton.title = "Click for switching theme";
-    this.triggerButton.textContent = this.config.displayIcon;
-
-    this.triggerButton.onclick = () => {
-      if (this.isMenuOpen) {
-        this.close();
-      } else {
-        this.open();
-      }
-    };
-
-    // 5. ORKESTRASI SPASIAL VERTIKAL (Top vs Bottom Susunan Element)
-    // Sesuai dengan standardisasi CSS, jika di bawah, panel wajib berada di ATAS tombol trigger
-    if (this.config.position.startsWith("bottom")) {
-      this.currentDOMElement.appendChild(this.panelElement);
-      this.currentDOMElement.appendChild(this.triggerButton);
-    } else {
-      // Jika posisi melayang di atas, urutan dibalik: panel berada di BAWAH tombol trigger
-      this.currentDOMElement.appendChild(this.triggerButton);
-      this.currentDOMElement.appendChild(this.panelElement);
-    }
-
-    // Kembalikan element fisik murni tunggal ke rahim DOMRenderer untuk di-merge!
-    return this.currentDOMElement;
+    // Panggil fungsi utama pembersihan memori terpusat milik induk ksatria!
+    this.destroy();
   }
+  private _resetIdleTimer(): void {
+    this._clearIdleTimer();
 
-  /**
-   * 🛑 LIFECYCLE CLEANUP: Pembasmi Memory Leak & Pembersih Interval Pointer
-   */
-  public destroy(): void {
-    this.clearIdleTimer();
-
-    if (this.triggerButton) this.triggerButton.onclick = null;
-
-    // Bersihkan array referensi internal agar Garbage Collector bekerja instan
-    this.cachedItems = [];
-
-    if (this.currentDOMElement && this.currentDOMElement.parentNode) {
-      this.currentDOMElement.parentNode.removeChild(this.currentDOMElement);
-    }
-  }
-
-  // --- MANAGEMENT IDLE TIMER SUB-ROUTINES ---
-
-  private resetIdleTimer(): void {
-    this.clearIdleTimer();
-
-    // Proteksi: Jika durasi disetel null, 0, atau minus, nyalakan mode Always-Open tanpa timeout
     if (!this.config.duration || this.config.duration <= 0) return;
 
     this.idleTimer = window.setTimeout(() => {
@@ -196,7 +207,7 @@ export class FabMenuBuilder {
     }, this.config.duration);
   }
 
-  private clearIdleTimer(): void {
+  private _clearIdleTimer(): void {
     if (this.idleTimer) {
       window.clearTimeout(this.idleTimer);
       this.idleTimer = undefined;

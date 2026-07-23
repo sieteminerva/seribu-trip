@@ -234,7 +234,7 @@ export class FileUploader {
    *    extracts files from the `dataTransfer` object, and calls `this.handleFiles` to process them.
    */
   _onDragNdrop() {
-    console.log(this.container)
+    // console.log(this.container)
     if (!this.container) return;
 
     this.container.addEventListener("dragover", (e: DragEvent) => {

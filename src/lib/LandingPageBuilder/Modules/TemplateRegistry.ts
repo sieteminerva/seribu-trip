@@ -28,7 +28,7 @@ export class TemplateRegistry {
    * 🧙‍♂️ THE DYNAMIC CASCADE RESOLVER 
    * Menjaga Inversion of Control: Builder tidak peduli siapa yang merender!
    */
-  public static resolve(themeId: string, selectorKey: string, defaultHandler: TemplateHandler<any>): TemplateHandler<any> {
+  public static resolve(themeId: string, selectorKey: string, defaultHandler: TemplateHandler<any> | null): TemplateHandler<any> | null {
     const primaryKey = `${themeId}${selectorKey}`;
 
     if (this._templates.has(primaryKey)) {

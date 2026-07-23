@@ -1,10 +1,11 @@
 
 import type { iActionProperty, iBasicNode, iBuilderConfig } from "../../interface";
-import { BuilderRenderer, type iBuilder } from "../../Modules/BuilderRenderer";
-import { type TemplateHandler } from "../../Modules/TemplateRegistry";
+import { Builder } from "../Base";
 import "./Menu.css";
 
+
 export type MenuElementType =
+  | "@container"
   | "@menu"
   | "@menu>brand"
   | "@menu>hamburger"
@@ -29,304 +30,22 @@ export interface iMenuConfig extends iBuilderConfig<MenuElementType> {
   onNavigate?: (href?: string) => boolean
 }
 
-export class MenuBuilderLegacy {
-  readonly name: string = "menu";
-  readonly stylesheet: string = "";
-
-  public config: Required<iMenuConfig>;
-  protected isMenuOpened: boolean = false;
-
-  constructor(config: Partial<iMenuConfig> = {}) {
-    // DEFAULT SELECTORS PRESET
-    const defaultSelectors: Record<MenuElementType, iActionProperty> = {
-      "@menu": { tagName: "nav", className: "nav" },
-      "@menu>brand": { tagName: "div", className: "brand", src: "" },
-      "@menu>hamburger": { tagName: "button", className: "hamburger-btn" },
-      "@menu>navigations": { tagName: "ul", className: "navigations" },
-      "@menu>navigations>item": { tagName: "li", className: "item" },
-      "@menu>actions": { tagName: "div", className: "actions" }
-    };
-
-    const mergedSelectors = { ...defaultSelectors } as Record<MenuElementType, iActionProperty>;
-
-    for (const key in config.selectors) {
-      mergedSelectors[key as MenuElementType] = {
-        ...mergedSelectors[key as MenuElementType],
-        ...config.selectors[key as MenuElementType]
-      };
-    }
-
-    this.config = {
-      selectors: mergedSelectors,
-      defaultRoute: "home",
-      routes: ["home", "package", "gallery", "form"],
-      onNavigate(href?: string) {
-        if (href) {
-          console.info("Navigation handled manually! to:", href);
-          return true;
-        }
-        return false
-      },
-      ...config
-    } as Required<iMenuConfig>;
-
-  }
-
-  //==================================================
-  // Public Compiler Entry
-  //==================================================
-
-  public create(content: iBasicNode): HTMLElement {
-    if (!content || typeof content !== "object") {
-      return document.createElement(this.config.selectors["@menu"].tagName!);
-    }
-
-    const actionsArray: iActionProperty[] = Array.isArray(content.actions)
-      ? content.actions
-      : content.actions ? [content.actions] : [];
-
-    const brandPayload = actionsArray[0] || { label: "Brand", href: "#home" };
-    const menuLinksPayload = actionsArray.slice(1);
-
-    // Bangun kontainer pembungkus utama berdasarkan selector dinamis
-    const navContainer = this.createContainer(content);
-
-    // Susun secara modular
-    navContainer.append(
-      this.createBrand(brandPayload),
-      this.createHamburger(),
-      this.createMenuItems(menuLinksPayload),
-      this.createActions(menuLinksPayload)
-    );
-
-    this.initialize(navContainer);
-
-    return navContainer;
-  }
-
-  //==================================================
-  // Initialization & Interaction Loop
-  //==================================================
-
-  protected initialize(nav: HTMLElement): void {
-    const hamburgerSel = this.config.selectors["@menu>hamburger"];
-    const itemsSel = this.config.selectors["@menu>navigations"];
-
-    const hamburgerBtn = nav.querySelector(`.${hamburgerSel.className!.split(" ")[0]}`);
-    const itemsList = nav.querySelector(`.${itemsSel.className!.split(" ")[0]}`);
-
-    if (hamburgerBtn && itemsList) {
-      hamburgerBtn.addEventListener("click", () => {
-        this.isMenuOpened = !this.isMenuOpened;
-
-        /* overrides */
-        const handled = true;
-        if (handled === true) {
-          // console.log("[Menu Engine] Navigation toggle logic intercepted by external controller. Internal animation bypassed.");
-          return;
-        }
-
-        // small viewport action
-        itemsList.classList.toggle("active", this.isMenuOpened);
-        hamburgerBtn.classList.toggle("open", this.isMenuOpened);
-      });
-    }
-  }
-
-  // Navigation
-  public navigate(href?: string): void {
-    if (href) {
-      window.location.hash = href.replace(/^#/, "");
-    }
-  }
-
-  // Headless Element Builders
-  protected createContainer(content: any): HTMLElement {
-    const selector = this.config.selectors["@menu"];
-    const nav = document.createElement(selector.tagName!);
-    nav.className = selector.className as string;
-
-    if (content.id) nav.id = content.id;
-    if (content.className) nav.classList.add(content.className);
-
-    this.config.emit?.("elementAdded", {
-      builder: "menu", type: "@menu", element: nav, data: {}
-    });
-
-    return nav;
-  }
-
-  protected createBrand(action: iActionProperty): HTMLElement {
-    const selector = this.config.selectors["@menu>brand"];
-    const el = document.createElement(selector.tagName!);
-    el.className = selector.className as string;
-
-    const link = document.createElement("a");
-    link.href = action.href || "#home";
-
-    // LOGO SRC DIGANDENG MASUK KE SELECTORS 
-    if (selector.src) {
-      const img = document.createElement("img");
-      img.src = selector.src;
-      img.alt = action.label || "logo";
-      link.appendChild(img);
-    } else {
-      link.textContent = action.label || "Brand";
-    }
-
-    this.bindNavigation(link, link.href);
-    el.appendChild(link);
-
-    this.config.emit?.("elementAdded", {
-      builder: "menu", type: "@menu>brand", element: el, data: {}
-    });
-
-    return el;
-  }
-
-  protected createHamburger(): HTMLElement {
-    const selector = this.config.selectors["@menu>hamburger"];
-    const el = document.createElement(selector.tagName!);
-    el.className = selector.className as string;
-    el.setAttribute('aria-label', 'Toggle menu');
-
-    // Jika tag berupa button bawaan, pasang tipe datanya secara tertib
-    if (selector.tagName!.toLowerCase() === "button") {
-      (el as HTMLButtonElement).type = 'button';
-    }
-
-    // Berikan inner HTML bawaan jika desainer malas menyuapkan SVG kustom dari luar
-    el.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>';
-
-    this.config.emit?.("elementAdded", {
-      builder: "menu", type: "@menu>hamburger", element: el, data: {}
-    });
-
-    return el;
-  }
-
-  protected createMenuItems(actions: iActionProperty[]): HTMLElement {
-    const selector = this.config.selectors["@menu>navigations"];
-    const linksContainer = document.createElement(selector.tagName!);
-    linksContainer.className = selector.className as string;
-
-    // Saring tautan menu standar yang bukan bertindak sebagai tombol aksi visual button
-    const standardLinks = actions.filter(link => link.className !== "button" && !link.href?.includes("tel:"));
-
-    for (const link of standardLinks) {
-      const li = document.createElement('li');
-      // reserved li.className
-      const a = document.createElement('a');
-
-      if (link?.id) a.id = link.id;
-      if (link?.className) a.className = link.className;
-
-      a.href = link?.href || "#";
-      a.textContent = link?.label || "";
-
-      this.bindNavigation(a, a.href);
-      li.appendChild(a);
-      linksContainer.appendChild(li);
-    }
-
-    this.config.emit?.("elementAdded", {
-      builder: "menu", type: "@menu>navigations", element: linksContainer, data: actions
-    });
-
-    return linksContainer;
-  }
-
-  protected createActions(actionsPayload: iActionProperty[]): HTMLElement {
-    const selector = this.config.selectors["@menu>actions"];
-    const actionsContainer = document.createElement(selector.tagName!);
-    actionsContainer.className = selector.className as string;
-
-    const ctaPayload = actionsPayload.find(link => link.className === "button" || link.href?.includes("tel:"));
-
-    if (ctaPayload) {
-      // Pasang tombol aksi kustom dinamis bawaan data Sheets
-      const el = document.createElement('a');
-      el.className = ctaPayload.className || 'button small';
-      el.href = ctaPayload.href || '#form';
-      el.textContent = ctaPayload.label || 'Hubungi';
-      if (ctaPayload.id) el.id = ctaPayload.id;
-
-      this.bindNavigation(el, el.href);
-      actionsContainer.appendChild(el);
-    }
-
-    this.config.emit?.("elementAdded", {
-      builder: "menu", type: "@menu>actions", element: actionsContainer, data: actionsPayload
-    });
-
-    return actionsContainer;
-  }
-
-
-  protected bindNavigation(
-    element: HTMLAnchorElement,
-    href?: string
-  ): void {
-    let targetHref = (href || element.getAttribute("href") || this.config.defaultRoute || "home").trim();
-
-    if (targetHref.includes(window.location.origin) || targetHref.includes(window.location.host)) {
-      if (targetHref.includes("#")) {
-        const parts = targetHref.split("#").filter(Boolean);
-        const validPathParts = parts.filter(part => !part.includes("://") && !part.includes("localhost") && !part.includes(".com"));
-        targetHref = validPathParts.join("#").trim();
-      }
-    }
-
-    // Set visualisasi href di level DOM agar address bar browser tetap rapi bawa tanda pagar
-    element.href = targetHref.startsWith("#") ? targetHref : `#${targetHref}`;
-
-    element.addEventListener("click", (e: MouseEvent) => {
-      // 🔒 LOCK VETO UTLAK: Browser native dilarang keras melompat liar/buka tab baru!
-      e.preventDefault();
-
-      const isExternalLink = targetHref.includes("://") || targetHref.startsWith("//") || targetHref.startsWith("www.");
-
-      if (!isExternalLink) {
-
-        const cleanRoutePayload = targetHref.replace(/^#/, "").trim();
-
-        // Tembakkan eksekusi callback luar milik LandingPageBuilder Anda
-        const handled = this.config.onNavigate(cleanRoutePayload);
-
-        // Jika dari luar mengembalikan true (sudah dihandle penuh), matikan fungsi fallback internal!
-        if (handled === true) {
-          return;
-        }
-
-        // Fallback internal hanya berjalan jika MenuBuilder dipakai terpisah tanpa router luar
-        // Ambil nama halaman terdepannya saja jika terpaksa meluncur terpisah
-        const [routePart] = cleanRoutePayload.split("#");
-        this.navigate(routePart || "home");
-      } else {
-        // Hanya tautan luar pihak ketiga asli yang diizinkan melesat membuka tab baru!
-        window.open(targetHref, "_blank");
-      }
-    });
-  }
-
-}
-
-export class MenuBuilder implements iBuilder<MenuElementType> {
+export class MenuBuilder extends Builder<MenuElementType, iMenuConfig> {
   readonly builderId = "menu";
   readonly name = "menu";
   readonly stylesheet = "./Menu.css";
-  public config!: Required<iMenuConfig>;
+  public config: Required<iMenuConfig>;
 
-  // Caching internal bind(this) hemat memori
-  protected readonly defaultTemplate: TemplateHandler = this.template.bind(this);
 
   protected isMenuOpened: boolean = false;
-  protected rawDataNode: any = null;
 
   constructor(config: Partial<iMenuConfig> = {}) {
+    super(); // Wajib mengetuk pintu rahim induk BuilderBase
+
     const defaultSelectors: Record<MenuElementType, iActionProperty> = {
+      "@container": {},
       "@menu": { tagName: "nav", className: "nav" },
-      "@menu>brand": { tagName: "div", className: "brand", src: "" },
+      "@menu>brand": { tagName: "div", className: "brand", attrs: { src: "" } },
       "@menu>hamburger": { tagName: "button", className: "hamburger-btn", attrs: { "aria-label": "Toggle menu" } },
       "@menu>navigations": { tagName: "ul", className: "navigations", isArray: true },
       "@menu>navigations>item": { tagName: "li", className: "item" },
@@ -344,16 +63,40 @@ export class MenuBuilder implements iBuilder<MenuElementType> {
     };
 
 
-    this.config = BuilderRenderer.resolveConfig<iMenuConfig>(defaultConfig, config);
+    this.config = this.resolveConfig(defaultConfig, config);
 
   }
 
-  create(content: iBasicNode, config?: Partial<iBuilderConfig<MenuElementType>> | undefined): HTMLElement {
-    this.config = BuilderRenderer.resolveConfig<iMenuConfig>(this.config, config);
-    return BuilderRenderer.compile(this as any, content);
+  public prepare(content: iBasicNode, _config?: Partial<iMenuConfig>): HTMLElement {
+
+    const payload = this.resolvePayload(content);
+
+    const nav = this.render("@menu", payload["@menu"]);
+    const brand = this.render("@menu>brand", payload["@menu>brand"]);
+    const navigations = this.render("@menu>navigations", payload["@menu>navigations"]);
+    for (const p of payload["@menu>navigations>item"]) {
+      const item = this.render("@menu>navigations>item", p, true);
+      navigations?.append(item!)
+    }
+    const actions = this.render("@menu>actions", payload["@menu>actions"]);
+    const hamburger = this.render("@menu>hamburger", payload["@menu>hamburger"]);
+
+    nav?.append(brand!, hamburger!, navigations!, actions!);
+
+    return this.load("@menu") as HTMLElement;
   }
 
-  protected resolvePayload(content: any): Record<string, any> {
+  // ====================================================
+  // 🧙‍♂️ OVERRIDE 1: ABSTRAKSI PETA DATA (MURNI KHUSUS UNTUK DATA MENU)
+  // ====================================================
+  // Inside MenuBuilder.ts
+
+  /**
+   * 🏗️ RE-ENGINEERING DATA RESOLVER (PERBAIKAN KUNCI UTAMA ANDA!)
+   * Memotong, mengiris (slice), dan memisahkan data linear Sheets menjadi 3 seksi bersih.
+   * Menjamin level TemplateRegistry dan Tema Kustom murni hanya menerima data yang sudah matang!
+   */
+  protected resolvePayload(content: iBasicNode): Record<MenuElementType, any> {
     const actionsArray: iActionProperty[] = Array.isArray(content.actions)
       ? content.actions
       : content.actions ? [content.actions] : [];
@@ -371,23 +114,62 @@ export class MenuBuilder implements iBuilder<MenuElementType> {
       link => link.className === "button" || link.href?.includes("tel:")
     ) || null;
 
+
     return {
       "@menu": content,
-      "@menu>brand": brandPayload,             // 🟢 Sudah berupa Objek Brand Tunggal Bersih!
+      "@menu>brand": brandPayload,
       "@menu>hamburger": {},
-      "@menu>navigations": navigationLinksPayload, // 🟢 Sudah berupa Array Links Bersih tanpa polusi logo/CTA!
-      "@menu>navigations>item": {},            // Dikonsumsi per-item saat loop dinamis di dalam hydrate()
-      "@menu>actions": ctaPayload              // 🟢 Sudah berupa Objek CTA Tunggal Bersih (atau null)!
-    };
+      "@menu>navigations": null,
+      "@menu>navigations>item": navigationLinksPayload,
+      "@menu>actions": ctaPayload
+    } as Record<MenuElementType, any>;
+
+  }
+
+  public initialize(): void {
+    // ====================================================
+    // 🧙‍♂️ DIRECT ELEMENT REF RETRIEVAL (SIHIR MAP OBJECT ANDA!)
+    // Karena _nodes mengembalikan Array (mendukung multi-instance), 
+    // ambil indeks ke-0 secara aman karena Menu bersifat singleton makro halaman!
+    // ====================================================
+    const hamburgerBtn = this.load("@menu>hamburger") as HTMLButtonElement;
+    const itemsList = this.load("@menu>navigations") as HTMLElement;
+
+    // Kunci gerbang interaksi jika kedua elemen fisik hidup sukses terambil dari saku RAM
+    if (hamburgerBtn && itemsList) {
+      hamburgerBtn.addEventListener("click", () => {
+        this.isMenuOpened = !this.isMenuOpened;
+        let isDefaultPrevented = false;
+
+        // Picu emisi event eksternal framework kustom Anda
+        this.config.emit?.("builder:menu-toggle" as any, {
+          opened: this.isMenuOpened,
+          element: hamburgerBtn,
+          preventDefault: () => { isDefaultPrevented = true; }
+        });
+
+        if (isDefaultPrevented) return;
+
+        // Manipulasi kelas visual secara lurus, linear, dan direct!
+        itemsList.classList.toggle("active", this.isMenuOpened);
+        hamburgerBtn.classList.toggle("open", this.isMenuOpened);
+      });
+
+      console.log("[Menu Lifecycle] Interactive hamburger event bindings attached securely.");
+    } else {
+      console.warn("[Menu Lifecycle] Initialization skipped. Hamburger or navigation node missing in _nodes storage.");
+    }
   }
 
   // ====================================================
   // 🧙‍♂️ OVERRIDE 2: PERAKIT STRUKTUR CONTENT DEFAULT FALLBACK KOMPONEN MENU
   // ====================================================
-  protected template(typeKey: string, el: HTMLElement, payload: any, selector: any): void {
+  protected template(typeKey: MenuElementType, el: HTMLElement, payload: any): void {
+    if (!payload) return;
 
     // 🧪 KASUS A: KONTAINER UTAMA NAVBAR (@menu)
     if (typeKey === "@menu") {
+
       if (payload.id) el.id = payload.id;
       if (payload.className) el.classList.add(payload.className);
     }
@@ -398,9 +180,9 @@ export class MenuBuilder implements iBuilder<MenuElementType> {
       const link = document.createElement("a");
       link.href = payload.href || "#home";
 
-      if (selector.src) {
+      if (payload.src) {
         const img = document.createElement("img");
-        img.src = selector.src;
+        img.src = payload.src;
         img.alt = payload.label || "logo";
         link.appendChild(img);
       } else {
@@ -413,28 +195,35 @@ export class MenuBuilder implements iBuilder<MenuElementType> {
 
     // 🧪 KASUS C: TOMBOL HAMBURGER (@menu>hamburger)
     else if (typeKey === "@menu>hamburger") {
-      if (selector.tagName?.toLowerCase() === "button") (el as HTMLButtonElement).type = "button";
+
+      if (payload.tagName?.toLowerCase() === "button") (el as HTMLButtonElement).type = "button";
       if (!el.innerHTML) {
         el.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>';
       }
     }
 
     // 🧪 KASUS D: BARIS BUTIR ITEM NAVIGASI LOOPING (@menu>navigations>item)
-    // 💡 FIX SAKRAL: Sekarang payload dijamin 100% bertipe objek item tunggal hasil semburan loop dari hydrate()!
+    // 💡 FIX SAKRAL: Sekarang payload dijamin 100% bertipe objek item tunggal hasil semburan loop dari template()!
+    else if (typeKey === "@menu>navigations") {
+
+    }
+
     else if (typeKey === "@menu>navigations>item") {
+      if (payload.className) el.className = payload.className;
+
       const a = document.createElement("a");
       if (payload.id) a.id = payload.id;
       if (payload.className) a.className = payload.className;
-
       a.href = payload.href || "#";
       a.textContent = payload.label || "";
 
       this.bindNavigation(a, a.href);
-      el.appendChild(a); // Tempelkan tag <a> ke dalam kulit <li> hantaran parameter el
+      el.appendChild(a);
     }
 
     // 🧪 KASUS E: TOMBOL AKSEN HUBUNGI KANAN (@menu>actions)
     else if (typeKey === "@menu>actions") {
+
       const actionsList = Array.isArray(payload) ? payload : [];
       // Saring secara akurat untuk mencari tombol CTA di dalam array hantaran resolvePayload
       const ctaPayload = actionsList.find(link => link.className === "button" || link.href?.includes("tel:"));
@@ -453,29 +242,6 @@ export class MenuBuilder implements iBuilder<MenuElementType> {
     }
   }
 
-  // ====================================================
-  // OVERRIDE 3: INTERAKSI RUNTIME TOMBOL HAMBURGER NAVBAR
-  // ====================================================
-  public initialize(nav: HTMLElement): void {
-    const hamburgerSel = this.config.selectors["@menu>hamburger"];
-    const itemsSel = this.config.selectors["@menu>navigations"];
-
-    const hamburgerBtn = nav.querySelector(`.${hamburgerSel.className!.split(" ")}`) as HTMLElement;
-    const itemsList = nav.querySelector(`.${itemsSel.className!.split(" ")}`) as HTMLElement;
-
-    if (hamburgerBtn && itemsList) {
-      hamburgerBtn.addEventListener("click", () => {
-        this.isMenuOpened = !this.isMenuOpened;
-        let isDefaultPrevented = false;
-        this.config.emit?.("builder:menu-toggle" as any, {
-          opened: this.isMenuOpened, element: hamburgerBtn, preventDefault: () => { isDefaultPrevented = true; }
-        });
-        if (isDefaultPrevented) return;
-        itemsList.classList.toggle("active", this.isMenuOpened);
-        hamburgerBtn.classList.toggle("open", this.isMenuOpened);
-      });
-    }
-  }
 
   public navigate(href?: string): void {
     if (href) window.location.hash = href.replace(/^#/, "");
@@ -502,5 +268,6 @@ export class MenuBuilder implements iBuilder<MenuElementType> {
       }
     });
   }
-
 }
+
+

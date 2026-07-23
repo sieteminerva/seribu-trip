@@ -41,20 +41,30 @@ if (app) {
 
   };
 
+  const companyName = "Agen Wisata SeribuTrip";
+
   const footer: iBasicNode = {
     builder: "footer",
     isRoot: true,
     content: {
       id: 'contact-section',
-      title: 'Agen Wisata SeribuTrip',
-      description: 'Operator lokal resmi yang mengedepankan kenyamanan dan ketepatan.',
-      actions: [
-        { label: 'email', href: 'halo@seributrip.id' },
-        { label: 'phone', href: '+628123456789' },
-        { label: 'address', href: 'Dermaga 16 Marina Ancol, Jakarta' },
+      company: companyName,
+      columns: [
+        {
+          title: companyName,
+          description: 'Operator lokal resmi yang mengedepankan kenyamanan dan ketepatan.',
+        },
+        {
+          title: "Kontak & Informasi",
+          actions: [
+            { label: 'email', href: 'halo@seributrip.id' },
+            { label: 'phone', href: '+628123456789' },
+            { label: 'address', href: 'Dermaga 16 Marina Ancol, Jakarta' },
+          ]
+        },
+        //... tambahkan column lain jika perlu
       ]
     }
-
   };
 
 
@@ -95,9 +105,10 @@ if (app) {
   builder.component?.register("accordion", (data: any) => new AccordionBuilder().create(data))
     .register("form", (data: any) => new FormBuilder().create(data.content))
     .register("carousel", (data: any) => new CarouselBuilder().create(data))
-    .register("pricing-card", (data: any) => PricingCardBuilder.create(data.content))
+    .register("pricing-card", (data: any) => new PricingCardBuilder().create(data))
+    // .register("pricing-card", (data: any) => PricingCardBuilder.createLegacy(data.content))
     .register("masonry", (data: any) => new MasonryBuilder({ category: "category" }).create(data.content))
-    .register("section", (data: any) => SectionBuilder.create(data, { tagName: "section" }))
+    .register("section", (data: any) => new SectionBuilder().create(data/* , { tagName: "section" } */))
     .register("menu", (data: any) => new MenuBuilder({
       themeId: builder.currentThemeId,
       // override navigation
@@ -109,7 +120,7 @@ if (app) {
       // attach event emitter
       emit: (event, payload) => builder.events.emit(event, payload as any)
     }).create(data.content))
-    .register("footer", (data: any) => FooterBuilder.create(data))
+    .register("footer", (data: any) => new FooterBuilder().create(data))
     .register("fab-menu", (data: any) => new FabMenuBuilder().create(data.content))
     .register("modal", (el: any) => new ModalBuilder().create(el as HTMLElement) as any)
     .register("mode-switcher", (data: any) => new ModeSwitcherBuilder().create(data))

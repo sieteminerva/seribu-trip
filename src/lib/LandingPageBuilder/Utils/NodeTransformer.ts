@@ -91,14 +91,20 @@ export class NodeTransformer {
       const payload = nodeObj.content;
 
       if (payload instanceof HTMLElement || typeof payload === "string") {
-        // Jika berupa HTML element hidup atau teks mentah
         innerBlock.content = payload;
-      } else if (nodeObj.builder) {
-        // 💡 FIX: Jika objek saat ini memiliki properti 'builder', 
-        // JANGAN LAKUKAN KONVERSI REKURSIF pada content-nya! Biarkan payload data aslinya lewat secara utuh.
+      }
+      // 💡 KALIBRASI UTAMA: Jika dia adalah sebuah builder yang memegang array data multi-instance
+      else if (nodeObj.builder && Array.isArray(payload)) {
+        // Biarkan data array lewat secara utuh, NAMUN tandai objek ini dengan flag kustom 
+        // atau bungkus agar DOMRenderer di hilir tahu bahwa perulangan MASSAAL 
+        // sepenuhnya didelegasikan ke dalam Builder internal, sehingga DOMRenderer LUAR harus diam!
         innerBlock.content = payload;
-      } else if (Array.isArray(payload)) {
-        // Jika berupa array berisi anak-anak layout (iBasicNode[])
+        innerBlock.isArrayDelegated = true; // Flag penyelamat agar DOMRenderer luar tidak ikut melakukan loop .forEach!
+      }
+      else if (nodeObj.builder) {
+        innerBlock.content = payload;
+      }
+      else if (Array.isArray(payload)) {
         const childLayoutObj: any = {};
         payload.forEach((childItem, index) => {
           const resolvedChild = NodeTransformer.resolveContentNode(childItem as iBasicNode);
@@ -106,8 +112,8 @@ export class NodeTransformer {
           childLayoutObj[`${childKey}$child-${index}`] = resolvedChild[childKey];
         });
         innerBlock.content = childLayoutObj;
-      } else if (typeof payload === "object" && payload !== null) {
-        // Jika berupa objek tata letak standar tunggal tanpa builder
+      }
+      else if (typeof payload === "object" && payload !== null) {
         innerBlock.content = NodeTransformer.resolveContentNode(payload);
       }
     }

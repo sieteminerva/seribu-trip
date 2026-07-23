@@ -94,7 +94,7 @@ export class ComponentRegistry {
   /**
    * ⚡ AMAN & SINKRONUS MURNI (.run Method)
    */
-  public buildLegacy<K extends keyof iBuilderRegistry>(name: K, data: any): any {
+  public _build<K extends keyof iBuilderRegistry>(name: K, data: any): any {
 
     const fn = this.builders.get(name);
     if (!fn) return null;

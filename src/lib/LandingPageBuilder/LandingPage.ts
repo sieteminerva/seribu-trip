@@ -358,9 +358,9 @@ export class LandingPageBuilder {
         return;
       }
 
-      Object.keys(item).forEach((key) => {
+      for (const key of Object.keys(item)) {
         const value = item[key];
-        if (!value || typeof value !== "object" || value instanceof HTMLElement) return;
+        if (!value || typeof value !== "object" || value instanceof HTMLElement) continue;
 
         // Deteksi Komponen Builder Kustom
         if (value.builder && this.component?.has(value.builder)) {
@@ -369,10 +369,7 @@ export class LandingPageBuilder {
 
           if (liveDomElement instanceof HTMLElement) {
             if (value.attrs && typeof value.attrs === "object") {
-              // console.log(`[Deep Attrs Welder] Injecting custom attrs to nested builder: "${value.builder}"`);
-
               Object.entries(value.attrs).forEach(([aName, aValue]) => {
-                // Siram tanpa syarat! data-theme, data-position, dll otomatis ter-inject kokoh!
                 liveDomElement.setAttribute(aName, String(aValue));
               });
             }
@@ -390,11 +387,12 @@ export class LandingPageBuilder {
             }
 
             this.events.emit("elementAdded", { element: liveDomElement, parent: this.shell! });
+            break;
           }
         } else {
           scanAndBuild(value); // Terus menyelam mencari builder bersarang di tingkat terdalam
         }
-      });
+      }
     };
 
     nodes.forEach(scanAndBuild);

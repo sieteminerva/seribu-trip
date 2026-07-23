@@ -1,143 +1,135 @@
 import type { iBasicNode, iBuilderConfig } from "../../interface";
+import { Builder } from "../Base";
 import "./PricingCard.css";
 
 export type PricingCardElementType =
-  | "@row"
-  | "@column"
+  | "@container"
   | "@card"
   | "@card>header"
-  | "@card>header>eyebrow"
   | "@card>divider"
   | "@card>body"
   | "@card>body>features"
   | "@card>body>features>item"
   | "@card>actions"
-  | "@card>actions>button"
 
 interface iPricingCardConfig extends iBuilderConfig<PricingCardElementType> {
   // selectors: Record<PricingCardElementType, iActionProperty>;
 }
 
-export class PricingCardBuilder {
+export class PricingCardBuilder extends Builder<PricingCardElementType, iPricingCardConfig> {
+  readonly builderId = "pricing-card";
+  readonly name = "pricing-card";
+  readonly stylesheet = "./PricingCard.css";
 
-  private _config!: Required<iPricingCardConfig>
+  protected rawDataNode: any = null;
 
-  constructor(_config: Partial<iPricingCardConfig>) {
+  constructor(config: Partial<iPricingCardConfig> = {}) {
+    super();
+    const defaultSelectors = {
+      "@container": { tagName: "div", className: "row" },
+      "@card": { tagName: "div", className: "card pricing", wrapper: ".column" },
+      "@card>header": { tagName: "div", className: "header" },
+      "@card>divider": { tagName: "hr", className: "divider" },
+      "@card>body": { tagName: "div", className: "body" },
+      "@card>body>features": { tagName: "ul", className: "features" },
+      "@card>body>features>item": { tagName: "li", className: "item" },
+      "@card>actions": { tagName: "div", className: "actions" },
+    }
 
-  }
-
-  get config() {
-    return this._config;
-  }
-
-  set config(_config: Partial<iPricingCardConfig>) {
     const defaultConfig: Required<iPricingCardConfig> = {
       themeId: "default",
       emit: () => { },
-      selectors: {
-        "@row": { tagName: "div", className: "row" },
-        "@column": { tagName: "div", className: "column" },
-        "@card": { tagName: "div", className: "card" },
-        "@card>header": { tagName: "div", className: "header" },
-        "@card>header>eyebrow": { tagName: "div", className: "eyebrow" },
-        "@card>divider": { tagName: "div", className: "devider" },
-        "@card>body": { tagName: "div", className: "body" },
-        "@card>body>features": { tagName: "div", className: "row", isArray: true },
-        "@card>body>features>item": { tagName: "div", className: "item" },
-        "@card>actions": { tagName: "div", className: "actions" },
-        "@card>actions>button": { tagName: "button", className: "button" }
-      },
+      selectors: defaultSelectors,
     };
 
-    this._config = { ...defaultConfig, ..._config, ...defaultConfig.selectors, ..._config.selectors };
+    this.config = this.resolveConfig(defaultConfig, config);
 
   }
 
-  static create(data: iBasicNode[], _config?: Partial<iPricingCardConfig>): HTMLElement {
+  public prepare(data: iBasicNode, _config?: Partial<iBuilderConfig<PricingCardElementType>> | undefined): HTMLElement {
 
-    const section = document.createElement("div");
-    section.className = "row";
+    const container = this.render("@container");
+    const items = Array.isArray(data.content) ? data.content : [data.content];
 
-    // console.log("PricingCardBuilder", { data })
+    items.forEach((item: any) => {
+      const card = this.render("@card", item, true) as { outer: HTMLElement, inner: HTMLElement };
+      const header = this.render("@card>header", item, true);
+      const divider = this.render("@card>divider", item, true);
+      const body = this.render("@card>body", item, true);
+      const features = this.render("@card>body>features", item, true);
 
-    // Loop render structural items array
-    data.forEach((item: any) => {
-      const column = document.createElement("div");
-      column.className = "column";
-
-      const card = document.createElement("div");
-      card.className = "card pricing";
-      if (item.id) card.id = item.id;
-      if (item.className) card.classList.add(...item.className.split(" "));
-
-      // 1. Pricing Header Configuration
-      const headerDiv = document.createElement("div");
-      headerDiv.className = "header";
-
-      const eyebrow = document.createElement("span");
-      eyebrow.className = "eyebrow";
-      eyebrow.textContent = item.header;
-
-      headerDiv.append(eyebrow);
-      card.append(headerDiv);
-
-      // 2. Component Layout Divider
-      const divider = document.createElement("hr");
-      divider.className = "divider";
-      card.append(divider);
-
-      // 3. Pricing Body / Feature Listing Loop
-      const bodyDiv = document.createElement("div");
-      bodyDiv.className = "body";
-
-      const list = document.createElement("ul");
-      list.className = "features";
-      // console.log("PricingCardBuilder", { item })
-
-      item.body.forEach((feature: any) => {
-        const li = document.createElement("li");
-        li.className = "item"
-        li.textContent = feature.name;
-        if (feature.className) {
-          li.classList.add(...feature.className.split(" "));
-        }
-        list.append(li);
-      });
-
-      bodyDiv.append(list);
-      card.append(bodyDiv);
-
-      // 4. Action Button Footer Handler
-      if (item.action) {
-        const actionsDiv = document.createElement("div");
-        actionsDiv.className = "actions";
-
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "button";
-        btn.textContent = item.action.label || "Pilih Paket";
-
-        // Dynamically style featured actions
-        if (card.classList.contains("is-featured")) {
-          btn.classList.add("primary");
-        }
-
-        // Apply custom action data tags or classes if available
-        if (item.action.className) {
-          btn.classList.add(...item.action.className.split(" "));
-        }
-        if (item.action.onClick) {
-          btn.addEventListener("click", item.action.onClick);
-        }
-
-        actionsDiv.append(btn);
-        card.append(actionsDiv);
+      for (const feature of item.body) {
+        const li = this.render("@card>body>features>item", feature, true);
+        features?.appendChild(li!);
       }
 
-      column.append(card);
-      section.append(column);
+      const actions = this.render("@card>actions", item, true);
+
+      body?.appendChild(features!);
+      card?.inner.append(header!, divider!, body!, actions!);
+
+      container?.append(card.outer!)
     });
 
-    return section;
+    return this.load("@container") as HTMLElement;
   }
+
+  /**
+   * PHASE 5: Attaches dynamic event interactions securely onto computed DOM paths.
+   */
+  public initialize(): void {
+    const actionData = this.getPayload("@card>actions");
+    if (actionData && actionData.onClick) {
+      // TODO handle attach listeners
+      const buttonElement = (this.load("@card>actions") as HTMLElement)?.firstChild;
+      if (buttonElement) {
+        buttonElement.addEventListener("click", actionData.onClick);
+      }
+    }
+  }
+
+  protected template(typeKey: PricingCardElementType, el: HTMLElement, payload: any): void {
+    if (!payload) return;
+
+    switch (typeKey) {
+      case "@card":
+        // console.log(typeKey, { payload, el })
+        if (payload.className) el.classList.add(payload.className);
+        break;
+
+      case "@card>header":
+        // console.log(typeKey, { payload, el })
+        const eyebrow = document.createElement("span");
+        eyebrow.textContent = payload.header;
+        el.appendChild(eyebrow);
+        break;
+
+      case "@card>body>features":
+        // console.log(typeKey, { payload, el })
+        if (payload.disabled) el.classList.add("disabled");
+        break;
+
+      case "@card>body>features>item":
+        // console.log(typeKey, { payload, el })
+        el.textContent = payload.name;
+        if (payload && payload.className) el.classList.add(payload.className);
+        break;
+
+      case "@card>actions":
+        // console.log(typeKey, { payload, el })
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "button";
+        button.textContent = "Pilih"
+        if (payload.className === "is-featured") {
+          button.classList.add("primary");
+        }
+        el.appendChild(button);
+        break;
+    }
+  }
+
+  // private bindListeners() {
+
+  // }
 }

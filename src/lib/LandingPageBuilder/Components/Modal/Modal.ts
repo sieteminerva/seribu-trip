@@ -1,8 +1,12 @@
-import type { iBuilderConfig } from "../../interface";
+import type { iBuilderConfig, iBuilderRegistry } from "../../interface";
+import { Builder } from "../Base";
 import "./Modal.css";
 
 export type ModalElementType =
-  | "@modal";
+  | "@container"
+  | "@modal"
+  | "@modal>header"
+  | "@modal>closeBtn";
 
 export interface iModalConfig extends iBuilderConfig<ModalElementType> {
   id: string;                  // Kunci pelacakan instansiasi tunggal di DOM agar anti-kembung
@@ -14,166 +18,180 @@ export interface iModalConfig extends iBuilderConfig<ModalElementType> {
   onClose?: (el: HTMLElement) => void; // Callback siklus hidup saat modal padam ditutup
 }
 
-export class ModalBuilder {
-  private config: iModalConfig;
-  private overlayElement: HTMLElement | null = null;
+export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
+  readonly builderId: keyof iBuilderRegistry = "modal";
+  readonly name: keyof iBuilderRegistry = "modal";
+  readonly stylesheet: string = "./Modal.css";
+
+  public config: Required<iModalConfig>;
 
   constructor(config: Partial<iModalConfig> = {}) {
+    super();
+    const defaultSelectors = {
+      "@container": { tagName: "div", className: "dialog" },
+      "@modal": { tagName: "div", className: "modal" },
+      "@modal>header": { tagName: "div", className: "header" },
+      "@modal>closeBtn": { tagName: "", className: "close" },
+    };
     const defaultConfig: Required<iModalConfig> = {
       themeId: "default",
-      id: "modal-",
+      id: "modal-default",
       className: "",
       title: "Notification",
       modalClass: "",
       destroyOnClose: false,
-      selectors: {
-        "@modal": {}
-      },
+      selectors: defaultSelectors,
       emit: () => { },
       onClose: () => { },
       onOpen: () => { }
     };
-    const randomSuffix = Math.random().toString(36).substring(7);
-    this.config = {
-      ...defaultConfig,
-      ...config,
-      id: config.id ? config.id : defaultConfig.id + randomSuffix
-    };
-  }
-
-  /**
-   * 🏗️ UNIVERSAL VANILLA INGESTION
-   * Menerjemahkan konten polimorfik murni tanpa polusi engine eksternal!
-   */
-  private _compileContent(content: any): HTMLElement {
-
-    if (content instanceof HTMLElement) return content;
-
-    // Jalur string template murni / HTML mentah
-    if (typeof content === "string") {
-      const wrapper = document.createElement("div");
-      wrapper.innerHTML = content;
-      return wrapper.firstElementChild instanceof HTMLElement ? wrapper.firstElementChild : wrapper;
-    }
-
-    // Jika user menyuapkan fungsi kustom (callback), eksekusi fungsinya 
-    // dan biarkan fungsi luar tersebut yang mengembalikan HTMLElement matang!
-    if (typeof content === "function") {
-      const renderedNode = content();
-      if (renderedNode instanceof HTMLElement) return renderedNode;
-    }
-
-    // Terakhir, jika data berupa object JSON kaku tetapi project luar tidak punya DOMRenderer,
-    // buat container kosong dan biarkan developer luar memanipulasinya lewat onCreated
-    const fallbackDiv = document.createElement("div");
-    fallbackDiv.textContent = typeof content === "object" ? JSON.stringify(content) : String(content);
-    return fallbackDiv;
+    // const randomSuffix = Math.random().toString(36).substring(7);
+    this.config = this.resolveConfig(defaultConfig, config);
   }
 
   /**
    * 🏛️ SYSTEM PRESET PAGE DEFAULT BUILDER
    * Mengatur daur hidup pembuatan elemen dan menahan duplikasi fisik di DOM browser
    */
-  public create(contentPayload: any): { open: () => void; close: () => void; destroy: () => void; element: HTMLElement } {
-    // 💡 POTENSI ANTI-KEMBUNG SEJATI: Cek keberadaan ID elemen di live DOM tree
-    const existingDOMElement = document.getElementById(this.config.id);
+  public prepare(contentPayload: any): { open: () => void; close: () => void; destroy: () => void; element: HTMLElement } {
 
+    // 💡 POTENSI ANTI-KEMBUNG: Ambil dari live DOM jika mode reuse aktif
+    const existingDOMElement = document.getElementById(this.config.id);
     if (existingDOMElement && !this.config.destroyOnClose) {
       console.log(`[Universal Modal] Re-using active memory pointer for #${this.config.id}`);
-      this.overlayElement = existingDOMElement;
+
+      // Sinkronisasikan saku internal Map agar tetap konsisten memegang elemen aktif
+      this.render("@container", contentPayload);
       return this._getControlInterfaces();
     }
 
-    // 1. Bangun Backdrop luar (Outer Overlay Container)
-    this.overlayElement = document.createElement("div");
-    this.overlayElement.id = this.config.id;
-    this.overlayElement.className = `dialog hidden ${this.config.className}`.trim();
+    // 1. Lahirkan Cangkang Makro Terluar (Outer Overlay Backdrop)
+    const overlay = (this.load("@container") || this.render("@container", contentPayload)) as HTMLElement;
 
-    // 2. Bangun Kotak Modal Dalam (Inner Box Layout)
-    const modalBox = document.createElement("div");
-    modalBox.className = `modal ${this.config.modalClass}`.trim();
+    // 2. Lahirkan Kotak Dialog Modal Dalam (Inner Box)
+    const modalBox = this.render("@modal", contentPayload);
 
-    // 3. Bangun Header Preset Default
-    const header = document.createElement("div");
-    header.className = "header";
+    // 3. Lahirkan Header & Tombol Silang JIT
+    const header = this.render("@modal>header", contentPayload);
+    const closeBtn = this.render("@modal>closeBtn", contentPayload);
 
-    const title = document.createElement("h2");
-    title.className = "title";
-    title.textContent = this.config.title || "Formulir Pesanan";
-
-    const closeButton = document.createElement("button");
-    closeButton.type = "button";
-    closeButton.className = "close";
-    closeButton.innerHTML = "&times;"; // Simbol silang perkasa
-
-    // 4. Proses kompilasi konten murni vanilla
+    // 4. Proses kompilasi konten polimorfik murni vanilla pilihan cerdas Anda
     const bodyContent = this._compileContent(contentPayload);
     bodyContent.classList.add("body");
 
-    // Satukan rantai anatomi fisik komponen
-    header.append(title, closeButton);
-    modalBox.append(header, bodyContent);
-    this.overlayElement.appendChild(modalBox);
-
     // ====================================================
-    // 🎢 PENGIKAT EVENT LISTENER MURNI
+    // 🧙‍♂️ THE PERFECT VANILLA WEAVING (JAHIT STRUKTUR DOM)
     // ====================================================
-    closeButton.addEventListener("click", () => this.close());
+    if (header && closeBtn) header.appendChild(closeBtn);
+    if (modalBox && header) modalBox.appendChild(header);
+    if (modalBox && bodyContent) modalBox.appendChild(bodyContent);
+    if (overlay && modalBox) overlay.appendChild(modalBox);
 
-    // Tutup safely jika area hitam backdrop luar diketuk
-    this.overlayElement.addEventListener("click", (event) => {
-      if (event.target === this.overlayElement) {
-        this.close();
-      }
-    });
-
-    // Injeksi fisik modal langsung di bawah dokumen kulit terluar body
-    document.body.appendChild(this.overlayElement);
+    // Injeksi fisik modal langsung di bawah bodi kulit terluar dokumen HTML
+    if (overlay) document.body.appendChild(overlay);
 
     return this._getControlInterfaces();
   }
 
-  public open(): void {
-    if (!this.overlayElement) return;
+  protected template(typeKey: ModalElementType, el: HTMLElement, _payload?: any): void {
+    switch (typeKey) {
+      case "@container":
+        el.id = this.config.id;
+        el.className = `dialog hidden ${this.config.className} ${el.className || ""}`.trim();
+        break;
 
-    this.overlayElement.classList.remove("hidden");
+      case "@modal":
+        el.className = `modal ${this.config.modalClass} ${el.className || ""}`.trim();
+        break;
+
+      case "@modal>header": {
+        const title = document.createElement("h2");
+        title.className = "title";
+        title.textContent = this.config.title || "Formulir Pesanan";
+        el.appendChild(title);
+        break;
+      }
+
+      case "@modal>closeBtn": {
+        const btn = el as HTMLButtonElement;
+        btn.type = "button";
+        btn.innerHTML = "&times;"; // Simbol silang perkasa
+        break;
+      }
+    }
+  }
+
+  public initialize(): void {
+
+    const overlay = this.load("@container") as HTMLElement;
+    const closeBtn = this.load("@modal>closeBtn") as HTMLElement;
+
+    if (closeBtn && overlay) {
+      // Klik tombol silang memicu penutupan modal
+      closeBtn.addEventListener("click", () => this.close());
+
+      // Tutup safely jika area kosong backdrop luar hitam diketuk oleh user
+      overlay.addEventListener("click", (event) => {
+        if (event.target === overlay) {
+          this.close();
+        }
+      });
+
+      console.log(`[Modal Lifecycle] Event interaksi untuk #${this.config.id} sukses terikat.`);
+    }
+  }
+
+  public open(): void {
+    const overlay = this.load("@container") as HTMLElement;
+    if (!overlay) return;
+
+    overlay.classList.remove("hidden");
     document.body.style.overflow = "hidden"; // Cegah double scrolling halaman belakang
 
     if (typeof this.config.onOpen === "function") {
-      this.config.onOpen(this.overlayElement);
+      this.config.onOpen(overlay);
     }
   }
 
   public close(): void {
-    if (!this.overlayElement) return;
+    const overlay = this.load("@container") as HTMLElement;
+    if (!overlay) return;
 
-    this.overlayElement.classList.add("hidden");
+    overlay.classList.add("hidden");
     document.body.style.overflow = ""; // Pulihkan scroll normal halaman belakang
 
     if (typeof this.config.onClose === "function") {
-      this.config.onClose(this.overlayElement);
+      this.config.onClose(overlay);
     }
 
-    // Eksekusi pemusnahan jika bendera destroyOnClose bernilai TRUE
     if (this.config.destroyOnClose) {
       this.destroy();
     }
   }
 
-  /**
-   * 💣 THE TOTAL WIPEOUT: Hancurkan fisik elemen dari rahim DOM Tree halaman
-   */
-  public destroy(): void {
-    if (this.overlayElement) {
-      this.overlayElement.remove(); // Cabut dari halaman web
-      this.overlayElement = null;   // Kosongkan pointer memori agar dibersihkan Garbage Collector OS
-      console.log(`[Universal Modal] Instance #${this.config.id} successfully wiped out from active memory stacks.`);
+  private _compileContent(content: any): HTMLElement {
+    if (content instanceof HTMLElement) return content;
+
+    if (typeof content === "string") {
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = content;
+      return wrapper.firstElementChild instanceof HTMLElement ? wrapper.firstElementChild : wrapper;
     }
+
+    if (typeof content === "function") {
+      const renderedNode = content();
+      if (renderedNode instanceof HTMLElement) return renderedNode;
+    }
+
+    const fallbackDiv = document.createElement("div");
+    fallbackDiv.textContent = typeof content === "object" ? JSON.stringify(content) : String(content);
+    return fallbackDiv;
   }
 
   private _getControlInterfaces() {
+    const overlay = this.load("@container") as HTMLElement;
     return {
-      element: this.overlayElement as HTMLElement,
+      element: overlay as HTMLElement,
       open: () => this.open(),
       close: () => this.close(),
       destroy: () => this.destroy()

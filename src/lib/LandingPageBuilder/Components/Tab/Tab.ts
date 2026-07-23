@@ -121,7 +121,7 @@ export class TabBuilder {
     return [...this.#items];
   }
 
-  public create(content: iTabContent): HTMLElement {
+  public prepare(content: iTabContent): HTMLElement {
     this.items = content.body;
     this.currentTabIndex = 0;
 

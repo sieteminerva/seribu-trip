@@ -1,16 +1,22 @@
-import type { iBasicNode, iBuilderConfig } from "../../interface";
+import type { iBasicNode, iBuilderConfig, iBuilderRegistry } from "../../interface";
+import { Builder } from "../Base";
 import "./Carousel.css";
 
 export type CarouselElementType =
+  | "@container"
   | "@carousel"
   | "@carousel>control"
+  | "@carousel>control>prev"
+  | "@carousel>control>next"
   | "@carousel>navigations"
-  | "@carousel>navigations>button"
+  | "@carousel>navigations>dot"
   | "@carousel>track"
   | "@carousel>track>slide"
-  | "@carousel>track>slide>slide-inner"
-  | "@carousel>track>slide>slide-inner>img-fluid"
-  | "@carousel>track>slide>slide-inner>caption"
+  | "@carousel>track>slide>inner"
+  | "@carousel>track>slide>caption"
+  | "@carousel>track>slide>title"
+  | "@carousel>track>slide>desc"
+  | "@carousel>track>slide>image";
 
 export interface iCarouselConfig extends iBuilderConfig<CarouselElementType> {
   container?: null | string | HTMLElement;
@@ -82,14 +88,17 @@ interface iResolvedConfig extends iCarouselConfig {
   isSliding: boolean;
 };
 
-export class CarouselBuilder {
+export class CarouselBuilder extends Builder<CarouselElementType, iCarouselConfig> {
+  readonly builderId: keyof iBuilderRegistry = "carousel";
+  readonly name: keyof iBuilderRegistry = "carousel";
+  readonly stylesheet: string = "./Carousel.css";
+
   // Instance State Variables
   private currentIndex = 0;
   private isTransitioning = false;
   private autoPlayTimer: number | undefined;
 
   private rConfig!: iResolvedConfig;
-  public _config!: iCarouselConfig;
 
   // Element References
   private container!: HTMLElement;
@@ -100,18 +109,28 @@ export class CarouselBuilder {
 
 
   constructor(config: Partial<iCarouselConfig> = {}) {
-    this.config = config;
-  }
+    super();
 
+    const defaultSelectors = {
+      "@container": { tagName: "div", className: "carousel-widget-wrapper" },
+      "@carousel": { tagName: "div", className: "carousel" },
+      "@carousel>control": { tagName: "div", className: "control-group" },
+      "@carousel>control>prev": { tagName: "button", className: "control prev" },
+      "@carousel>control>next": { tagName: "button", className: "control next" },
+      "@carousel>navigations": { tagName: "div", className: "navigations" },
+      "@carousel>navigations>dot": { tagName: "button", className: "dot" },
+      "@carousel>track": { tagName: "div", className: "track" },
+      "@carousel>track>slide": { tagName: "div", className: "slide" },
+      "@carousel>track>slide>inner": { tagName: "div", className: "slide-inner" },
+      "@carousel>track>slide>caption": { tagName: "div", className: "caption" },
+      "@carousel>track>slide>title": { tagName: "h3", className: "title" },
+      "@carousel>track>slide>desc": { tagName: "p", className: "desc" },
+      "@carousel>track>slide>image": { tagName: "img", className: "img-fluid" }
+    };
 
-  public get config(): any {
-    return this._config;
-  }
-
-  public set config(newConfig: any) {
     const defaultConfig: Required<iCarouselConfig> = {
       themeId: "default",
-      container: null,
+      container: "",
       showNavigation: true,
       showControl: "auto",
       autoPlay: 4000,
@@ -122,126 +141,227 @@ export class CarouselBuilder {
       pauseOnHover: true,
       slideHeight: "",
       slideWidth: "",
-      selectors: {
-        "@carousel": { tagName: "div", className: "carousel" },
-        "@carousel>control": { tagName: "button" },
-        "@carousel>navigations": { tagName: "div" },
-        "@carousel>navigations>button": { tagName: "button" },
-        "@carousel>track": { tagName: "div", className: "track", isArray: true },
-        "@carousel>track>slide": { tagName: "div", className: "slide" },
-        "@carousel>track>slide>slide-inner": { tagName: "div", className: "slide-inner" },
-        "@carousel>track>slide>slide-inner>caption": { tagName: "div", className: "caption" },
-        "@carousel>track>slide>slide-inner>img-fluid": { tagName: "img", className: "img-fluid" }
-      },
-      emit: () => { }
-    };
-    this._config = {
-      ...defaultConfig,
-      ...newConfig
+      selectors: defaultSelectors,
+      emit: null
     };
 
-    // 💡 LIVE RE-RETRIGGER SIKLUS: 
-    // Jika komponen lama Anda punya fungsi internal untuk memperbarui kecepatan geser (e.g. this.updateSliderSpeed()), 
-    // Anda bisa memicunya langsung dari dalam setter ini secara live reaktif!
-    if (typeof (this as any).updateSliderSpeed === "function") {
-      (this as any).updateSliderSpeed();
-    }
+    this.config = this.resolveConfig(defaultConfig, config);
+
   }
 
+  public prepare(data: any, _config?: Required<iCarouselConfig> | undefined): HTMLElement | Record<string, any | HTMLElement> {
 
-  /**
-   * 👑 CORE ENTRY POINT: Pintu masuk tunggal perakitan carousel
-   */
-  public create(data: iBasicNode, config?: iCarouselConfig): HTMLElement {
-    // console.log("[Carousel Input Check] Object received:", data);
-
-    // ====================================================
-    const secureAttributes = data?.attrs || (data as any)?.config || {};
     // console.log("[Carousel Input Check] Locked attributes payload:", secureAttributes);
 
     // Bersihkan state internal instance komponen secara steril
-    this.destroy();
+    this.unmount();
     this.currentIndex = 0;
     this.slides = [];
     this.dots = [];
     this.buttons = [];
 
     if (data.config) {
-      this.config = data.config;
+      this.config = this.resolveConfig(this.config, data.config);
       console.log("carousel config: Updated from data params")
-    } else if (config) {
-      this.config = config;
-      console.log("carousel config: Updated from config params")
-    }
-
-    // ====================================================
-    if (Object.keys(secureAttributes).length > 0) {
-      this._mergeAttributesToConfig(secureAttributes);
     }
 
     // 3. Ambil kontainer fisik dari DOM/system setelah konfigurasi dasar di memori aman
-    this.container = this._getContainer() as HTMLElement;
-    // console.log("Carousel Container Locked:", { container: this.container });
-
+    // const wrapper = this.render("@container", data) as HTMLElement;
 
     // 4. Kunci hasil konfigurasi akhir yang mutlak valid berdasarkan panjang konten gambar
-    const contentPayload = (data.content as iBasicNode[]) || [];
-    this.rConfig = this._resolveConfig(this.config, contentPayload.length);
+    const content = (data.content as iBasicNode[]) || [];
     // console.log("CarouselBuilder Final Resolution Config:", { config: this.rConfig });
 
     // 5. Bangun Elemen Dasar DOM Kerangka Utama
-    const carouselElement = this._buildBaseDOM(contentPayload);
+    const carousel = this.render("@carousel", content);
+    this.rConfig = this.resolveRuntimeConfig(carousel as HTMLElement, data);
 
-    if (Object.keys(secureAttributes).length === 0 && carouselElement instanceof HTMLElement) {
-      this._extractConfigFromDOM(carouselElement);
+    if (this.config.showControl === 'auto' || this.config.showNavigation === 'auto') {
+      carousel?.classList.add('auto-controls');
     }
 
+    this.track = this.render("@carousel>track", content) as HTMLElement;
 
+    this.slides = content.map((item, _index) => {
+      const slide = this.render("@carousel>track>slide", item, true) as HTMLElement;
+      const inner = this.render("@carousel>track>slide>inner", item, true) as HTMLElement;
 
-    // 6. MODULAR ROUTER TERMINAL: Jalankan jalur penataan spesifik tanpa melompat layout
-    if (this.rConfig.vertical) {
-      this._activateVerticalMode(carouselElement);
-    } else {
-      this._activateHorizontalMode(carouselElement);
-    }
+      if (item.image) {
+        const img = this.render("@carousel>track>slide>image", item, true);
+        if (img && inner) inner.appendChild(img);
+      }
 
-    // 7. Pasang ke container tujuan akhir
+      if (item.title || item.description) {
+        const caption = this.render("@carousel>track>slide>caption", item, true);
+        if (item.title) {
+          const title = this.render("@carousel>track>slide>title", item, true);
+          if (title && caption) caption.appendChild(title);
+        }
+        if (item.description) {
+          const desc = this.render("@carousel>track>slide>desc", item, true);
+          if (desc && caption) caption.appendChild(desc);
+        }
+        if (caption && inner) inner.appendChild(caption);
+      }
+
+      if (inner && slide) slide.appendChild(inner);
+      if (slide && this.track) this.track.appendChild(slide);
+
+      return slide as HTMLElement;
+    });
+
+    if (this.track && carousel) carousel.appendChild(this.track);
+
     if (this.config.container) {
-      this.container.appendChild(carouselElement);
+      this.container.appendChild(carousel!);
     } else {
-      this.container = carouselElement;
-    }
-
-    // 8. Nyalakan sistem pemutar otomatis secara tertib
-    if (this.rConfig.autoPlay) {
-      this._startAutoPlay();
-    }
-
-    // 9. Bind hover events for pauseOnHover and auto controls (Aman Terisolasi)
-    if (this.config.pauseOnHover || this.config.showControl === 'auto' || this.config.showNavigation === 'auto') {
-      carouselElement.addEventListener('mouseenter', () => {
-        if (this.config.pauseOnHover && this.autoPlayTimer) {
-          window.clearInterval(this.autoPlayTimer);
-          this.autoPlayTimer = undefined;
-        }
-        carouselElement.classList.add('hovering');
-      });
-      carouselElement.addEventListener('mouseleave', () => {
-        if (this.config.pauseOnHover && this.rConfig.autoPlay) {
-          this._startAutoPlay();
-        }
-        carouselElement.classList.remove('hovering');
-      });
+      this.container = carousel!;
     }
 
     // Kembalikan elemen hidup yang sudah matang sempurna 100% tanpa cangkang dummy palsu!
     return this.container;
   }
 
+  public initialize(carousel: HTMLElement): void {
+
+    if (this.rConfig.showControl && this.slides.length > 1) {
+      this.attachControls(carousel!);
+    }
+
+    if (this.rConfig.showNavigation && this.slides.length > 1) {
+      const maxDotsLimit = this.rConfig.maxDots || this.slides.length;
+      this.attachNavigation(carousel!, this.slides.slice(0, maxDotsLimit));
+    }
+
+    // 6. MODULAR ROUTER TERMINAL: Jalankan jalur penataan spesifik tanpa melompat layout
+    if (this.rConfig.vertical) {
+      this.renderVerticalMode(carousel);
+    } else {
+      this.renderHorizontalMode(carousel);
+    }
+
+    // 8. Nyalakan sistem pemutar otomatis secara tertib
+    if (this.rConfig.autoPlay) {
+      this.startAutoPlay();
+    }
+
+    // 9. Bind hover events for pauseOnHover and auto controls (Aman Terisolasi)
+    if (this.config.pauseOnHover || this.config.showControl === 'auto' || this.config.showNavigation === 'auto') {
+      carousel.addEventListener('mouseenter', () => {
+        if (this.config.pauseOnHover && this.autoPlayTimer) {
+          window.clearInterval(this.autoPlayTimer);
+          this.autoPlayTimer = undefined;
+        }
+        carousel.classList.add('hovering');
+      });
+      carousel.addEventListener('mouseleave', () => {
+        if (this.config.pauseOnHover && this.rConfig.autoPlay) {
+          this.startAutoPlay();
+        }
+        carousel.classList.remove('hovering');
+      });
+    }
+  }
+
+  protected template(typeKey: CarouselElementType, el: HTMLElement, payload?: any): void {
+    const isVert = this.config?.vertical;
+
+    switch (typeKey) {
+      case "@carousel":
+        // Siram kelas nama animasi dinamis bawaan config spreadsheet Sheets Anda
+        el.className = `carousel anim-${this.config.animation} ${el.className || ""}`.trim();
+        if (this.config.showControl === 'auto' || this.config.showNavigation === 'auto') {
+          el.classList.add('auto-controls');
+        }
+        break;
+
+      case "@carousel>track>slide>image": {
+        const img = el as HTMLImageElement;
+        img.src = encodeURI(payload?.image || "");
+        img.alt = payload?.title || "carousel-slide-graphic";
+        break;
+      }
+
+      case "@carousel>track>slide>title":
+        el.textContent = payload?.title || "";
+        break;
+
+      case "@carousel>track>slide>desc":
+        el.textContent = payload?.description || "";
+        break;
+
+      case "@carousel>control>prev":
+        el.innerHTML = isVert ? "&#9650;" : "&#10094;"; // ▲ atau ❮ secara semantik
+        break;
+
+      case "@carousel>control>next":
+        el.innerHTML = isVert ? "&#9660;" : "&#10095;"; // ▼ atau ❯ secara semantik
+        break;
+    }
+  }
+
+
+  // Inside Components/CarouselBuilder.ts -> Converted to your Pure Custom Bootstrapper Specification
+
+  /**
+   * 👑 THE UNIVERSAL PROGRESSIVE BOOTSTRAPPER (THE FINAL HOLY GRAIL)
+   * 100% Menggunakan logika cerdas Anda! Memanfaatkan render() resmi untuk meregistrasikan 
+   * elemen manual secara legal, aman, dan kebal dari pembatasan Private Fields #nodes!
+   */
+  public run(el?: HTMLElement): void {
+    let targetCarousel = el;
+
+    if (!targetCarousel) {
+      targetCarousel = document.querySelector(".carousel") as HTMLElement;
+    }
+
+    if (!targetCarousel) {
+      console.warn(
+        `🚨 [Carousel Bootstrapper Warning]: Failed to manually activate Carousel.\n` +
+        `Reason: No active live element matching selector ".carousel" was found in the DOM Tree.`
+      );
+      return;
+    }
+
+    // ====================================================
+    // 🛡️ BENTENG PERTAHANAN PENYELAMAT MEMORI (IDE LOGIS ANDA!)
+    // 1. Eksekusi pembersihan total di level paling atas agar RAM dicuci resik saat refresh!
+    // ====================================================
+    this.destroy();
+    if (this.autoPlayTimer) {
+      window.clearInterval(this.autoPlayTimer);
+      this.autoPlayTimer = undefined;
+    }
+
+    console.log(`🚀 [Carousel Bootstrapper]: Bootstrapping live markup for #${targetCarousel.id || "vanilla-carousel"}.`);
+
+    // 2. Ambil referensi internal gerbong slides fisik yang ditulis manual di HTML luar
+    this.slides = Array.from(targetCarousel.querySelectorAll(".slide")) as HTMLElement[];
+    this.track = targetCarousel.querySelector(".track") as HTMLElement || targetCarousel;
+
+    // 3. ONE-SHOT CONFIG RESOLUTION: Peras atribut data- dari fisik element RAM seketika!
+    this.resolveRuntimeConfig(targetCarousel, {}, this.slides.length);
+
+    // ====================================================
+    // 🧙‍♂️ THE SOVEREIGN REGISTRATION BYPASS (MAHKOTA LOGIKA JENIUS ANDA!)
+    // Kita panggil render() pusat. Karena kita menyuapkan parameter payload kustom,
+    // elemen HTML manual ini otomatis ter-store secara 100% legal dan suci ke dalam #nodes privat!
+    // ====================================================
+    // Catatan: Jika Base Class render mengembalikan elemen baru, kita pastikan data- data-nya tetap tersinkron
+    // this.render("@container", {}, true);
+    this.render("@carousel", {}, true);
+
+    // 4. Detonasi sakelar interaksi hidup pergerakan dan event listeners hover secara otomatis!
+    this.initialize(targetCarousel);
+
+    console.log(`✨ [Carousel Bootstrapper]: Manual HTML markup successfully activated via Legal #nodes Registration!`);
+  }
+
+
   /**
   * TERMINAL MODUL 1: Menghidupkan total penataan jalur mendatar (Horizontal)
   */
-  private _activateHorizontalMode(carousel: HTMLElement): void {
+  private renderHorizontalMode(carousel: HTMLElement): void {
     carousel.classList.add("orient-horizontal");
 
     const totalSlides = this.slides.length;
@@ -272,13 +392,13 @@ export class CarouselBuilder {
       });
     }
 
-    this._executeAnimationEngine(true);
+    this.animate(true);
   }
 
   /**
    * TERMINAL MODUL 2: Menghidupkan total penataan jalur tegak lurus (Vertical)
    */
-  private _activateVerticalMode(carousel: HTMLElement): void {
+  private renderVerticalMode(carousel: HTMLElement): void {
     carousel.classList.add("orient-vertical");
     this.track.style.display = "flex";
     this.track.style.flexDirection = this.rConfig.animation === 'slide-down' ? "column-reverse" : "column";
@@ -306,14 +426,14 @@ export class CarouselBuilder {
       slide.style.width = this.rConfig.slideWidth || "100%";
     });
 
-    this._executeAnimationEngine(true);
+    this.animate(true);
   }
 
 
   /**
    * 🎢 PUSAT KENDALI PENGANIMASIAN MODULAR (ANTI-JUMPING GUARANTEED)
    */
-  private _executeAnimationEngine(immediate = false): void {
+  private animate(immediate = false): void {
     // A. FADE MODE — CSS-driven transitions on individual slides
     if (this.rConfig.animation === 'fade' && !this.rConfig.vertical) {
       // For immediate (initial render), suppress CSS transitions temporarily
@@ -374,7 +494,10 @@ export class CarouselBuilder {
     });
   }
 
-  public navigateTo(index: number, immediate = false): void {
+  public next = (): void => this._navigateTo(this.currentIndex + 1);
+  public previous = (): void => this._navigateTo(this.currentIndex - 1);
+
+  public _navigateTo(index: number, immediate = false): void {
     const totalSlides = this.slides.length;
     if (totalSlides === 0 || this.isTransitioning) return;
 
@@ -383,7 +506,7 @@ export class CarouselBuilder {
 
     if (immediate) {
       this.currentIndex = targetIndex;
-      this._executeAnimationEngine(true);
+      this.animate(true);
       return;
     }
 
@@ -396,88 +519,25 @@ export class CarouselBuilder {
     }
 
     this.currentIndex = targetIndex;
-    this._executeAnimationEngine(false);
-    this._updateDots(loop as boolean);
+    this.animate(false);
+    this.renderDots(loop as boolean);
   }
 
-  public next = (): void => this.navigateTo(this.currentIndex + 1);
-  public previous = (): void => this.navigateTo(this.currentIndex - 1);
-
-  // --- Sub-routines Pengolah Atribut & DOM Dasar ---
-
-  private _buildBaseDOM(content: iBasicNode[]): HTMLElement {
-    const carousel = document.createElement("div");
-    carousel.className = `carousel anim-${this.rConfig.animation}`;
-
-    if (this.config.showControl === 'auto' || this.config.showNavigation === 'auto') {
-      carousel.classList.add('auto-controls');
-    }
-
-    this.track = document.createElement("div");
-    this.track.className = "track";
-    this.slides = content.map((item, _index) => {
-      const slide = document.createElement("div");
-      slide.className = "slide";
-
-      const inner = document.createElement("div");
-      inner.className = "slide-inner";
-
-      if (item.image) {
-        const img = document.createElement("img");
-        img.src = item.image; img.alt = item.title || "";
-        img.className = "img-fluid";
-        inner.appendChild(img);
-      }
-
-      if (item.title || item.description) {
-        const caption = document.createElement("div");
-        caption.className = "caption";
-        if (item.title) {
-          const t = document.createElement("h3");
-          t.textContent = item.title;
-          caption.appendChild(t);
-        }
-        if (item.description) {
-          const desc = document.createElement("p");
-          desc.textContent = item.description;
-          caption.appendChild(desc);
-        }
-        inner.appendChild(caption);
-      }
-
-      slide.appendChild(inner);
-      this.track.appendChild(slide);
-      return slide;
-    });
-
-    carousel.appendChild(this.track);
-    if (this.rConfig.showControl && this.slides.length > 1) {
-      this._attachControls(carousel);
-    }
-    if (this.rConfig.showNavigation && this.slides.length > 1) {
-      this._attachNavigation(carousel, this.slides.slice(0, this.rConfig.maxDots));
-    }
-    return carousel;
-  }
-
-  private _getContainer(): HTMLElement | null {
-    if (!this.config.container) return document.createElement("div");
-    return typeof this.config.container === "string" ? document.querySelector(this.config.container) : this.config.container;
-  }
-  private _startAutoPlay(): void {
+  private startAutoPlay(): void {
     if (this.rConfig.autoPlay && this.slides.length > 1 && !this.autoPlayTimer) {
       const interval = typeof this.rConfig.autoPlay === 'number' ? this.rConfig.autoPlay : 3000;
       this.autoPlayTimer = window.setInterval(this.next, interval);
     }
   }
 
-  private _resetAutoPlay = (): void => {
+  private resetAutoPlay = (): void => {
     if (this.autoPlayTimer) {
       window.clearInterval(this.autoPlayTimer);
-      this._startAutoPlay();
+      this.startAutoPlay();
     }
   }
-  private _updateDots(loop: boolean): void {
+
+  private renderDots(loop: boolean): void {
     if (!this.rConfig.showNavigation || this.dots.length === 0) return;
     this.dots.forEach(d => d.classList.remove("active"));
     let dotActiveIndex = this.currentIndex;
@@ -487,32 +547,32 @@ export class CarouselBuilder {
     }
     if (this.dots[dotActiveIndex]) this.dots[dotActiveIndex].classList.add("active");
   }
-  private _attachControls(carousel: HTMLElement): void {
-    const isVert = this.rConfig.vertical;
-    const prevBtn = document.createElement("button");
-    prevBtn.className = "control prev"; prevBtn.innerHTML = isVert ? "▲" : "❮";
-    prevBtn.onclick = () => { this.previous(); this._resetAutoPlay(); };
-    const nextBtn = document.createElement("button");
-    nextBtn.className = "control next";
-    nextBtn.innerHTML = isVert ? "▼" : "❯";
+
+  private attachControls(carousel: HTMLElement): void {
+    // const isVert = this.rConfig.vertical;
+    const prevBtn = this.render("@carousel>control>prev") as HTMLButtonElement;
+
+    prevBtn.onclick = () => { this.previous(); this.resetAutoPlay(); };
+    const nextBtn = this.render("@carousel>control>next") as HTMLButtonElement;
+
     nextBtn.onclick = () => {
       this.next();
-      this._resetAutoPlay();
+      this.resetAutoPlay();
     };
     this.buttons.push(prevBtn, nextBtn);
     carousel.append(prevBtn, nextBtn);
   }
 
-  private _attachNavigation(carousel: HTMLElement, navigableSlides: HTMLElement[]): void {
-    const navContainer = document.createElement("div");
+  private attachNavigation(carousel: HTMLElement, navigableSlides: HTMLElement[]): void {
+    const navContainer = this.render("@carousel>navigations") as HTMLElement;
     navContainer.className = `navigations ${this.rConfig.vertical ? "vertical-dots" : "horizontal-dots"}`;
     navigableSlides.forEach((_, index) => {
-      const dot = document.createElement("button");
+      const dot = this.render("@carousel>navigations>dot", null, true) as HTMLButtonElement;
       dot.className = "dot";
       if (index === 0) dot.classList.add("active");
       dot.onclick = () => {
-        this.navigateTo(index);
-        this._resetAutoPlay();
+        this._navigateTo(index);
+        this.resetAutoPlay();
       };
       this.dots.push(dot);
       navContainer.appendChild(dot);
@@ -520,61 +580,7 @@ export class CarouselBuilder {
     carousel.appendChild(navContainer);
   }
 
-  private _mergeAttributesToConfig(attrs: Record<string, any>): void {
-    for (const [dataKey, rawValue] of Object.entries(attrs)) {
-      const targetKey = (AttrsConfigMap as any)[dataKey];
-      if (targetKey && targetKey in this.config) {
-        let finalValue = rawValue;
-        const defaultType = typeof (this.config as any)[targetKey];
-        if (defaultType === "boolean" && typeof rawValue === "string") {
-          finalValue = rawValue === "true";
-        } else if (defaultType === "number" && typeof rawValue === "string") {
-          finalValue = Number(rawValue);
-        } (this.config as any)[targetKey] = finalValue;
-      }
-    }
-  }
-
-  private _extractConfigFromDOM(element: HTMLElement): void {
-    const rawAttrs: Record<string, any> = {};
-    for (const attr of Array.from(element.attributes)) {
-      if (attr.name.startsWith("data-") || attr.name === "container") {
-        rawAttrs[attr.name] = attr.value;
-      }
-    }
-    this._mergeAttributesToConfig(rawAttrs);
-  }
-
-  private _resolveConfig(config: Partial<iCarouselConfig>, totalSlides: number): iResolvedConfig {
-
-    // console.log("main config:", this.config)
-    const slidesPerView = config.slidesPerView || 1;
-    let animation = config.animation || 'fade';
-    const vertical = config.vertical === true;
-    // Paksa agar mode vertical selalu menggunakan klan sliding animation (slide-up) jika bernilai fade kaku
-    if (vertical && animation === 'fade') { animation = 'slide-up'; }
-    if (!vertical && slidesPerView > 1 && animation === 'fade') { animation = 'slide-left'; }
-    const isSliding = animation.startsWith('slide');
-    const maxIndex = isSliding ? totalSlides - slidesPerView : totalSlides - 1;
-    const maxDots = isSliding ? totalSlides - slidesPerView + 1 : totalSlides;
-    return {
-      showControl: config.showControl ?? true,
-      showNavigation: config.showNavigation ?? true,
-      autoPlay: config.autoPlay ?? 4000,
-      animation,
-      slidesPerView,
-      vertical,
-      loop: config.loop ?? true,
-      slideHeight: config.slideHeight,
-      slideWidth: config.slideWidth,
-      pauseOnHover: config.pauseOnHover ?? true,
-      isSliding,
-      maxIndex: maxIndex > 0 ? maxIndex : 0,
-      maxDots: maxDots > 0 ? maxDots : 1
-    };
-  }
-
-  public destroy(): void {
+  public unmount(): void {
     if (this.autoPlayTimer) {
       window.clearInterval(this.autoPlayTimer);
       this.autoPlayTimer = undefined;
@@ -586,5 +592,65 @@ export class CarouselBuilder {
     this.buttons = [];
     if (this.container && this.config.container) this.container.innerHTML = "";
   }
+
+  private resolveRuntimeConfig(element: HTMLElement, payload: any, totalSlides?: number): iResolvedConfig {
+
+    const mergeAttributes = (attrs: Record<string, any>): void => {
+      for (const [dataKey, rawValue] of Object.entries(attrs)) {
+        const targetKey = (AttrsConfigMap as any)[dataKey];
+        if (targetKey && targetKey in this.config) {
+          let finalValue = rawValue;
+          const defaultType = typeof (this.config as any)[targetKey];
+          if (defaultType === "boolean" && typeof rawValue === "string") {
+            finalValue = rawValue === "true";
+          } else if (defaultType === "number" && typeof rawValue === "string") {
+            finalValue = Number(rawValue);
+          } (this.config as any)[targetKey] = finalValue;
+        }
+      }
+    }
+
+    let dataAttrs: Record<string, any> = {};
+    // A. PEMERASAN JALUR 1: Peras objek data payload Sheets bawaan server
+    const secureAttributes = payload?.attrs || payload?.config || {};
+    // B. PEMERASAN JALUR 2 (SIHIR ANDA!): Peras atribut data- dari fisik element RAM seketika!
+    if (element instanceof HTMLElement) {
+      for (const attr of Array.from(element.attributes)) {
+        if (attr.name.startsWith("data-") || attr.name === "container") {
+          dataAttrs[attr.name] = attr.value;
+        }
+      }
+    }
+
+    totalSlides = totalSlides ? totalSlides : payload.content.length;
+
+    mergeAttributes({ ...secureAttributes, ...dataAttrs });
+
+    // C. KALKULASI RASIO MATEMATIKA UTANPA CADANGAN LOOPING GANDA
+    const slidesPerView = this.config.slidesPerView || 1;
+    let animation = this.config.animation || 'fade';
+    const vertical = this.config.vertical === true;
+
+    if (vertical && animation === 'fade') animation = 'slide-up';
+    if (!vertical && slidesPerView > 1 && animation === 'fade') animation = 'slide-left';
+
+    const isSliding = animation.startsWith('slide');
+    const maxIndex = isSliding ? totalSlides! - slidesPerView : totalSlides! - 1;
+    const maxDots = isSliding ? totalSlides! - slidesPerView + 1 : totalSlides;
+
+    // Kunci mati rConfig satu pintu untuk selamanya!
+    return {
+      showControl: this.config.showControl ?? true,
+      showNavigation: this.config.showNavigation ?? true,
+      autoPlay: this.config.autoPlay ?? 4000,
+      animation, slidesPerView, vertical, loop: this.config.loop ?? true,
+      slideHeight: this.config.slideHeight, slideWidth: this.config.slideWidth,
+      pauseOnHover: this.config.pauseOnHover ?? true,
+      isSliding,
+      maxIndex: maxIndex > 0 ? maxIndex : 0,
+      maxDots: maxDots! > 0 ? maxDots! : 1
+    };
+  }
+
 }
 

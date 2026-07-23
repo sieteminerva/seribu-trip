@@ -1,4 +1,5 @@
-import type { iActionProperty, iBasicNode, iBuilderConfig } from "../../interface";
+import type { iActionProperty, iBasicNode, iBuilderConfig, iBuilderRegistry } from "../../interface";
+import { Builder } from "../Base";
 
 export type FooterElementType =
   | "@footer"
@@ -12,36 +13,43 @@ export type FooterElementType =
 
 export interface iFooterConfig extends iBuilderConfig<FooterElementType> {
   useCopyright: boolean,
-  useContact: boolean
+  useInfo: boolean
 }
 
 
-export class FooterBuilder {
-  public config!: Required<iFooterConfig>
+export class FooterBuilder extends Builder<FooterElementType, iFooterConfig> {
+  readonly builderId: keyof iBuilderRegistry = "footer";
+  readonly name: keyof iBuilderRegistry = "footer";
+  readonly stylesheet: string = "";
+  public config: Required<iFooterConfig>
 
-  constructor(_config: Partial<iFooterConfig>) {
+  constructor(config: Partial<iFooterConfig> = {}) {
+    super();
+    const defaultSelectors = {
+      "@footer": { tagName: "footer", className: "footer" },
+      "@footer>row": { tagName: "div", className: "row" },
+      "@footer>row>column": { tagName: "div", className: "column" },
+      "@footer>row>column>header": { tagName: "h2", className: "header" },
+      "@footer>row>column>desc": { tagName: "p", className: "desc" },
+      "@footer>row>column>list": { tagName: "ul", className: "unstyled-list" },
+      "@footer>row>column>list>item": { tagName: "li", className: "item" },
+      "@footer>copyright": { tagName: "div", className: "row" }
+    };
+
     const defaultConfig: Required<iFooterConfig> = {
       themeId: "default",
-      useContact: true,
+      useInfo: true,
       useCopyright: true,
-      selectors: {
-        "@footer": { tagName: "footer", className: "footer" },
-        "@footer>row": { tagName: "div", className: "row" },
-        "@footer>row>column": { tagName: "div", className: "column" },
-        "@footer>row>column>header": { tagName: "div", className: "header" },
-        "@footer>row>column>desc": { tagName: "div", className: "desc" },
-        "@footer>row>column>list": { tagName: "ul", className: "unstyled-list" },
-        "@footer>row>column>list>item": { tagName: "li", className: "item" },
-        "@footer>copyright": { tagName: "div", className: "row" }
-      },
+      selectors: defaultSelectors,
       emit: () => { }
     };
 
-    this.config = { ...defaultConfig, ..._config, ...defaultConfig.selectors, ..._config.selectors }
+    this.config = this.resolveConfig(defaultConfig, config);
 
   }
 
-  static create(data: iBasicNode, _config: Partial<iFooterConfig> = {}): HTMLElement {
+  createLegacy(data: iBasicNode, _config: Partial<iFooterConfig> = {}): HTMLElement {
+    if (_config) this.config = this.resolveConfig(this.config, _config);
     // console.log("FooterBuilder", { data })
     const content = data.content as iBasicNode;
 
@@ -112,5 +120,101 @@ export class FooterBuilder {
     footer.appendChild(bottomRow);
 
     return footer;
+  }
+
+  public prepare(data: any): HTMLElement {
+
+    const content = data.content || data;
+
+    // 1. Lahirkan Cangkang Makro Terluar & Baris Utama
+    const footer = this.render("@footer", content);
+
+    // 🪐 INFO ROW
+    if (this.config.useInfo) {
+      const row = this.render("@footer>row", content);
+
+      for (const col of content.columns) {
+
+        const column = this.render("@footer>row>column", col, true);
+        const header = this.render("@footer>row>column>header", col, true);
+        const desc = this.render("@footer>row>column>desc", col, true);
+        const list = this.render("@footer>row>column>list", content, true);
+
+        // Loop linear menyemburkan baris atomik tautan link kontak dari Sheets (.unstyled-list>item)
+        if (list) {
+          const actions = Array.isArray(col.actions) ? col.actions : [];
+          actions.forEach((payload: any) => {
+            const item = this.render("@footer>row>column>list>item", payload, true);
+            list.appendChild(item!);
+          });
+        }
+
+        if (header) column?.appendChild(header);
+        if (list) column?.appendChild(list)
+        if (desc) column?.appendChild(desc);
+        if (row) row.appendChild(column!);
+      }
+
+      footer?.appendChild(row!);
+    }
+
+    // 🪐 COPYRIGHT ROW
+    if (this.config.useCopyright) {
+      const row = this.render("@footer>copyright", content);
+      if (row) footer?.appendChild(row);
+    }
+
+    // Amankan dan kembalikan elemen kontainer makro terluarnya secara standard via Map get!
+    return this.load("@footer") as HTMLElement;
+  }
+
+
+  /**
+   * 👑 THE SEPARATED HYDRATION VALVE (POS PENYIRAMAN DATA KEBAL XSS)
+   * Mengunci pengisian nilai teks dan transformasi tag dinamis (Anchor) di RAM.
+   */
+  protected template(typeKey: FooterElementType, el: HTMLElement, payload?: any): void {
+    if (!payload) return;
+
+    switch (typeKey) {
+      case "@footer":
+        if (payload.id) el.id = payload.id;
+        if (payload.className) el.className = payload.className;
+        break;
+
+      case "@footer>row>column>header":
+        el.textContent = payload.title || "";
+        break;
+
+      case "@footer>row>column>desc":
+        el.textContent = payload.description || "";
+        break;
+
+      case "@footer>row>column>list>item": {
+        // Melahirkan tag jangkar <a> secara otonom di dalam rahim <li> list item
+        const a = document.createElement("a");
+        if (payload.id) a.id = payload.id;
+        if (payload.className) a.className = payload.className;
+        a.href = payload.href || "#";
+
+        // Gabungkan label dan alamat link secara aman tanpa risiko kebocoran XSS
+        a.textContent = `${payload.label || ""} ${payload.href || ""}`.trim();
+        el.appendChild(a);
+        break;
+      }
+
+      case "@footer>copyright": {
+        el.classList.add("bottom")
+        const pCopy = document.createElement("p");
+        // 🔮 JIT TIMESTAMP INJECTION: Hitung tahun secara real-time saat mendarat di RAM browser
+        pCopy.textContent = `© ${new Date().getFullYear()} ${payload.company || ""}. All rights reserved.`;
+        el.appendChild(pCopy);
+        break;
+      }
+    }
+  }
+
+  public initialize(): void {
+    console.log(`[Footer Lifecycle] Core structure connected successfully.`);
   }
 }
