@@ -1,12 +1,15 @@
 import type { iBuilderRegistry, iBuilderConfig, iElementProperty, iActionProperty, iBasicNode } from "../interface";
-import { TemplateRegistry } from "../Modules/TemplateRegistry";
+import { TemplateRegistry, type iNodeRecordItem, type iNodeRecords } from "../Modules/TemplateRegistry";
 
 declare global {
   interface HTMLElement {
-    outer?: HTMLElement;
-    inner?: HTMLElement;
+    __outer?: HTMLElement;
+    __inner?: HTMLElement;
   }
 }
+
+const GLOBAL_INSTANCE_COUNTER = new Map<string, number>();
+
 /**
  * Abstract Core Base Class representing the definitive declarative rendering engine blueprint.
  * Orchestrates a unidirectional 5-Phase lifecycle execution stream to parse configurations,
@@ -18,6 +21,8 @@ declare global {
  * @version 1.0.0
  */
 export abstract class Builder<TType extends string = string, TConfig extends iBuilderConfig<TType> = iBuilderConfig<TType>> {
+
+  protected instanceId: string = "";
 
   /**
    * The distinct, unique registry identifier allocated to the specific component subclass.
@@ -43,12 +48,135 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
    * Internal reference holder pointing directly to the raw, unmutated data node extracted from the spreadsheet database.
    */
 
-  #nodes = new Map<TType | string, { element: HTMLElement | HTMLElement[]; payload: any }>();
 
   protected activeLiveThemeId: string = "default";
 
-  constructor() { }
+  constructor() {
+    const isRegistryPresent = typeof TemplateRegistry !== "undefined" && typeof TemplateRegistry.nodes !== "undefined";
+    // const isRegistryPresent = false;
+    if (!isRegistryPresent) {
+      this.errorHandler();
+    }
+  }
 
+  private ensureInstanceIdentity(): string {
+    if (!this.instanceId) {
+      const baseId = this.builderId;
+
+      // Ambil urutan angka kelahiran instansi string ini di dalam RAM
+      let currentCount = GLOBAL_INSTANCE_COUNTER.get(baseId) || 0;
+      currentCount++;
+      GLOBAL_INSTANCE_COUNTER.set(baseId, currentCount);
+
+      // 💥 BUM! Jika instansi lahir lebih dari 1x, otomatis berikan ekor penanda numerik yang konsisten!
+      // Contoh: Putaran 1 tetap "product-card", Putaran 2 otomatis menjadi "product-card:instance-2", dst!
+      this.instanceId = currentCount > 1
+        ? `${baseId}:instance-${currentCount}`
+        : baseId;
+
+      console.log(`🤖 [Instance Fingerprint]: Auto-assigned identity scope: "${this.instanceId}"`);
+    }
+    return this.instanceId;
+  }
+
+  private errorHandler() {
+    const id = this.builderId;
+    console.warn(
+      `⚠️ [Framework Degraded Mode]: TemplateRegistry is not present!\n` +
+      `Global Slotting System and Cross-Builder Live Reactivity are disabled.\n` +
+      `Falling back to standalone local memory buffer for builder: "${id}".`
+    );
+  }
+
+  // nodes builder
+  #nodes = new Map<TType, iNodeRecords>();
+  private nodes() {
+    const id = this.ensureInstanceIdentity();
+    const isRegistryPresent = typeof TemplateRegistry !== "undefined" && typeof TemplateRegistry.nodes !== "undefined";
+    // const isRegistryPresent = false;
+
+    // 🛡️ BOM PERINGATAN ASAL USUL JELAS PILIHAN ANDA:
+    if (!isRegistryPresent) {
+      return {
+        has: (key: TType): boolean => this.#nodes.has(key),
+        get: (key: TType, index: number | "all" = 0): any => {
+          const mainRecord = this.#nodes.get(key);
+          if (!mainRecord || !mainRecord.records || mainRecord.records.length === 0) return null;
+
+          // Jika komponen meminta seluruh barisan elemen saudara (e.g. load(..., "all"))
+          if (index === "all") {
+            return mainRecord.records;
+          }
+          // Kembalikan murni 1 elemen fisik spesifik berdasarkan nomor indeks array-nya!
+          return mainRecord.records[index] || null;
+        },
+        set: (key: TType, element: HTMLElement, payload: any, multiple: boolean) => {
+          if (this.builderId === "masonry") console.log({ builder: this.builderId, method: "this.nodes().set()", entries: this.#nodes.entries() })
+          if (this.#nodes.has(key) && !multiple) return this.#nodes.get(key)?.records[0].proxy;
+
+          const rawObj = payload && typeof payload === "object" ? { ...payload } : { value: payload };
+          const newItem: iNodeRecordItem = { element, raw: rawObj, proxy: rawObj }; // Tanpa Proxy penangkap
+
+          if (this.#nodes.has(key)) {
+            this.#nodes.get(key)!.records.push(newItem);
+            return rawObj;
+          }
+
+          this.#nodes.set(key, { records: [newItem], builderInstance: this });
+          return rawObj;
+        },
+        delete: (key: TType, index: number | "all" = "all"): void => {
+          if (index === "all") {
+            this.#nodes.delete(key);
+          } else if (typeof index === "number") {
+            const mainRecord = this.#nodes.get(key);
+            if (mainRecord && mainRecord.records) {
+              // 🟢 FIX SINKRON: Potong murni tepat pada koordinat index, hapus sebanyak 1 item!
+              mainRecord.records.splice(index, 1);
+            }
+          }
+        },
+        clear: () => this.#nodes.clear(),
+        payload: (key: TType, index: number | "all" = 0): any => {
+          const mainRecord = this.#nodes.get(key);
+          if (!mainRecord || !mainRecord.records || mainRecord.records.length === 0) return null;
+          // Periksa parameter string "all" secara eksplisit pada array .records!
+          if (index === "all") return mainRecord.records.map(n => n.proxy);
+          return mainRecord.records[index as number]?.proxy || null;
+        },
+        load: (key: TType, index: number | "all" = 0): any => {
+          const mainRecord = this.#nodes.get(key);
+          if (!mainRecord || !mainRecord.records || mainRecord.records.length === 0) return null;
+          if (index === "all") return mainRecord.records.map(n => n.element);
+          return mainRecord.records[index as number]?.element || null;
+        }
+      }
+    }
+
+    return {
+      has: (key: TType): boolean => TemplateRegistry.nodes.has(id, key as string),
+      get: (key: TType, index: number | "all" = 0): HTMLElement | HTMLElement[] => TemplateRegistry.nodes.get(id, key as TType, index),
+      set: (typeKey: TType, element: HTMLElement, payload: any, multiple: boolean) => {
+        return TemplateRegistry.nodes.set(this, typeKey as string, element, payload, multiple, id);
+      },
+      delete: (key: TType, index: number | "all" = "all"): void => TemplateRegistry.nodes.delete(id, key as string, index),
+      clear: (): void => TemplateRegistry.nodes.clear(id),
+      payload: (key: TType, index: number | "all" = 0): any => {
+        // Panggil TemplateRegistry.nodes.get secara legal
+        const nodes = TemplateRegistry.nodes.get(id, key as string, index);
+        if (!nodes) return null;
+        // Jika pusat mengembalikan array (karena index === "all")
+        if (Array.isArray(nodes)) return nodes.map(n => n.proxy);
+        return nodes.proxy; // Mengambil properti .proxy dari dalam boks iNodeRecordItem sejati!
+      },
+      load: (key: TType, index: number | "all" = 0): any => {
+        const nodes = TemplateRegistry.nodes.get(id, key as string, index);
+        if (!nodes) return null;
+        if (Array.isArray(nodes)) return nodes.map(n => n.element);
+        return nodes.element;
+      }
+    };
+  }
   /**
    * 👑 THE SEPARATED HYDRATION VALVE (POS KEMENTERIAN PENGISIAN RAHIM DATA)
    * Murni hanya mengurusi penyemprotan teks data spesifik atomik, 
@@ -94,7 +222,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     // 🔮 THE ANCESTRAL POINTER EXTRACTOR (EVAKUASI DARI MAP POOL)
     // Jemput elemen root hidup dari dalam saku standard identifier @container!
     // ====================================================
-    const rootElement = this.#nodes.get(typeKey || "@container")?.element as HTMLElement
+    const rootElement = this.nodes().get(typeKey || "@container" as TType) as HTMLElement
 
     if (rootElement) {
       // Cabut dari silsilah induk bodi HTML jika memiliki parentNode aktif di browser
@@ -113,7 +241,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     // Pemicu utama agar Garbage Collector (GC) browser langsung menyapu bersih 
     // sisa bita RAM aplikasi Anda tanpa ada risiko Detached DOM tunggal yang tertinggal!
     // ====================================================
-    this.#nodes.clear();
+    this.nodes().clear();
     this.config = null as any;
 
     // console.log(`[Lifecycle Security] _nodes Map successfully liquidated. Memory state at 0B leak.`);
@@ -122,12 +250,16 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
   public create(content: iBasicNode, config?: Partial<TConfig>): HTMLElement {
     if (config) this.config = this.resolveConfig(this.config, config);
 
+    console.count(`📊 [Core Lifecycle Audit] ${this.builderId.toUpperCase()} .create() called`);
+    const trace = new Error();
+    console.log(`🧭 [Stack Trace for ${this.builderId}]:`, trace.stack?.split("\n").slice(1, 4).join("\n"));
+
     // 💡 AUTOMATION LIFECYCLE: Bersihkan sisa bita RAM & kunci Tema sebelum anak bersiap!
     this.activeLiveThemeId = this.config?.themeId || document.body.dataset.theme?.replace(/^theme-/, "") || "default";
-    this.#nodes.clear();
-
+    this.nodes().clear();
     // Jalankan persiapan rajutan silsilah milik komponen anak
     const DOMTree = this.prepare(content, this.config) as HTMLElement;
+    // if (this.builderId === "tab") console.log(`${this.builderId} Elements Map`, this.#nodes.entries())
 
     // Detonasi event bindings interaktif klik browser
     this.initialize(DOMTree, content);
@@ -197,9 +329,9 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
    * @param multiple - True: Elemen loop berulang (Multi-Instance). False: Elemen tunggal (Singleton Guard).
    * 
    */
-  protected render(typeKey: TType, payload?: any, multiple: boolean = false): HTMLElement | undefined {
+  protected _render(typeKey: TType, payload?: any, multiple: boolean = false): HTMLElement | undefined {
 
-    if (!multiple && this.#nodes.has(typeKey)) {
+    if (!multiple && this.nodes().has(typeKey)) {
       console.warn(
         `🚨 [Framework Architectural Violation]: Element key "${String(typeKey)}" has already been rendered!\n` +
         `Re-rendering a Singleton node is strictly prohibited.\n Please use "this.render('${String(typeKey)}', payload, true)" if it multiple item or \n` +
@@ -254,21 +386,23 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
       const wrapperChain = this._wrapElement(selector.wrapper, el);
       if (wrapperChain) {
         // Kembalikan bungkusan utuh agar anak tahu siapa pintu luar (outer) & pintu dalam (inner)
-        el.outer = wrapperChain.outer;
-        el.inner = el;
+        el.__outer = wrapperChain.__outer;
+        el.__inner = el;
       }
     }
 
-    const tElement = el.outer || el;
+    const tElement = el.__outer || el;
     const tPayload = payload && typeof payload === "object" ? Object.freeze({ ...payload }) : payload;
 
-    if (!this.#nodes.has(typeKey)) {
+    if (!this.nodes().has(typeKey)) {
       // Putaran Pertama: Pasang langsung sebagai HTMLElement TUNGGAL (Sangat Direct!)
-      this.#nodes.set(typeKey, { element: [tElement], payload: tPayload });
+      this.nodes().set(typeKey, tElement, tPayload, multiple);
     } else {
-      const existingRecord = this.#nodes.get(typeKey)!;
-      (existingRecord.element as HTMLElement[]).push(tElement);
+      const existingRecord = this.nodes().get(typeKey)!;
+      (existingRecord as HTMLElement[]).push(tElement);
     }
+
+
 
     if (this.config?.emit !== undefined) {
       this.config.emit?.("elementAdded", {
@@ -283,20 +417,50 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
   }
 
 
-  protected load(key: TType, index?: number | "all"): HTMLElement | HTMLElement[] | null {
-    const nodeCtx = this.#nodes.get(key);
-    if (nodeCtx && (nodeCtx.element as HTMLElement[]).length > 0) {
-      if (index && index === "all") {
-        return nodeCtx.element as HTMLElement[]
-      } else {
-        return ((nodeCtx.element as HTMLElement[])[index ? index : 0] || null) as HTMLElement;
+  protected render(typeKey: TType, payload?: any, multiple: boolean = false): HTMLElement | undefined {
+    // if (this.builderId === "pricing-card") console.log(this.builderId, "this.render", payload);
+    const selector = this.config.selectors?.[typeKey];
+    if (!selector) return undefined;
+
+    const el = document.createElement(selector.tagName || "div");
+    this._applyNodeAttributes(el, selector);
+
+    // Setor instansi dan daftarkan langsung ke rahim pusat lewat katup .set() proxy nodes!
+    const activeProxyPayload = this.nodes().set(typeKey, el, payload, multiple);
+    this.template(typeKey, el, activeProxyPayload);
+
+    if (selector.wrapper) {
+      const wrapperChain = this._wrapElement(selector.wrapper, el);
+      if (wrapperChain) {
+        // Kembalikan bungkusan utuh agar anak tahu siapa pintu luar (outer) & pintu dalam (inner)
+        (el as any).__outer = wrapperChain.__outer;
+        (el as any).__inner = el;
       }
     }
-    return null;
+
+    if (this.config?.emit !== undefined) {
+      this.config.emit?.("elementAdded", {
+        builder: this.builderId,
+        type: typeKey as TType,
+        element: el,
+        data: payload
+      });
+    }
+
+    return el;
   }
 
-  protected getPayload(key: TType | string): any {
-    return this.#nodes.get(key)?.payload || null;
+  // with template registry .nodes().set() called 40x (x3 because of old bug [ignored it for now]) for 1 builder with 3 items.
+  // no template registry only local builder base .nodes().set() called 40x (x3 because of old bug [ignored it for now]) for 1 builder with 3 items.
+  // builder base .load called 3x for 1 builder with 3 items.
+
+  protected load(key: TType, index: number | "all" = 0): HTMLElement | HTMLElement[] | null {
+    // if (this.builderId === "pricing-card") console.log(this.builderId, "this.load", nodes);
+    return this.nodes().load(key, index);
+  }
+
+  protected getPayload(key: TType, index: number = 0): any {
+    return this.nodes().payload(key, index) || null;
   }
 
   /**
@@ -308,14 +472,22 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
   * @param keys - Daftar token nama selektor kaku yang mau dihancurkan massal.
   * @protected
   */
-  protected remove(...keys: (TType)[]): void {
+  protected remove(...typeKeys: TType[]): void {
+    typeKeys.forEach((key) => {
+      const liveElement = this.load(key) as HTMLElement;
+      if (liveElement) liveElement.remove();
+      this.nodes().delete(key, "all");
+    });
+  }
+
+  protected _remove(...keys: (TType)[]): void {
     // Sisir setiap kunci yang disuapkan dari level komponen anak
     keys.forEach((key) => {
-      const nodeCtx = this.#nodes.get(key);
+      const nodeCtx = this.load(key, "all");
 
       if (nodeCtx) {
         // 1. Cabut seluruh fisik elemen (Singleton maupun Multi-Instance Loop) dari DOM Tree halaman
-        (nodeCtx.element as HTMLElement[]).forEach((el) => {
+        (nodeCtx as HTMLElement[]).forEach((el) => {
           if (el) {
             if (el.parentNode) {
               el.parentNode.removeChild(el);
@@ -331,13 +503,55 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
               });
             }
           }
+
+          this.nodes().delete(key);
         });
 
         // 2. Potong tali referensi memori dari rahim Map pusat agar GC browser mencuci bersih RAM!
-        this.#nodes.delete(key);
+
         // console.log(`🧹 [RAM Bulk Shield]: Key "${String(key)}" liquidated successfully.`);
       }
     });
+  }
+
+
+  public attach(childElement: HTMLElement | any, globalSlotPathKey: string): void {
+    if (!childElement) return;
+    const el = childElement.element || childElement;
+    if (!(el instanceof HTMLElement)) return;
+
+    const [targetIdentifier, slotName] = globalSlotPathKey.split("~");
+    const [targetBuilderId, targetTypeKey] = targetIdentifier.split(":");
+
+    if (!targetBuilderId || !targetTypeKey || !slotName) {
+      console.error(`🚨 [Slotting Error]: Expected "builderId:typeKey~slotName", got: "${globalSlotPathKey}"`);
+      return;
+    }
+
+    // Memanggil fungsi .load() pusat milik registry yang sudah Anda sinkronkan!
+    const parentElement = TemplateRegistry.nodes.get(targetBuilderId, targetTypeKey) as HTMLElement;
+
+    if (!parentElement) {
+      console.warn(`⚠️ [Slotting Warning]: Target semesta "${targetBuilderId}:${targetTypeKey}" tidak aktif di RAM.`);
+      return;
+    }
+
+    let slotTarget: HTMLElement | null = parentElement.getAttribute("data-slot") === slotName
+      ? parentElement
+      : parentElement.querySelector(`[data-slot="${slotName}"]`);
+
+    if (slotTarget) {
+      console.log(`🚀 [Independent Slotting]: Welding "${this.builderId}" node into target "${globalSlotPathKey}"`);
+      slotTarget.appendChild(el);
+    } else {
+      parentElement.appendChild(el);
+    }
+  }
+
+  public detach(childElement: HTMLElement | any): void {
+    if (!childElement) return;
+    const el = childElement.element || childElement;
+    if (el && el.parentElement) el.remove();
   }
 
   /**
@@ -398,8 +612,8 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     };
 
     // 1. Bangun benteng terluar (Root Wrapper)
-    const outer = parseNode(parts[0]);
-    let innerPointer = outer;
+    const __outer = parseNode(parts[0]);
+    let innerPointer = __outer;
 
     // 2. Bangun silsilah rantai bersarang ke dalam
     for (let i = 1; i < parts.length; i++) {
@@ -412,7 +626,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     innerPointer.appendChild(targetElement);
 
     // 4. Return koordinat dua arah yang jujur sesuai kebutuhan realcase Anda!
-    return { outer, inner: targetElement } as HTMLElement;
+    return { __outer, __inner: targetElement } as HTMLElement;
   }
 
 
@@ -421,24 +635,25 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
    * Melumat tuntas ID, ClassName, kustom attrs, hingga data- attributes bawaan database Sheets.
    */
   private _applyNodeAttributes(el: HTMLElement, selector: any): void {
-    if (selector.id) el.id = selector.id;
-    if (selector.className) el.className = selector.className;
+    if (!selector) return;
 
-    // Siram seluruh isi kamus attrs kustom (src, href, alt, dll)
-    if (selector.attrs && typeof selector.attrs === "object") {
-      Object.entries(selector.attrs).forEach(([k, v]) => {
-        el.setAttribute(k, String(v));
-      });
+    // 1. Suntikkan Identitas ID jika didefinisikan kaku di dalam selektor preset
+    if (selector.id) {
+      el.id = selector.id;
     }
 
-    // 💡 AUTOMATED REGULAR PROPERTY & DATA- INJECTION PASS-THROUGH
-    // Menyapu sisa properti hantaran sheets kustom agar otomatis ter-inject kokoh
-    Object.keys(selector).forEach((key) => {
-      const isReserved = ["tagName", "id", "className", "attrs", "wrapper"].includes(key);
-      if (!isReserved && !key.startsWith("_")) {
-        el.setAttribute(key, String(selector[key]));
-      }
-    });
+    // 2. Suntikkan Kosmetik ClassName standar secara aman
+    if (selector.className) {
+      el.className = selector.className;
+    }
+
+    // 3. 🧙‍♂️ SAFE ATTRS EXTRACTOR: Menyisir dan menancapkan atribut HTML legal JIT
+    // Hanya memproses boks 'attrs' khusus, memblokir buta loop properti config luar!
+    if (selector.attrs && typeof selector.attrs === "object") {
+      Object.entries(selector.attrs).forEach(([attrName, attrValue]) => {
+        el.setAttribute(attrName, String(attrValue));
+      });
+    }
   }
 
 }

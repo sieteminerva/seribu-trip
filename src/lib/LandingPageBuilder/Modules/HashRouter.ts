@@ -46,7 +46,7 @@ export class HashRouter {
     return redirectState;
   }
 
-  public navigate(routeId: string, themeId?: string | null, fragmentId?: string): void {
+  public navigate(routeId: string, themeId?: string | null, fragmentId?: string, _isValidRoute: boolean = false): void {
     const activeTheme = this._normalizeTheme(themeId || this.currentThemeId);
 
     // 🧙‍♂️ THE DYNAMIC ROUTE SENSOR INTEGRATION
@@ -55,8 +55,8 @@ export class HashRouter {
     let targetFragment = fragmentId?.trim().replace(/^#/, "") || "";
 
     // Jika yang mau dituju ternyata bukan rute halaman resmi, melainkan nama seksi polos (#faq-section)
-    if (!this.validRoutes.includes(targetRoute.toLowerCase())) {
-      // console.log(`[Router] Redirecting dynamic section anchor click to default page path.`);
+    if (!this.validRoutes.includes(targetRoute.toLowerCase()) && !_isValidRoute) {
+      console.warn(`[Router] Redirecting dynamic section anchor click to default page path.`);
       // Alihkan kemudi murni lewat gerbang redirect terpusat baru Anda!
       const correctedState = this.redirect(this.defaultRoute, activeTheme, targetRoute);
       this.onRouteChanged(correctedState);
@@ -162,8 +162,8 @@ export class HashRouter {
     const theme = this._normalizeTheme(state.theme || this.currentThemeId) || "default";
     const fragment = state.fragment?.trim().replace(/^#/, "");
     const query = `?theme=${encodeURIComponent(theme)}`;
-    const fragmentHash = fragment ? `#${fragment}` : "";
-    return `#${route}${query}${fragmentHash}`;
+    const fragmentHash = fragment ? `/${fragment}` : "";
+    return `#${route}${fragmentHash}${query}`;
   }
 
   private _safeDecode(value: string): string {

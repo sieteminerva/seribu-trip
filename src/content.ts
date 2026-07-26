@@ -1,4 +1,5 @@
 import type { iBasicNode } from "./lib/LandingPageBuilder/interface";
+import { NodeTransformer } from "./lib/LandingPageBuilder/Utils/NodeTransformer";
 
 export const HomePageContent: iBasicNode[] = [
   {
@@ -186,7 +187,7 @@ export const HomePageContent: iBasicNode[] = [
             btn.className = "button primary";
             btn.textContent = "Pesan Sekarang";
 
-            const form = build("form", OrderFormSchema);
+            const form = build("form", OrderFormSchema.content);
             const modal = build("modal", form);
 
             btn.addEventListener("click", () => {
@@ -540,3 +541,412 @@ export const GalleryPageContent = [
   }
 ];
 
+
+function getFormPageContent(content: any[]) {
+
+  const injectionRules = [
+    { selector: "p.eyebrow", inputType: "text" },
+    { selector: "h2.title", inputType: "textarea" },
+    { selector: "p.description", inputType: "textarea" },
+    { selector: "img", inputType: "file" },
+    // 💡 JEMBATAN BARU: Tambahkan aturan agar scanner mendeteksi komponen kompleks otomatis!
+    { selector: ".compact", inputType: "textarea" }
+  ];
+
+  const reverseNode = NodeTransformer.toFormNode(content, injectionRules);
+  // console.log({ reverseNode })
+
+  const tabMenu: string[] = [];
+  const tabBody: any[] = [];
+  for (const node of reverseNode) {
+    const m = node.legend.replace("Panel: ", "").replace("_", " ")
+    tabMenu.push(m);
+    tabBody.push({ builder: "form", content: [node] });
+  }
+
+  return {
+    nodes: reverseNode,
+    page: [{
+      id: "dashboard-tab",
+      builder: "tab",
+      content: {
+        menu: tabMenu,
+        body: tabBody
+      }
+    }]
+  }
+}
+
+export const FormPageContent = getFormPageContent(HomePageContent);
+
+export const ProductPageContent = [
+  {
+    builder: "product-card-grid",
+    content: [
+      {
+        "uid": "dsr7524x",
+        "name": "O-Neck Standard",
+        "category": "T-Shirt",
+        "fabrics": [
+          {
+            "color": "white",
+            "HEX": "#ffffff"
+          },
+          {
+            "color": "black",
+            "HEX": "#212121"
+          },
+          {
+            "color": "light grey",
+            "HEX": "#cacaca"
+          },
+          {
+            "color": "red",
+            "HEX": "#f83939"
+          },
+          {
+            "color": "violet",
+            "HEX": "#9966cc"
+          },
+          {
+            "color": "dark brown",
+            "HEX": "#37220e"
+          },
+          {
+            "color": "navy",
+            "HEX": "#151935"
+          },
+          {
+            "color": "green",
+            "HEX": "#1bb752"
+          }
+        ],
+        "artwork": {
+          "src": "apparel/man_tshirt_standard_o-neck.png",
+          "mask": {
+            "fullbody": "",
+            "sleeve_right": "",
+            "sleeve_left": "",
+            "ribs_neck": "",
+            "ribs_lefthand": "",
+            "ribs_righthand": ""
+          }
+        },
+        "caption": {
+          "title": "Standard O-neck",
+          "description": ""
+        },
+        "price": "getPrice"
+      },
+      {
+        "uid": "dsr7523s",
+        "name": "Man Long Sleeve",
+        "category": "Shirt",
+        "fabrics": [
+          {
+            "color": "black",
+            "HEX": "#212121"
+          },
+          {
+            "color": "white",
+            "HEX": "#fffbfb"
+          },
+          {
+            "color": "dark grey",
+            "HEX": "#423b3b"
+          },
+          {
+            "color": "misty grey",
+            "HEX": "#cacaca"
+          },
+          {
+            "color": "violet",
+            "HEX": "#9966cc"
+          },
+          {
+            "color": "cream",
+            "HEX": "#fbfde2"
+          },
+          {
+            "color": "orange",
+            "HEX": "#ff932e"
+          },
+        ],
+        "artwork": {
+          "src": "apparel/man_shirt_long_slevee.png",
+          "mask": {
+            "fullbody": "",
+            "sleeve_right": "",
+            "sleeve_left": "",
+            "ribs_neck": "",
+            "ribs_lefthand": "",
+            "ribs_righthand": ""
+          }
+        },
+        "caption": {
+          "title": "Man Long Sleeve",
+          "description": ""
+        },
+        "price": "getPrice"
+      },
+      {
+        "uid": "dsr7534e",
+        "name": "Event's Balloon",
+        "category": "Merchandise",
+        "fabrics": [
+          {
+            "color": "black",
+            "HEX": "#212121"
+          },
+          {
+            "color": "white",
+            "HEX": "#fffbfb"
+          },
+          {
+            "color": "red",
+            "HEX": "#ff0000"
+          },
+          {
+            "color": "pink",
+            "HEX": "#ff89ed"
+          },
+          {
+            "color": "violet",
+            "HEX": "#9966cc"
+          },
+          {
+            "color": "transparent",
+            "HEX": "#fbfde2"
+          },
+          {
+            "color": "blue",
+            "HEX": "#0245fc"
+          },
+          {
+            "color": "green",
+            "HEX": "#1bb752"
+          }
+        ],
+        "artwork": {
+          "src": "apparel/Promotion_Balloon.png",
+          "mask": {
+            "fullbody": "",
+            "sleeve_right": "",
+            "sleeve_left": "",
+            "ribs_neck": "",
+            "ribs_lefthand": "",
+            "ribs_righthand": ""
+          }
+        },
+        "caption": {
+          "title": "Event's Balloon",
+          "description": ""
+        },
+        "price": "getPrice"
+      },
+      {
+        "uid": "dsk7524m",
+        "name": "Standard Mug",
+        "category": "Merchandise",
+        "fabrics": [
+          {
+            "color": "black",
+            "HEX": "#212121"
+          },
+          {
+            "color": "white",
+            "HEX": "#fffbfb"
+          },
+          {
+            "color": "cream",
+            "HEX": "#fbfde2"
+          }
+        ],
+        "artwork": {
+          "src": "apparel/Promotion_Mug.png",
+          "mask": {
+            "fullbody": "",
+            "sleeve_right": "",
+            "sleeve_left": "",
+            "ribs_neck": "",
+            "ribs_lefthand": "",
+            "ribs_righthand": ""
+          }
+        },
+        "caption": {
+          "title": "Standard Mug",
+          "description": ""
+        },
+        "price": "getPrice"
+      },
+      {
+        "uid": "psr4524b",
+        "name": "Pin",
+        "category": "Merchandise",
+        "fabrics": [
+          {
+            "color": "black",
+            "HEX": "#212121"
+          },
+          {
+            "color": "white",
+            "HEX": "#fffbfb"
+          },
+          {
+            "color": "cream",
+            "HEX": "#fbfde2"
+          },
+          {
+            "color": "yellow",
+            "HEX": "#F7EA14"
+          },
+          {
+            "color": "red",
+            "HEX": "#EC2A2A"
+          }
+        ],
+        "artwork": {
+          "src": "apparel/Promotion_Pin.png",
+          "mask": {
+            "fullbody": "",
+            "sleeve_right": "",
+            "sleeve_left": "",
+            "ribs_neck": "",
+            "ribs_lefthand": "",
+            "ribs_righthand": ""
+          }
+        },
+        "caption": {
+          "title": "Pin",
+          "description": ""
+        },
+        "price": "getPrice"
+      },
+      {
+        "uid": "dsf7454a",
+        "name": "Cushion",
+        "category": "Accesories",
+        "fabrics": [
+          {
+            "color": "black",
+            "HEX": "#020000"
+          },
+          {
+            "color": "white",
+            "HEX": "#ffffffe3"
+          },
+          {
+            "color": "yellow",
+            "HEX": "#fffc30"
+          },
+          {
+            "color": "red",
+            "HEX": "#EC2A2A"
+          },
+          {
+            "color": "brown",
+            "HEX": "#382b2b"
+          },
+          {
+            "color": "grey",
+            "HEX": "#5B5B5B"
+          }
+        ],
+        "artwork": {
+          "src": "apparel/Promotion_Cushion.png",
+          "mask": {
+            "fullbody": "",
+            "sleeve_right": "",
+            "sleeve_left": "",
+            "ribs_neck": "",
+            "ribs_lefthand": "",
+            "ribs_righthand": ""
+          }
+        },
+        "caption": {
+          "title": "Cushion",
+          "description": ""
+        },
+        "price": "getPrice"
+      }
+    ]
+  }
+];
+
+
+export const BlogPageContent = [{
+  builder: "article",
+  content: {
+    "status": "success",
+    "meta": {
+      "currentPage": 1,
+      "perPage": 5,
+      "totalItems": 25,
+      "totalPages": 5,
+      "links": {
+        "first": "https://google.com",
+        "prev": null,
+        "self": "https://google.com",
+        "next": "https://google.com",
+        "last": "https://google.com"
+      }
+    },
+    "data": [
+      {
+        "uid": "art-001",
+        "slug": "tren-fashion-apparel-2026",
+        "title": "Tren Fashion Apparel Terkini di Tahun 2026",
+        "summary": "Menjelajahi revolusi gaya sandang minimalis-modern, perpaduan warna aksen neon, dan kebangkitan pakaian kustom pintar.",
+        "thumbnail": "https://placehold.co/300x300/4f3274/ffffff?text=Tren Fashion",
+        "largeCover": "https://placehold.co/600x600/4f3274/ffffff?text=Tren Fashion",
+        "author": "Garda internal Team",
+        "date": "24 Juli 2026",
+        "body": "<p>Tahun 2026 membawa angin segar bagi industri apparel global. Desain kaku purba resmi ditinggalkan oleh para perancang busana muda, beralih murni memeluk estetika minimalis dengan potongan pola geometri yang presisi.</p><p>Kombinasi kain berteknologi tinggi yang ringan namun kokoh, dipadukan dengan sentuhan warna aksen cerah di level detail, menjadi pilihan utama para eksekutif muda saat menjelajahi aktivitas harian mereka di ibu kota.</p>"
+      },
+      {
+        "uid": "art-002",
+        "slug": "rahasia-desain-kaos-retina-performa",
+        "title": "Rahasia Desain Kaos dengan Performa Visual 120fps",
+        "summary": "Bagaimana memanfaatkan trik bayangan semi-transparan (multiply shadow blend) untuk menciptakan visual produk e-commerce yang ultra-fluid.",
+        "thumbnail": "https://placehold.co/300x300/607d31/ffffff?text=Rahasia Desain Kaos",
+        "largeCover": "https://placehold.co/600x600/607d31/ffffff?text=Rahasia Desain Kaos",
+        "author": "Master Architect",
+        "date": "22 Juli 2026",
+        "body": "<p>Menampilkan visual produk pakaian di web sering kali terkendala ukuran bita gambar yang kembung. Melalui penerapan teknik mutakhir <i>multiply blend mode</i>, satu file bayangan hitam transparan kini legal dipakai bersama belasan varian warna latar belakang.</p><p>Hasilnya? Ukuran request HTTP terpangkas drastis, memori RAM browser tetap steril, dan transisi visual berjalan sehalus sutra di angka kecepatan penuh!</p>"
+      },
+      {
+        "uid": "art-003",
+        "slug": "arsitektur-headless-google-sheets-microservice",
+        "title": "Membangun Headless Microservice Berbasis Google Sheets",
+        "summary": "Panduan taktis menguras data spreadsheet menggunakan Google Apps Script REST API untuk platform mandiri satu pintu.",
+        "thumbnail": "https://placehold.co/300x300/25b298/ffffff?text=Arsitektur Headless",
+        "largeCover": "https://placehold.co/600x600/25b298/ffffff?text=Arsitektur Headless",
+        "author": "Systems Engineer",
+        "date": "18 Juli 2026",
+        "body": "<p>Deploy infrastruktur server database sering kali mahal dan melelahkan bagi tim kecil. Memanfaatkan Google Sheets sebagai database inti dan Apps Script sebagai gerbang RESTful API adalah solusi kedaulatan platform yang sangat matang.</p><p>Dengan penataan skema HATEOAS yang teratur di level meta links, frontend Anda mampu mengendalikan pergeseran halaman data secara otonom tanpa dependensi kaku luar.</p>"
+      },
+      {
+        "uid": "art-004",
+        "slug": "manajemen-ram-browser-anti-leak",
+        "title": "Manajemen Memori RAM Browser Bebas Kebocoran",
+        "summary": "Taktik mengunci rahim memori private field Map dan melikuidasi elemen usang dari live DOM tree secara tertib.",
+        "thumbnail": "https://placehold.co/300x300/d6ac23/ffffff?text=Manajemen Ram",
+        "largeCover": "https://placehold.co/600x600/d6ac23/ffffff?text=Manajemen Ram",
+        "author": "Master Architect",
+        "date": "15 Juli 2026",
+        "body": "<p>Aplikasi Single Page Application (SPA) sangat rawan mengalami kembung RAM jika sisa elemen hantu tidak dibersihkan saat pindah rute. Penerapan katup <code>this.remove(...keys)</code> satu pintu terbukti melumat habis detached DOM elements secara tuntas sebersih salju.</p>"
+      },
+      {
+        "uid": "art-005",
+        "slug": "panduan-trip-kepulauan-seribu-privat",
+        "title": "Panduan Lengkap Menyusun Private Trip Keluarga",
+        "summary": "Langkah menyusun itinerary pelesiran laut yang tenang, fasilitas nyaman, dan dukungan koordinasi tim lokal terpadu.",
+        "thumbnail": "https://placehold.co/300x300/fe2626/ffffff?text=Panduan Trip",
+        "largeCover": "https://placehold.co/600x600/fe2626/ffffff?text=Panduan Trip",
+        "author": "Travel Consultant",
+        "date": "10 Juli 2026",
+        "body": "<p>Liburan keluarga membutuhkan kepastian kenyamanan. Melalui integrasi modul form kustom hierarki wilayah Indonesia yang reaktif, pengumpulan data domisili peserta trip dapat terdokumentasi secara sangat bersih, rapi, dan tervalidasi otomatis sejak awal.</p>"
+      }
+    ]
+  }
+}]

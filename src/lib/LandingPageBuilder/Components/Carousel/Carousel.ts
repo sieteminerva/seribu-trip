@@ -33,7 +33,7 @@ export interface iCarouselConfig extends iBuilderConfig<CarouselElementType> {
 }
 
 export const AttrsConfigKeys = [
-  "container",
+  "data-carousel",
   "data-show-control",
   "data-show-navigation",
   "data-autoplay",
@@ -53,7 +53,7 @@ export type iCarouselAttrsConfig = {
 };
 
 export const dataAttrsConfig: iCarouselAttrsConfig = {
-  "container": null,
+  "data-carousel": "",
   "data-show-control": true,
   "data-show-navigation": true,
   "data-autoplay": true,
@@ -67,7 +67,7 @@ export const dataAttrsConfig: iCarouselAttrsConfig = {
 }
 
 export const AttrsConfigMap: iCarouselAttrsConfig = {
-  "container": "container",
+  "data-carousel": "carousel",
   "data-show-control": "showControl",
   "data-show-navigation": "showNavigation",
   "data-autoplay": "autoPlay",

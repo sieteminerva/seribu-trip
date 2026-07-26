@@ -102,6 +102,7 @@ textarea:focus-visible {
 .input-wrapper input:not([type="checkbox"]),
 .input-wrapper select,
 .input-wrapper textarea {
+  font-family: inherit;
   box-sizing: border-box;
   display: block;
   width: 100%;
@@ -116,6 +117,7 @@ textarea:focus-visible {
   overflow: hidden;
   transition: 200ms;
   background-color: var(--primary-background-color);
+  color: var(--primary-text-color);
 }
 
 .input-wrapper input:not([type="checkbox"]),

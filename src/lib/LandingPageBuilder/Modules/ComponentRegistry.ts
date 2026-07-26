@@ -200,8 +200,6 @@ export class ComponentRegistry {
   }
 
 
-
-
   private injectStyle(sheet: CSSStyleSheet): void {
     if (!this.registeredSheets.has(sheet)) {
       this.registeredSheets.add(sheet);

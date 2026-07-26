@@ -235,7 +235,8 @@ body {
   color: var(--text-heading);
 }
 
-.desc {
+.desc,
+.description {
   margin: 0 0 1rem;
   line-height: 1.7;
   color: var(--text-muted);

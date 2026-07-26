@@ -1,9 +1,283 @@
+import type { iBuilderConfig, iBuilderRegistry } from "../../interface";
+import { Builder } from "../Base";
 
-import type { iBasicInputNode, InputBuilderSelectorOption } from "../../interface";
 
-export class InputBuilder {
 
-  private static sanitizeId(value: string): string {
+export type InputType =
+  | "text"
+  | "textarea"
+  | "number"
+  | "select"
+  | "checkbox"
+  | "radio"
+  | "range"
+  | "date"
+  | "time"
+  | "datetime-local"
+  | "file"
+  | "color"
+  | "email"
+  | "password"
+  | "url"
+  | "tel"
+  | "hidden";
+
+export interface iBasicSelectOption {
+  value?: string;
+  label?: string;
+  icon?: string;
+}
+
+export type InputElementType =
+  | "@field"
+  | "@field>label"
+  | "@field>input"
+  | "@field>textarea"
+  | "@field>select"
+  | "@field>select>option"
+  | "@field>checkbox"
+  | "@field>radio"
+  | "@field>file"
+  | "@field>info";
+
+export interface iBasicInputConfig {
+  attributes?: Array<{ name: string; value: string }>;
+  style?: string;
+  field?: string;
+  className?: string;
+  options?: Array<string | iBasicSelectOption>;
+  position?: "left" | "right";
+  icon?: string;
+  content?: string | Record<string, unknown>;
+  action?: { mode?: string } | null;
+  actionMode?: string;
+  wide?: number | null;
+  useLabel?: boolean;
+  view?: string;
+  thumbnail?: boolean;
+  maxUpload?: number;
+  maxFileSize?: number;
+  groupUnallowed?: boolean;
+  createEventListener?: boolean;
+  display?: "block" | "inline";
+}
+
+export interface iBasicInputNode extends iBuilderConfig<InputElementType> {
+  type?: InputType;
+  id?: string;
+  name?: string;
+  title?: string;
+  placeholder?: string;
+  value?: any;
+  rows?: number;
+  cols?: number;
+  multiple?: boolean;
+  disabled?: boolean;
+  readonly?: boolean;
+  required?: boolean;
+  checked?: boolean;
+  range?: string;
+  info?: string;
+  config?: iBasicInputConfig;
+}
+
+export class InputBuilder extends Builder<InputElementType> {
+  readonly builderId: keyof iBuilderRegistry = "input";
+  readonly name: keyof iBuilderRegistry = "input";
+  readonly stylesheet: string = "";
+
+  #input: iBasicInputNode = {};
+
+  constructor(config: Partial<iBuilderConfig<InputElementType>> = {}) {
+    super();
+
+    const defaultSelectors = {
+      "@field": { tagName: "div", className: "input-wrapper" },
+      "@field>label": { tagName: "label", className: "field-label" },
+      "@field>input": { tagName: "input", className: "field-input" },
+      "@field>textarea": { tagName: "textarea", className: "field-textarea" },
+      "@field>select": { tagName: "select", className: "field-select" },
+      "@field>select>option": { tagName: "option", className: "select-option" },
+      "@field>checkbox": { tagName: "input", className: "field-checkbox", type: "checkbox" as InputType },
+      "@field>radio": { tagName: "input", className: "field-radio", type: "radio" as InputType },
+      "@field>file": { tagName: "input", className: "field-file", type: "file" as InputType },
+      "@field>info": { tagName: "small", className: "field-info" }
+    };
+
+    const defaultConfig: Required<iBuilderConfig<InputElementType>> = {
+      themeId: "default",
+      selectors: defaultSelectors,
+      emit: () => { }
+    };
+
+    this.config = this.resolveConfig(defaultConfig, config);
+
+  }
+
+  public prepare(inputObj: Partial<iBasicInputNode>, _config?: Required<iBuilderConfig<InputElementType>> | undefined): HTMLElement | Record<string, any | HTMLElement> {
+    this.#input = this.resolvePayload(inputObj);
+    const elementId = this._sanitizeId(this.#input.id || this.#input.title || `input-${Math.random().toString(36).slice(2, 10)}`);
+    const wrapper = this.render("@field", this.#input);
+
+    if (this.#input.title && this.#input.config?.useLabel) {
+      const label = this.render("@field>label", { id: elementId, text: this.#input.title })!;
+      wrapper?.appendChild(label);
+    }
+
+    switch (this.#input.type) {
+      case "textarea": {
+        const textarea = this.render("@field>textarea", { id: elementId, config: this.#input });
+        wrapper?.appendChild(textarea!);
+        break;
+      }
+
+      case "select": {
+        const select = this.render("@field>select", { id: elementId, config: this.#input });
+
+        // Buat Baris Placeholder awal
+        const placeholderOpt = document.createElement("option");
+        placeholderOpt.value = "";
+        placeholderOpt.textContent = this.#input.placeholder || "Pilih Opsi...";
+        placeholderOpt.disabled = true;
+        placeholderOpt.selected = true;
+        select?.appendChild(placeholderOpt);
+
+        // Loop cetak barisan option standard bawaan Anda
+        const options = (this.#input.config?.options || []) as any[];
+        options.forEach(opt => {
+          const optionEl = document.createElement("option");
+          optionEl.value = opt.value;
+          optionEl.textContent = opt.label;
+          if (this.#input.value !== undefined && String(opt.value) === String(this.#input.value)) {
+            optionEl.selected = true;
+            placeholderOpt.selected = false;
+          }
+          select?.appendChild(optionEl);
+        });
+
+        wrapper?.appendChild(select!);
+        break;
+      }
+
+      case "checkbox":
+      case "radio": {
+        const typeKey = this.#input.type === "checkbox" ? "@field>checkbox" : "@field>radio";
+        const input = this.render(typeKey as any, { id: elementId, config: this.#input });
+        wrapper?.appendChild(input!);
+        break;
+      }
+
+      case "file": {
+        console.log(this.#input)
+        const fileInput = this.render("@field>file", { id: elementId, ...this.#input }) as HTMLInputElement;
+        fileInput.type = "file";
+        wrapper?.appendChild(fileInput!);
+        break;
+      }
+
+      // Default klan input text, number, email standard kaku
+      default: {
+        const input = this.render("@field>input", { id: elementId, config: this.#input });
+        wrapper?.appendChild(input!);
+        break;
+      }
+    }
+
+    // Suntikkan teks petunjuk info kecil di lantai terbawah boks input wrapper
+    if (this.#input.info) {
+      const info = this.render("@field>info", this.#input);
+      wrapper?.appendChild(info!);
+    }
+
+    return this.load("@field")!;
+  }
+
+  protected template(typeKey: InputElementType, el: HTMLElement, payload?: any): void {
+    if (!payload) return;
+
+    switch (typeKey) {
+      case "@field":
+        if (payload.config?.className) el.classList.add(...payload.config.className.split(" ").filter(Boolean));
+        if (payload.config?.display) el.dataset.display = payload.config.display;
+        break;
+
+      case "@field>label":
+        el.setAttribute("for", payload.id);
+        el.textContent = payload.text;
+        break;
+
+      case "@field>input":
+      case "@field>textarea":
+      case "@field>select":
+      case "@field>checkbox":
+      case "@field>radio":
+      case "@field>file": {
+        const input = el as any;
+        const cfg = payload.config;
+
+        input.id = payload.id;
+        input.name = cfg.name ? String(cfg.name) : payload.id;
+
+        if (cfg.placeholder) el.setAttribute("placeholder", String(cfg.placeholder));
+        if (cfg.disabled) el.setAttribute("disabled", "");
+        if (cfg.readonly) el.setAttribute("readonly", "readonly");
+        if (cfg.required) el.setAttribute("required", "");
+
+        if (typeKey === "@field>input") input.type = cfg.type || "text";
+        if (typeKey === "@field>textarea" && cfg.rows) (el as HTMLTextAreaElement).rows = cfg.rows;
+
+        if ((typeKey === "@field>checkbox" || typeKey === "@field>radio") && cfg.checked) {
+          (el as HTMLInputElement).checked = true;
+        }
+
+        if (typeKey === "@field>file") {
+          el.setAttribute("data-uploader", "");
+          el.setAttribute("data-view", `${cfg.config?.view || "list"}`);
+          el.setAttribute("data-render-thumbnail", `${cfg.config?.thumbnail ?? "true"}`);
+        }
+
+        if (cfg.value !== undefined && typeKey !== "@field>select") {
+          input.value = String(cfg.value);
+        }
+
+        // Tancapkan custom inline attributes kamus array sheets bawaan Anda
+        if (Array.isArray(cfg.config?.attributes)) {
+          cfg.config.attributes.forEach((attr: any) => {
+            if (attr?.name) el.setAttribute(attr.name, attr.value);
+          });
+        }
+        break;
+      }
+
+      case "@field>info":
+        el.textContent = payload.info || "";
+        break;
+    }
+  }
+
+  public initialize(_el?: HTMLElement, _payload?: any, _context?: any): void {
+
+  }
+
+  private resolvePayload(inputObj: Partial<iBasicInputNode>) {
+    const defaultPayload: iBasicInputNode = {
+      type: "text", id: "", title: "", placeholder: "", rows: 3,
+      multiple: false, disabled: false, readonly: false, required: false, checked: false,
+      config: { attributes: [], style: "", className: "", options: [], useLabel: true, display: "block", createEventListener: false }
+    };
+
+    const inputPayload = { ...defaultPayload, ...inputObj, config: { ...defaultPayload.config, ...inputObj.config } };
+
+    if (!inputPayload.placeholder && inputPayload.title) {
+      inputPayload.placeholder = (inputPayload.type === "select" || inputPayload.type === "textarea") ? `Pilih ${inputPayload.title}` : `Isi ${inputPayload.title}`;
+    }
+    if (Array.isArray(inputObj.config?.options)) {
+      inputPayload.config.options = inputObj.config.options.map((option) => typeof option === "string" ? { value: option, label: option } : option);
+    }
+    return inputPayload;
+  }
+
+  private _sanitizeId(value: string): string {
     return value
       .toLowerCase()
       .trim()
@@ -11,253 +285,4 @@ export class InputBuilder {
       .replace(/^-+|-+$/g, "");
   }
 
-  private static applyDataAttributes(
-    element: HTMLElement | HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
-    config?: Partial<iBasicInputNode>,
-  ): void {
-    const attrs = config?.attributes;
-    if (!Array.isArray(attrs)) return;
-    for (const attr of attrs) {
-      if (attr?.name) {
-        element.setAttribute(attr.name, attr.value);
-      }
-    }
-  }
-
-  private static applyCommonAttributes(
-    element: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
-    id: string,
-    config: iBasicInputNode,
-  ): void {
-    element.id = id;
-    element.name = config.name ? String(config.name) : id;
-
-    if (config.placeholder) element.setAttribute("placeholder", String(config.placeholder));
-    if (config.disabled) element.setAttribute("disabled", "");
-    if (config.readonly) element.setAttribute("readonly", "readonly");
-    if (config.required) element.setAttribute("required", "");
-    if (config.multiple && element instanceof HTMLInputElement) element.setAttribute("multiple", "");
-
-    if (config.value !== undefined && !(element instanceof HTMLSelectElement)) {
-      element.value = String(config.value);
-    }
-
-    this.applyDataAttributes(element, config.config);
-  }
-
-  private static buildWrapper(config: iBasicInputNode): HTMLDivElement {
-    const wrapper = document.createElement("div");
-    wrapper.classList.add("input-wrapper");
-
-    if (config.config?.className) {
-      wrapper.classList.add(...config.config.className.split(" ").filter(Boolean));
-    }
-    if (config.config?.display) {
-      wrapper.dataset.display = config.config.display;
-    }
-    if (config.type === "checkbox" && config.config?.style === "toggle") {
-      wrapper.classList.add("toggle-switch");
-    }
-    return wrapper;
-  }
-
-  private static createLabel(id: string, text?: string): HTMLLabelElement {
-    const label = document.createElement("label");
-    label.setAttribute("for", id);
-    label.textContent = text || id;
-    return label;
-  }
-
-  /**
-   * ⚡ STATIC FACTORY METHOD
-   * Membuka akses pembuatan native input element wrapper yang terisolasi murni
-   */
-  public static create(inputObj: iBasicInputNode = {}): HTMLElement {
-    const defaultConfig: iBasicInputNode = {
-      type: "text",
-      id: "",
-      title: "",
-      placeholder: "",
-      rows: 3,
-      multiple: false,
-      disabled: false,
-      readonly: false,
-      required: false,
-      checked: false,
-      config: {
-        attributes: [],
-        style: "",
-        field: "field",
-        className: "",
-        options: [],
-        position: "left",
-        icon: "",
-        content: "",
-        action: null,
-        actionMode: "",
-        wide: null,
-        useLabel: true,
-        view: "",
-        thumbnail: false,
-        maxUpload: undefined,
-        maxFileSize: undefined,
-        groupUnallowed: false,
-        createEventListener: false,
-        display: "block",
-      },
-    };
-
-    const config: iBasicInputNode = {
-      ...defaultConfig,
-      ...inputObj,
-      config: {
-        ...defaultConfig.config,
-        ...inputObj.config,
-      },
-    };
-
-    const elementId = config.id
-      ? this.sanitizeId(config.id)
-      : config.title
-        ? this.sanitizeId(config.title)
-        : `input-${Math.random().toString(36).slice(2, 10)}`;
-
-    if (!config.placeholder && config.title) {
-      if (config.type === "select" || config.type === "textarea") {
-        config.placeholder = `Pilih ${config.title}`;
-      } else {
-        config.placeholder = `Isi ${config.title}`;
-      }
-    }
-
-    if (Array.isArray(config.config?.options)) {
-      config.config.options = config.config.options.map((option) =>
-        typeof option === "string" ? { value: option, label: option } : option,
-      );
-    }
-
-    const wrapper = this.buildWrapper(config);
-    const label = config.title && config.config?.useLabel ? this.createLabel(elementId, config.title) : null;
-
-    switch (config.type) {
-      case "textarea": {
-        const textarea = document.createElement("textarea");
-        this.applyCommonAttributes(textarea, elementId, config);
-        if (config.rows) textarea.rows = config.rows;
-        if (config.cols) textarea.cols = config.cols;
-        if (label) wrapper.append(label);
-        wrapper.append(textarea);
-        break;
-      }
-      case "select": {
-        const select = document.createElement("select");
-        this.applyCommonAttributes(select, elementId, config);
-        if (config.multiple) select.setAttribute("multiple", "");
-
-        const placeholderOption = document.createElement("option");
-        placeholderOption.value = "";
-        placeholderOption.textContent = config.placeholder || `Pilih ${config.title || elementId}`;
-        placeholderOption.classList.add("placeholder");
-        placeholderOption.selected = true;
-        placeholderOption.disabled = true;
-        select.appendChild(placeholderOption);
-
-        const options = (config.config?.options || []) as InputBuilderSelectorOption[];
-        for (const option of options) {
-          const opt = document.createElement("option");
-          opt.value = option.value || String(option.label || ""),
-            opt.textContent = option.label || option.value || "";
-          select.appendChild(opt);
-        }
-        if (label) wrapper.append(label);
-        wrapper.append(select);
-        break;
-      }
-      case "checkbox": {
-        const input = document.createElement("input");
-        input.type = "checkbox";
-        this.applyCommonAttributes(input, elementId, config);
-        if (config.checked) input.checked = true;
-
-        if (config.config?.style === "toggle") {
-          if (label && config.config?.position) {
-            label.dataset.position = String(config.config.position);
-          }
-          const control = document.createElement("div");
-          control.classList.add("control");
-          const slider = document.createElement("span");
-          slider.classList.add("slider");
-          if (config.config?.content) {
-            slider.dataset.shape = String(config.config.content);
-          } else {
-            slider.dataset.shape = "round";
-          }
-          control.append(input, slider);
-          if (label) wrapper.append(label);
-          wrapper.append(control);
-          if (!label) {
-            const labelText = this.createLabel(elementId, config.title || elementId);
-            wrapper.append(labelText);
-          }
-        } else {
-          if (label) {
-            wrapper.append(input, label);
-          } else {
-            wrapper.append(input);
-          }
-        }
-        break;
-      }
-      case "radio": {
-        const input = document.createElement("input");
-        input.type = "radio";
-        this.applyCommonAttributes(input, elementId, config);
-        if (config.checked) input.checked = true;
-        if (label) {
-          wrapper.append(input, label);
-        } else {
-          wrapper.append(input);
-        }
-        break;
-      }
-      case "file": {
-        const input = document.createElement("input");
-        input.type = "file";
-        this.applyCommonAttributes(input, elementId, config);
-        input.setAttribute("data-uploader", "")
-        input.setAttribute("data-view", `${config.config?.view}` || "list")
-        input.setAttribute("data-render-thumbnail", `${config.config?.thumbnail}` || "true")
-        input.setAttribute("data-max-upload", `${config.config?.maxUpload}` || "5")
-        input.setAttribute("data-max-file-size", `${config.config?.maxFileSize}` || "5")
-        if (config.accept) input.setAttribute("accept", String(config.accept));
-        if (config.multiple) input.setAttribute("multiple", "");
-
-        // if (config.config?.view) input.dataset.view = String(config.config.view);
-        // if (config.config?.thumbnail !== undefined) input.dataset.thumbnail = String(config.config.thumbnail);
-        // if (config.config?.maxUpload !== undefined) input.dataset.maxUpload = String(config.config.maxUpload);
-        // if (config.config?.maxFileSize !== undefined) input.dataset.maxFileSize = String(config.config.maxFileSize);
-        if (config.config?.groupUnallowed !== undefined) input.dataset.groupUnallowed = String(config.config.groupUnallowed);
-        if (label) wrapper.append(label);
-        wrapper.append(input);
-        break;
-      }
-      default: {
-        const input = document.createElement("input");
-        this.applyCommonAttributes(input, elementId, config);
-        input.type = config.type || "text";
-        if (config.range) input.setAttribute("list", config.range);
-        if (label) wrapper.append(label);
-        wrapper.append(input);
-        break;
-      }
-    }
-
-    if (config.info) {
-      const info = document.createElement("small");
-      info.textContent = String(config.info);
-      wrapper.appendChild(info);
-    }
-
-    return wrapper;
-  }
 }

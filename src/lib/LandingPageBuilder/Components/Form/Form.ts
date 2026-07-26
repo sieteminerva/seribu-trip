@@ -1,7 +1,19 @@
+import type { iBuilderConfig, iBuilderRegistry } from "../../interface";
+import { Builder } from "../Base";
 import { FileUploader } from "./FileUploader";
 import { InputBuilder } from "./Input";
 
-export interface iFormConfig {
+export type FormElementType =
+  | "@container"
+  | "@form"
+  | "@form>group"
+  | "@form>group>legend"
+  | "@form>group>desc"
+  | "@form>actions"
+  | "@form>actions>submit"
+  | "@form>footer";
+
+export interface iFormConfig extends iBuilderConfig<FormElementType> {
   id?: string;
   name?: string;
   title?: string;
@@ -19,20 +31,36 @@ export interface iFormConfig {
   footer?: HTMLElement | string | null;
 }
 
-export class FormBuilder {
-  private config: Required<iFormConfig>;
+export class FormBuilder extends Builder<FormElementType, iFormConfig> {
+  readonly builderId: keyof iBuilderRegistry = "form";
+  readonly name: keyof iBuilderRegistry = "form";
+  readonly stylesheet: string = "./Form.css";
+
   private submitButtonId: string | undefined = undefined;
 
-  // Gunakan DOMRenderer internal khusus untuk merakit struktur form
+  #inputs: any[] = [];
 
-  constructor(config: iFormConfig = {}) {
+  constructor(config: Partial<iFormConfig> = {}) {
+    super();
+
+    const defaultSelectors = {
+      "@container": { tagName: "div", className: "form-widget-wrapper" },
+      "@form": { tagName: "form", className: "native form" },
+      "@form>group": { tagName: "fieldset", className: "form-group" },
+      "@form>group>legend": { tagName: "legend", className: "group-title" },
+      "@form>group>desc": { tagName: "p", className: "group-desc" },
+      "@form>actions": { tagName: "div", className: "form-actions" },
+      "@form>actions>submit": { tagName: "button", className: "button primary", type: "submit" as "submit" },
+      "@form>footer": { tagName: "div", className: "form-footer" }
+    };
+
     const defaultConfig: Required<iFormConfig> = {
       id: "",
       name: "",
       title: "",
       description: "",
       method: "post",
-      action: "",
+      action: "submit",
       className: "native form",
       submitButton: true,
       buttonText: "Submit",
@@ -41,60 +69,32 @@ export class FormBuilder {
       resetOnComplete: true,
       createEventListener: true,
       minHeight: "400px",
-      footer: null
+      footer: null,
+      themeId: "default",
+      selectors: defaultSelectors,
+      emit: null
     };
-    this.config = { ...defaultConfig, ...config };
-  }
-
-  /**
-   * Helper internal untuk memindai string HTML mentah atau element hidup 
-   * guna mencari tombol submit yang sudah ada (untuk link ID)
-   */
-  private scanForSubmitButton(input: any, formId: string): string | null {
-    if (!input) return null;
-    let btn: HTMLElement | null = null;
-
-    if (input instanceof HTMLInputElement) {
-      btn = input.type === "submit" ? input : input.querySelector("button[type=submit], input[type=submit]");
-    } else if (typeof input === "string") {
-      const wrapper = document.createElement("div");
-      wrapper.innerHTML = input.trim();
-      btn = wrapper.querySelector("button[type=submit], input[type=submit]");
-    }
-
-    if (btn) {
-      if (!btn.id) btn.id = `btn-${formId}`;
-      btn.setAttribute("form", formId);
-      return btn.id;
-    }
-    return null;
+    this.config = this.resolveConfig(defaultConfig, config);
   }
 
   /**
    * REFACTOR TOTAL: Merakit Form menggunakan struktur iBasicNode[] murni
    */
-  public create(inputs: Array<any | HTMLElement | string> | any): HTMLElement {
+  public prepare(inputs: Array<any | HTMLElement | string> | any, _config: Partial<iFormConfig> = {}): HTMLElement {
     // const inputs = data.content;
     // console.log(inputs)
-    const form = document.createElement("form");
-    form.className = this.config.className;
+    this.#inputs = Array.isArray(inputs) ? inputs : [inputs];
 
-    const randomSuffix = Math.random().toString(36).substring(7);
-    const formId = this.config.id ? `form ${this.config.id}`.replace(/\s+/g, "-") : `form-${randomSuffix}`;
-    form.id = formId;
-    const inputItems = Array.isArray(inputs) ? inputs : [inputs];
+    const wrapper = this.render("@container", inputs);
+
+    const form = this.render("@form", inputs) as HTMLFormElement;
+    const formId = form.id;
 
     // Iterasi dan transformasikan setiap input secara murni
-    inputItems.forEach((input: any) => {
-      // console.log(inputs)
+    this.#inputs.forEach((input: any) => {
 
-      // ==========================================
-      // KASUS A: Input berupa HTMLElement Hidup (Tanpa Wrapper Palsu!)
-      // ==========================================
       if (input instanceof HTMLElement) {
         this.submitButtonId = this.scanForSubmitButton(input, formId) || this.submitButtonId;
-
-        // Langsung push element fisiknya ke dalam content array form
         form.append(input);
       }
 
@@ -104,7 +104,6 @@ export class FormBuilder {
       else if (typeof input === "string") {
         const foundId = this.scanForSubmitButton(input, formId);
         if (foundId) this.submitButtonId = foundId;
-
         // Masukkan langsung string HTML-nya agar di-parse alami oleh DOMRenderer
         form.insertAdjacentHTML("beforeend", input as any);
       }
@@ -112,39 +111,19 @@ export class FormBuilder {
       // ==========================================
       // KASUS C: Input berupa Group Node (<fieldset>)
       // ==========================================
-      else if (input && typeof input === "object") {
+      else if (input && typeof input === "object" && "group" in input) {
         // console.log("group", { input })
-        if ("group" in input) {
-
-          const fieldset = document.createElement("fieldset");
-          fieldset.className = input.class || "";
-
-          const legendText = input.legend || input.title;
-          if (legendText) {
-            const legend = document.createElement("legend")
-            legend.textContent = String(legendText)
-            fieldset.append(legend);
-          }
-          if (input.description) {
-            const desc = document.createElement("p");
-            desc.className = "group-desc";
-            desc.textContent = String(input.description)
-            fieldset.append(desc);
-          }
-
-          // Iterasi anak-anak di dalam group secara murni
+        const fieldset = this.render("@form>group", input, true) as HTMLElement; // Multiple true loop!
+        if (input.group && Array.isArray(input.group)) {
           input.group.forEach((innerInput: any) => {
             // console.log({ innerInput })
             if (typeof innerInput === "string") {
               const foundId = this.scanForSubmitButton(innerInput, formId);
               if (foundId) this.submitButtonId = foundId;
               fieldset.insertAdjacentHTML("beforeend", innerInput as any);
-            } else if (typeof innerInput === "object") {
-              const inputEl = InputBuilder.create(innerInput)
-              fieldset.append(inputEl)
             } else {
               // InputBuilder melahirkan HTMLElement murni dengan isRoot internalnya sendiri
-              const inputEl = innerInput instanceof HTMLElement ? innerInput : InputBuilder.create(innerInput);
+              const inputEl = innerInput instanceof HTMLElement ? innerInput : new InputBuilder().create(innerInput);
               const foundId = this.scanForSubmitButton(inputEl, formId);
               if (foundId) this.submitButtonId = foundId;
 
@@ -153,64 +132,127 @@ export class FormBuilder {
             }
           });
 
-          if (input.submitButton) {
-            const btnId = `btn-${formId}-grp-${Math.random().toString(36).substring(7)}`;
-            this.submitButtonId = btnId;
-            const submitBtn = document.createElement("button");
-            submitBtn.id = btnId;
-            submitBtn.className = this.config.buttonClass;
-            submitBtn.type = "submit";
-
-            submitBtn.textContent = this.config.buttonText;
-
-            fieldset.append(submitBtn);
-          }
-
-          // const fieldset = document.createElement("fieldset");
-
-          form.appendChild(fieldset);
         }
 
-        // ==========================================
-        // KASUS D: Input berupa Parameter Objek Basic Tunggal
-        // ==========================================
-        // else {
-        //   // InputBuilder.prepare() mengelola isRoot dan melahirkan <div class="input-wrapper"> murni
-        //   const inputEl = InputBuilder.prepare(input);
-        //   if (this.config.submitButton) {
-        //     this.submitButtonId = this.scanForSubmitButton(inputEl, formId) || this.submitButtonId;
-        //   }
+        // Iterasi anak-anak di dalam group secara murni
+        if (input.submitButton) {
+          const submitBtn = this.render("@form>actions>submit", { isGroupBtn: true, formId }, true) as HTMLButtonElement;
+          this.submitButtonId = submitBtn.id;
+          fieldset.appendChild(submitBtn)
+        }
 
-        //   // Dorong langsung objek elemen fisiknya ke dalam formContentArray
-        //   form.append(inputEl as any);
-        // }
+        form.appendChild(fieldset);
       }
+
+      // ==========================================
+      // KASUS D: Input berupa Parameter Objek Basic Tunggal
+      // ==========================================
+      else {
+        // InputBuilder.prepare() mengelola isRoot dan melahirkan <div class="input-wrapper"> murni
+        const inputEl = new InputBuilder().create(input);
+        if (this.config.submitButton) {
+          this.submitButtonId = this.scanForSubmitButton(inputEl, formId) || this.submitButtonId;
+        }
+
+        // Dorong langsung objek elemen fisiknya ke dalam formContentArray
+        form.append(inputEl as any);
+      }
+
     });
 
-    // 3. Tambahkan Tombol Submit Default di akhir jika belum ada
     if (!this.submitButtonId && this.config.submitButton) {
-      const defaultBtnId = `btn-${formId}`;
-      const submitBtn = document.createElement("button");
-      submitBtn.id = defaultBtnId;
-      submitBtn.className = this.config.buttonClass;
-      submitBtn.type = "submit";
-      submitBtn.style = "margin-top: 1rem; padding: 1rem; float: right;"
-      submitBtn.textContent = this.config.buttonText;
-
-      form.append(submitBtn)
+      const defaultSubmitBtn = this.render("@form>actions>submit", { isGroupBtn: false, formId }) as HTMLButtonElement;
+      this.submitButtonId = defaultSubmitBtn.id;
+      form.append(defaultSubmitBtn)
     }
 
-    // 4. Tambahkan elemen Footer jika didefinisikan
     if (this.config.footer) {
-      form.append(this.config.footer as any);
+      if (this.config.footer instanceof HTMLElement) {
+        form.appendChild(this.config.footer);
+      } else {
+        const footerEl = this.render("@form>footer", this.config.footer) as HTMLElement;
+        form.appendChild(footerEl);
+      }
     }
 
-    if (this.config.createEventListener) {
-      this.attachFormListener(form)
-    }
+    if (wrapper && form) wrapper.appendChild(form);
 
     // console.log(form)
-    return form;
+    return this.load("@container") as HTMLElement;
+  }
+
+
+  public initialize(): void {
+    const formElement = this.load("@form") as HTMLFormElement;
+    if (formElement && this.config.createEventListener) {
+      this.attachFormListener(formElement);
+    }
+    console.log(`[Form Engine v2] Form ID "${formElement?.id}" successfully compiled with active listeners.`);
+  }
+
+  protected template(typeKey: FormElementType, el: HTMLElement, payload?: any): void {
+    switch (typeKey) {
+      case "@container":
+        el.style.minHeight = this.config.minHeight;
+        break;
+
+      case "@form": {
+        const form = el as HTMLFormElement;
+        const randomSuffix = Math.random().toString(36).substring(7);
+        form.id = this.config.id ? `form-${this.config.id}`.replace(/\s+/g, "-") : `form-${randomSuffix}`;
+        form.className = `${this.config.className} ${form.className || ""}`.trim();
+        form.method = this.config.method;
+        if (this.config.action) form.action = this.config.action;
+        break;
+      }
+
+      case "@form>group": {
+        if (payload?.class) el.className = `${el.className} ${payload.class}`.trim();
+
+        const legendText = payload?.legend || payload?.title;
+        if (legendText) {
+          const legend = document.createElement("legend"); // Element internal pendukung kaku
+          legend.className = "group-title";
+          legend.textContent = String(legendText);
+          el.appendChild(legend);
+        }
+
+        if (payload?.description) {
+          const desc = document.createElement("p");
+          desc.className = "group-desc";
+          desc.textContent = String(payload.description);
+          el.appendChild(desc);
+        }
+        break;
+      }
+
+      case "@form>actions>submit": {
+        const btn = el as HTMLButtonElement;
+        btn.className = `${this.config.buttonClass} ${btn.className || ""}`.trim();
+        btn.type = "submit";
+        btn.textContent = this.config.buttonText;
+
+        if (payload?.isGroupBtn) {
+          btn.id = `btn-${payload.formId}-grp-${Math.random().toString(36).substring(7)}`;
+        } else {
+          btn.id = `btn-${payload?.formId || "default"}`;
+          btn.style.marginTop = "1rem";
+          btn.style.padding = "1rem";
+          btn.style.float = "right";
+        }
+        break;
+      }
+
+      case "@form>footer":
+        el.textContent = typeof payload === "string" ? payload : (payload?.text || "");
+        break;
+    }
+  }
+
+
+  public unmount(): void {
+    // Jalankan ritual pencabutan listener kustom jika disematkan esok sore
+    this.destroy(); // Bersihkan saku memori Map privat!
   }
 
   /**
@@ -226,7 +268,9 @@ export class FormBuilder {
     const toggleLoadingState = (success: boolean) => {
       form.classList.remove("loading");
       form.querySelectorAll(".field").forEach((f) => f.classList.remove("error"));
-      if (!success) form.querySelectorAll(".field").forEach((f) => f.classList.add("error"));
+      if (!success) {
+        form.querySelectorAll(".field").forEach((f) => f.classList.add("error"));
+      }
     };
 
     form.addEventListener("submit", async (e) => {
@@ -265,11 +309,40 @@ export class FormBuilder {
     });
 
     if (this.submitButtonId) {
-      const button = document.getElementById(this.submitButtonId);
-      button?.addEventListener("click", (e) => {
-        e.preventDefault();
-        form.requestSubmit(button);
-      });
+      const button = this.load("@form>actions>submit") as HTMLButtonElement;
+
+      if (button) {
+        button.addEventListener("click", (e) => {
+          e.preventDefault();
+          // Memicu form validation HTML5 native secara legal lintas penunjuk elemen!
+          form.requestSubmit(button);
+        });
+      }
     }
+  }
+
+
+  /**
+   * Helper internal untuk memindai string HTML mentah atau element hidup 
+   * guna mencari tombol submit yang sudah ada (untuk link ID)
+   */
+  private scanForSubmitButton(input: any, formId: string): string | null {
+    if (!input) return null;
+    let btn: HTMLElement | null = null;
+
+    if (input instanceof HTMLButtonElement) {
+      btn = input.type === "submit" ? input : input.querySelector("button[type=submit], input[type=submit]");
+    } else if (typeof input === "string") {
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = input.trim();
+      btn = wrapper.querySelector("button[type=submit], input[type=submit]");
+    }
+
+    if (btn) {
+      if (!btn.id) btn.id = `btn-${formId}`;
+      btn.setAttribute("form", formId);
+      return btn.id;
+    }
+    return null;
   }
 }

@@ -196,19 +196,17 @@
 .gallery .modal .close,
 .gallery .modal .next,
 .gallery .modal .previous {
-  display: flex;
+  display: block;
+  position: absolute;
   align-items: center;
   justify-content: center;
-  position: absolute;
   background: rgba(255, 255, 255, 0.1);
   color: white;
   border: none;
   border-radius: 50%;
   width: 3rem;
   height: 3rem;
-  line-height: 1.6rem;
   text-align: center;
-  font-size: 1.3rem;
   cursor: pointer;
   transition: background 0.3s ease;
 }
@@ -221,6 +219,17 @@
   color: red;
   top: 1.5rem;
   right: 1.5rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 6px 0;
+  line-height: 1rem;
+}
+
+.gallery .modal .next,
+.gallery .modal .previous {
+  padding: 10px 2px;
+  font-size: 1.3rem;
+  list-style: 1.6rem;
 }
 .gallery .modal .previous {
   left: 1.5rem;

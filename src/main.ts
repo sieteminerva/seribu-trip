@@ -2,7 +2,7 @@ import './style.css';
 import './lib/LandingPageBuilder/Components/Form/Form.css'
 import './overrides.css';
 
-import { PackagePageContent, GalleryPageContent, HomePageContent } from './content';
+import { PackagePageContent, GalleryPageContent, HomePageContent, ProductPageContent, FormPageContent, BlogPageContent } from './content';
 import { FooterBuilder } from './lib/LandingPageBuilder/Components/Footer/Footer';
 import { MenuBuilder } from './lib/LandingPageBuilder/Components/Menu/Menu';
 import { LandingPageBuilder } from './lib/LandingPageBuilder/LandingPage';
@@ -12,7 +12,6 @@ import { PricingCardBuilder } from './lib/LandingPageBuilder/Components/PricingC
 import { MasonryBuilder } from './lib/LandingPageBuilder/Components/Masonry/Masonry';
 import { SectionBuilder } from './lib/LandingPageBuilder/Components/Section/Section';
 import { FormBuilder } from './lib/LandingPageBuilder/Components/Form/Form';
-import { NodeTransformer } from './lib/LandingPageBuilder/Utils/NodeTransformer';
 import { DefaultTheme } from './lib/LandingPageBuilder/Themes/DefaultTheme';
 import { HorizontalTheme } from './lib/LandingPageBuilder/Themes/HorizontalTheme';
 import type { iBasicNode } from './lib/LandingPageBuilder/interface';
@@ -20,6 +19,9 @@ import { CyberpunkTheme } from './lib/LandingPageBuilder/Themes/CyberpunkTheme';
 import { FabMenuBuilder } from './lib/LandingPageBuilder/Components/FabMenu/FabMenu';
 import { ModalBuilder } from './lib/LandingPageBuilder/Components/Modal/Modal';
 import { ModeSwitcherBuilder } from './lib/LandingPageBuilder/Components/ModeSwitcher/ModeSwitcher';
+import { TabBuilder } from './lib/LandingPageBuilder/Components/Tab/Tab';
+import { ProductGridBuilder } from './lib/LandingPageBuilder/Components/Product/ProductGrid';
+import { ArticleBuilder } from './lib/LandingPageBuilder/Components/Article/Article';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 
@@ -35,7 +37,9 @@ if (app) {
         { label: 'Paket Perjalanan', href: '#package' },
         { label: 'Gallery', href: '#gallery' },
         { label: 'FAQ', href: '#faq-section' },
-        { label: 'Form', href: '#form' },
+        { label: 'Merchandise', href: '#merchandise' },
+        { label: 'Blog', href: '#blog' },
+        { label: 'Admin', href: '#form' },
       ]
     }
 
@@ -68,30 +72,15 @@ if (app) {
   };
 
 
-  const injectionRules = [
-    { selector: "p.eyebrow", inputType: "text" },
-    { selector: "h2.title", inputType: "textarea" },
-    { selector: "p.description", inputType: "textarea" },
-    { selector: "img", inputType: "file" },
-    // 💡 JEMBATAN BARU: Tambahkan aturan agar scanner mendeteksi komponen kompleks otomatis!
-    { selector: ".compact", inputType: "textarea" }
-  ];
-  const reverseNode = NodeTransformer.toFormNode(HomePageContent, injectionRules);
-
-  // console.log({ reverseNode });
-
   const builder = new LandingPageBuilder({
     menu,
     pages: {
       home: HomePageContent,
       package: PackagePageContent,
       gallery: GalleryPageContent,
-      form: [
-        {
-          builder: "form",
-          content: reverseNode,
-        }
-      ]
+      form: FormPageContent.page as any,
+      merchandise: (ProductPageContent as any),
+      blog: BlogPageContent as any // <= saya pakai awalan huruf besar sedangkan route di menu huruf kecil
     },
     footer
   }, {
@@ -103,10 +92,12 @@ if (app) {
   });
 
   builder.component?.register("accordion", (data: any) => new AccordionBuilder().create(data))
-    .register("form", (data: any) => new FormBuilder().create(data.content))
+    .register("form", (data: any) => {
+      // console.log("main.ts", { data });
+      return new FormBuilder().create(data)
+    })
     .register("carousel", (data: any) => new CarouselBuilder().create(data))
     .register("pricing-card", (data: any) => new PricingCardBuilder().create(data))
-    // .register("pricing-card", (data: any) => PricingCardBuilder.createLegacy(data.content))
     .register("masonry", (data: any) => new MasonryBuilder({ category: "category" }).create(data.content))
     .register("section", (data: any) => new SectionBuilder().create(data/* , { tagName: "section" } */))
     .register("menu", (data: any) => new MenuBuilder({
@@ -124,6 +115,18 @@ if (app) {
     .register("fab-menu", (data: any) => new FabMenuBuilder().create(data.content))
     .register("modal", (el: any) => new ModalBuilder().create(el as HTMLElement) as any)
     .register("mode-switcher", (data: any) => new ModeSwitcherBuilder().create(data))
+    .register("tab", (data: any) => new TabBuilder({
+      emit: (event, payload) => builder.events.emit(event, payload as any)
+    }).create(data))
+    .register("product-card-grid", (data: any) => {
+      // console.log(data)
+      return new ProductGridBuilder().create(data)
+    })
+    .register("article", (data: any) => {
+      return new ArticleBuilder({
+        navigate: (slug: string, themeId: string) => builder.router.navigate("blog", themeId || builder.currentThemeId, slug, true)
+      }).create(data.content)
+    })
 
   builder.theme?.register(new DefaultTheme())
     .register(new HorizontalTheme())
@@ -137,6 +140,15 @@ if (app) {
     if (data.builder === "menu" && data.type === "@menu>actions") {
       // console.log(data)
       data.element.appendChild(builder.component?.build("mode-switcher", {}))
+    }
+  });
+
+  builder.events.on("elementChanged", (payload) => {
+    if (payload.builder === "tab" && payload.type === "tab:changed") {
+      const index = payload.data;
+      const form = builder.component?.build("form", FormPageContent.nodes[index])
+      // console.log("tabChanged:", payload, form)
+      payload.element?.replaceChildren(form);
     }
   });
 

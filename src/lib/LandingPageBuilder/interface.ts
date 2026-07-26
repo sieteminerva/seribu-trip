@@ -21,6 +21,12 @@ export interface iLandingPageBuilderSource {
 }
 
 interface iComponentEvents<T extends string = string> {
+  elementChanged: {
+    builder?: keyof iBuilderRegistry;
+    type?: T | string; // 💡 Tipe sub-organ menangkap token dinamis dari T secara kaku!
+    element: HTMLElement | null;
+    data?: any;
+  };
   elementAdded: {
     builder?: keyof iBuilderRegistry;
     type?: T; // 💡 Tipe sub-organ menangkap token dinamis dari T secara kaku!
@@ -79,11 +85,15 @@ export interface iBuilderRegistry {
   menu: iBasicNode;
   footer: iBasicNode;
   "fab-menu": iBasicNode;
-  "modal": iBasicNode | HTMLElement;
+  modal: iBasicNode | HTMLElement;
   "mode-switcher": iBasicNode;
-  "message": iBasicNode;
-  "rating": any;
-  "article": any;
+  message: iBasicNode;
+  rating: any;
+  article: any;
+  tab: any;
+  input: iBasicInputNode;
+  "product-card": iBasicNode;
+  "product-card-grid": any;
   // Untuk komponen baru nanti, cukup daftarkan jenis array atomnya di sini:
   // stats: iStatsProperty[];
 }
@@ -161,7 +171,7 @@ export interface iActionProperty extends iElementProperty {
   href?: string;
   src?: string;
   isActive?: boolean;
-  type?: 'button' | 'submit' | 'reset';
+  type?: 'button' | 'submit' | 'reset' | InputType;
   onClick?: (event: MouseEvent) => void;
 }
 

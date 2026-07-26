@@ -2,7 +2,7 @@ import { ComponentRegistry } from "./Modules/ComponentRegistry";
 import type { iBasicNode, iBuilderRegistry, iLandingPageBuilderSource, iNodeContent } from "./interface";
 import { DOMRenderer } from "./Modules/DOMRenderer";
 import { ThemeRenderer } from "./Modules/ThemeRenderer";
-import { EventEmitter } from "./Modules/EventEmitter";
+import { EventEmitter } from "./Services/EventEmitter";
 import { NodeTransformer } from "./Utils/NodeTransformer";
 import { HashRouter, type iRouteState } from "./Modules/HashRouter";
 
@@ -305,11 +305,6 @@ export class LandingPageBuilder {
     if (!node || typeof node !== "object") return null;
     if (node instanceof HTMLElement) return node;
 
-    // ====================================================
-    // 🧙‍♂️ JALUR 1: THE JUST-IN-TIME TRANSFORMATION GATEWAY (Langkah Pertama!)
-    // Terjemahkan advanced selector keys ke format iNodeContent secara transparan di luar.
-    // Struktur data objek dipastikan 100% aman karena elemen fisiknya belum lahir!
-    // ====================================================
     const resolvedBlueprint = NodeTransformer.resolveContentNode(node);
 
     const buildComponent = (name: keyof iBuilderRegistry, data: any): HTMLElement | null => {
@@ -321,17 +316,8 @@ export class LandingPageBuilder {
       return null;
     };
 
-    // ====================================================
-    // 🧙‍♂️ JALUR 2: DEEP COMPONENT HYDRO-MATRIX (Langkah Kedua!)
-    // Setelah kuncinya rapi ter-resolve, barulah renderComponent menyelam 
-    // mencari properti .builder dan menukarnya menjadi HTMLElement hidup secara instan!
-    // ====================================================
     this.renderComponent([resolvedBlueprint]);
 
-    // ====================================================
-    // 🧱 LANGKAH 3: SYNCHRONOUS DOM RENDERING MACHINE
-    // Suapkan data resolvedBlueprint yang sudah 100% matang membawa organ elemen hidup!
-    // ====================================================
     const renderedElement = this.factory?.render(resolvedBlueprint, this.compile.bind(this), buildComponent as any);
 
     if (renderedElement instanceof HTMLElement && this.shell instanceof HTMLElement) {
@@ -342,10 +328,6 @@ export class LandingPageBuilder {
     return null;
   }
 
-  /**
-   * 🎢 THE PURE COMPONENT RESOLVER (Sovereign Builder Executor)
-   * Tetap murni dan fokus hanya mengeksekusi objek yang membawa properti .builder
-   */
   private renderComponent(nodes: any[]): void {
     if (!nodes || !Array.isArray(nodes)) return;
 
@@ -397,7 +379,6 @@ export class LandingPageBuilder {
 
     nodes.forEach(scanAndBuild);
   }
-
 
   public destroy(): void {
     // window.removeEventListener("hashchange", this.handleHashChange);

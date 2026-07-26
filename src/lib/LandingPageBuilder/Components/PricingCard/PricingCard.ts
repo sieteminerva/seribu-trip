@@ -48,11 +48,11 @@ export class PricingCardBuilder extends Builder<PricingCardElementType, iPricing
 
   public prepare(data: iBasicNode, _config?: Partial<iBuilderConfig<PricingCardElementType>> | undefined): HTMLElement {
 
-    const container = this.render("@container");
+    const container = this.render("@container", data);
     const items = Array.isArray(data.content) ? data.content : [data.content];
 
     items.forEach((item: any) => {
-      const card = this.render("@card", item, true) as { outer: HTMLElement, inner: HTMLElement };
+      const card = this.render("@card", item, true) as { __outer: HTMLElement, __inner: HTMLElement };
       const header = this.render("@card>header", item, true);
       const divider = this.render("@card>divider", item, true);
       const body = this.render("@card>body", item, true);
@@ -66,9 +66,10 @@ export class PricingCardBuilder extends Builder<PricingCardElementType, iPricing
       const actions = this.render("@card>actions", item, true);
 
       body?.appendChild(features!);
-      card?.inner.append(header!, divider!, body!, actions!);
 
-      container?.append(card.outer!)
+      card?.__inner.append(header!, divider!, body!, actions!);
+
+      container?.append(card.__outer!)
     });
 
     return this.load("@container") as HTMLElement;

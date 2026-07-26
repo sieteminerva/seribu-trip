@@ -116,7 +116,6 @@ export class DOMRenderer<
 
     for (const [key, value] of Object.entries(structure)) {
       if (!value || typeof value !== 'object') continue;
-
       // ====================================================
       // 🧙‍♂️ THE HOLY CASCADING HIERARCHY ABSORBER (IDE BERLIAN ANDA!)
       // Jika kunci mengandung tanda '>', belah stringnya menggunakan tanda '>' !
@@ -166,7 +165,7 @@ export class DOMRenderer<
       }
 
       // Phase 5: RECURSIVE NESTED KEYS TRAVERSAL (Untuk format objek bersarang bawaan DOMRenderer asli)
-      const reservedKeys = ['content', 'onCreated', 'onDestroy', 'builder', 'attrs', 'isRoot', 'isArray'];
+      const reservedKeys = ['content', 'onCreated', 'onDestroy', 'builder', 'attrs', 'isRoot', 'isArray', 'config', 'selectors'];
       const childKeys = Object.keys(value).filter(k => !reservedKeys.includes(k));
 
       if (childKeys.length > 0) {
@@ -285,6 +284,7 @@ export class DOMRenderer<
     renderFn?: (node: any) => HTMLElement | null,
     builderFn?: (name: keyof iBuilderRegistry, data: any) => HTMLElement | null
   ): void {
+
     if (value.content === undefined) return;
     if (value.builder) {
       return;

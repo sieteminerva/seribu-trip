@@ -28,7 +28,7 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
   constructor(config: Partial<iModalConfig> = {}) {
     super();
     const defaultSelectors = {
-      "@container": { tagName: "div", className: "dialog" },
+      "@container": { tagName: "div", className: "dialog hidden" },
       "@modal": { tagName: "div", className: "modal" },
       "@modal>header": { tagName: "div", className: "header" },
       "@modal>closeBtn": { tagName: "", className: "close" },
@@ -97,11 +97,11 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
     switch (typeKey) {
       case "@container":
         el.id = this.config.id;
-        el.className = `dialog hidden ${this.config.className} ${el.className || ""}`.trim();
+        if (this.config.className) el.classList.add(`${this.config.className}`.trim(), "hidden");
         break;
 
       case "@modal":
-        el.className = `modal ${this.config.modalClass} ${el.className || ""}`.trim();
+        if (this.config.modalClass) el.classList.add("modal", ` ${this.config.modalClass}.trim()`);
         break;
 
       case "@modal>header": {

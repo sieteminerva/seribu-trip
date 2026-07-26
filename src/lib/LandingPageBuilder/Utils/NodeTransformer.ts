@@ -72,7 +72,11 @@ export class NodeTransformer {
 
     const extractedAttrs = { ...(nodeObj.attrs || {}) };
     // 2. Kumpulkan semua atribut kustom (seperti src, href, alt) selevel tag dasar
-    const reservedKeys = ['tag', 'tagName', 'id', 'className', 'builder', 'content', 'onCreated', 'onDestroy', 'attrs', 'isRoot'];
+    const reservedKeys = [
+      'tag', 'tagName', 'id', 'className', 'builder', 'content',
+      'onCreated', 'onDestroy', 'attrs', 'isRoot',
+      'config', 'selectors' // 🟢 AMAN: Dua satpam pelindung baru pilihan Anda!
+    ];
 
     Object.keys(nodeObj).forEach(key => {
       const isSystemPrivateProperty = key.startsWith("_");

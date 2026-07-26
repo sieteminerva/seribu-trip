@@ -28,6 +28,8 @@
     "archieves/Base2.ts",
     "archieves/BuilderRenderer.ts",
     "archieves/Masonry copy.ts",
-    "archieves/Carousel copy.ts"
+    "archieves/Carousel copy.ts",
+    "archieves/InputStatic.ts",
+    "archieves/FormStatic.ts"
   ]
 }
