@@ -194,6 +194,7 @@ export const HomePageContent: iBasicNode[] = [
               if (modal) {
                 (modal as any).open()
               }
+              console.log("content.ts>HomePageContent>CTA.onCreated", modal)
             });
             el.appendChild(btn);
           }

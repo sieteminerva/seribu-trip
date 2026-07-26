@@ -23,7 +23,7 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
   readonly name: keyof iBuilderRegistry = "modal";
   readonly stylesheet: string = "./Modal.css";
 
-  public config: Required<iModalConfig>;
+  currentModal: HTMLElement | null = null;
 
   constructor(config: Partial<iModalConfig> = {}) {
     super();
@@ -53,7 +53,7 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
    * 🏛️ SYSTEM PRESET PAGE DEFAULT BUILDER
    * Mengatur daur hidup pembuatan elemen dan menahan duplikasi fisik di DOM browser
    */
-  public prepare(contentPayload: any): { open: () => void; close: () => void; destroy: () => void; element: HTMLElement } {
+  public prepare(contentPayload: any): { open: () => void; close: () => void; unmount: () => void; element: HTMLElement } {
 
     // 💡 POTENSI ANTI-KEMBUNG: Ambil dari live DOM jika mode reuse aktif
     const existingDOMElement = document.getElementById(this.config.id);
@@ -61,12 +61,16 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
       console.log(`[Universal Modal] Re-using active memory pointer for #${this.config.id}`);
 
       // Sinkronisasikan saku internal Map agar tetap konsisten memegang elemen aktif
-      this.render("@container", contentPayload);
+      // this.nodes().set("@container", existingDOMElement, contentPayload, false); //<= akan fix the issue
+      // this.load("@container", contentPayload) as HTMLElement; // <= tidak, sementara yang dilakukan sama
+      this.currentModal = existingDOMElement;
       return this._getControlInterfaces();
     }
 
     // 1. Lahirkan Cangkang Makro Terluar (Outer Overlay Backdrop)
     const overlay = (this.load("@container") || this.render("@container", contentPayload)) as HTMLElement;
+
+    this.currentModal = overlay;
 
     // 2. Lahirkan Kotak Dialog Modal Dalam (Inner Box)
     const modalBox = this.render("@modal", contentPayload);
@@ -121,9 +125,10 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
     }
   }
 
-  public initialize(): void {
-
-    const overlay = this.load("@container") as HTMLElement;
+  public initialize(_el?: HTMLElement, payload?: any, _context?: any): void {
+    // console.log("initialize", _el)
+    const overlay = (this.load("@container") || this.render("@container", payload)) as HTMLElement || this.currentModal;
+    // console.log("initialize overlay", overlay)
     const closeBtn = this.load("@modal>closeBtn") as HTMLElement;
 
     if (closeBtn && overlay) {
@@ -142,7 +147,8 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
   }
 
   public open(): void {
-    const overlay = this.load("@container") as HTMLElement;
+    const overlay = this.currentModal || this.load("@container") as HTMLElement;
+    console.log("open", overlay) //<= overlay element ada
     if (!overlay) return;
 
     overlay.classList.remove("hidden");
@@ -154,7 +160,9 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
   }
 
   public close(): void {
-    const overlay = this.load("@container") as HTMLElement;
+    const overlay = this.currentModal || this.load("@container") as HTMLElement;
+
+    console.log("close", overlay) //<= overlay element ada
     if (!overlay) return;
 
     overlay.classList.add("hidden");
@@ -165,7 +173,7 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
     }
 
     if (this.config.destroyOnClose) {
-      this.destroy();
+      this.unmount();
     }
   }
 
@@ -188,13 +196,24 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
     return fallbackDiv;
   }
 
-  private _getControlInterfaces() {
-    const overlay = this.load("@container") as HTMLElement;
+  private _getControlInterfaces(currentModal?: HTMLElement) {
+    console.log("same element:", currentModal?.isEqualNode(this.currentModal)) // ❌ hasilnya false padahal sama 
+    const overlay = this.load("@container") as HTMLElement || this.currentModal;
     return {
       element: overlay as HTMLElement,
       open: () => this.open(),
       close: () => this.close(),
-      destroy: () => this.destroy()
+      unmount: () => this.unmount()
     };
+  }
+
+  public unmount() {
+    const overlay = this.load("@container") as HTMLElement
+    const closeBtn = this.load("@modal>closeBtn") as HTMLElement;
+    if (overlay && closeBtn) {
+      // closeBtn.removeEventListener("click", this.close);
+      // overlay.removeEventListener("click", this.close);
+      // this.destroy();
+    }
   }
 }

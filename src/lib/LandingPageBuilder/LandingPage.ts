@@ -162,6 +162,8 @@ export class LandingPageBuilder {
  * Hanya bertugas menempelkan elemen hidup yang sudah dimatangkan penuh oleh .compile()
  */
   async render(route: string = this.currentRoute): Promise<void> {
+    // Unlock body scroll in case a modal or overlay left it locked
+    document.body.style.overflow = "";
 
     if (!this.shell) {
       this.shell = document.createElement("main");
@@ -244,6 +246,9 @@ export class LandingPageBuilder {
 
   private async prepare(): Promise<{ pages: any, menu: any, footer: any, context: any } | undefined> {
     try {
+      // 0. Clean up previous page/route node registries & instance identity counters
+      // this.component?.clear();
+
       // 1. Amankan snapshot memori imutabel (Data master murni)
       const snapshot = this._prepareDataSnapshot();
 
@@ -388,6 +393,7 @@ export class LandingPageBuilder {
     }
     this.events.clear(); // Bersihkan seluruh memory listeners
     this.container.innerHTML = "";
+    this.component?.clear();
   }
 
   // =============================

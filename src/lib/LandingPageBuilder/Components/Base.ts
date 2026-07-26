@@ -22,6 +22,11 @@ const GLOBAL_INSTANCE_COUNTER = new Map<string, number>();
  */
 export abstract class Builder<TType extends string = string, TConfig extends iBuilderConfig<TType> = iBuilderConfig<TType>> {
 
+  public static resetCounters(): void {
+    GLOBAL_INSTANCE_COUNTER.clear();
+    console.log(`🧹 [Builder]: Wiped all instance identity counters.`);
+  }
+
   protected instanceId: string = "";
 
   /**
@@ -90,7 +95,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
 
   // nodes builder
   #nodes = new Map<TType, iNodeRecords>();
-  private nodes() {
+  protected nodes() {
     const id = this.ensureInstanceIdentity();
     const isRegistryPresent = typeof TemplateRegistry !== "undefined" && typeof TemplateRegistry.nodes !== "undefined";
     // const isRegistryPresent = false;
@@ -136,7 +141,13 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
             }
           }
         },
-        clear: () => this.#nodes.clear(),
+        clear: (builderId?: keyof iBuilderRegistry) => {
+          for (const globalKey of this.#nodes.keys()) {
+            if (globalKey.startsWith(`${builderId || this.builderId}:`)) {
+              this.#nodes.delete(globalKey);
+            }
+          }
+        },
         payload: (key: TType, index: number | "all" = 0): any => {
           const mainRecord = this.#nodes.get(key);
           if (!mainRecord || !mainRecord.records || mainRecord.records.length === 0) return null;
@@ -222,7 +233,9 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     // 🔮 THE ANCESTRAL POINTER EXTRACTOR (EVAKUASI DARI MAP POOL)
     // Jemput elemen root hidup dari dalam saku standard identifier @container!
     // ====================================================
-    const rootElement = this.nodes().get(typeKey || "@container" as TType) as HTMLElement
+    const rootElement = this.nodes().load(typeKey || "@container" as TType) as HTMLElement
+
+    console.log({ rootElement })
 
     if (rootElement) {
       // Cabut dari silsilah induk bodi HTML jika memiliki parentNode aktif di browser
@@ -248,7 +261,8 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
   }
 
   public create(content: iBasicNode, config?: Partial<TConfig>): HTMLElement {
-    if (config) this.config = this.resolveConfig(this.config, config);
+    const effectiveConfig = config || (content && typeof content === "object" ? (content as any).config : undefined);
+    if (effectiveConfig) this.config = this.resolveConfig(this.config, effectiveConfig);
 
     console.count(`📊 [Core Lifecycle Audit] ${this.builderId.toUpperCase()} .create() called`);
     const trace = new Error();

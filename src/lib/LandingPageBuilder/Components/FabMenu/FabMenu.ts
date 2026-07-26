@@ -54,8 +54,6 @@ export class FabMenuBuilder extends Builder<FabMenuElementType, iFabMenuConfig> 
     this.config = this.resolveConfig(defaultConfig, config);
   }
 
-
-
   public prepare(content: iBasicNode, _config?: Partial<iFabMenuConfig>): HTMLElement {
 
     this._clearIdleTimer();

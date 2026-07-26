@@ -85,8 +85,8 @@ export class TemplateRegistry {
       },
 
       set: (builderInstance: any, typeKey: string, element: HTMLElement, payload: any, multiple: boolean, scopeId: string): any => {
-        // const selectedBuilder = "product-card"
-        // if (builderInstance.builderId === selectedBuilder) console.log({ builder: builderInstance.builderId, method: "this.nodes.set()", entries: this.#nodes.entries() })
+        const selectedBuilder = "fab-menu"
+        if (builderInstance.builderId === selectedBuilder) console.log({ builder: builderInstance.builderId, method: `this.nodes.set(${scopeId}, ${typeKey})`, entries: this.#nodes.entries() })
         const tElement = element;
 
         // Kunci penanda dasar Singleton murni bawaan spesifikasi asli Anda
@@ -155,6 +155,7 @@ export class TemplateRegistry {
 
       delete: (builderId: string, key: string, index: number | "all"): void => {
         const globalStorageKey = `${builderId}:${key}`;
+        if (builderId.includes("modal")) console.log(this.#nodes.entries())
         if (index === "all") {
           this.#nodes.delete(globalStorageKey);
         } else if (typeof index === "number") {
@@ -166,16 +167,24 @@ export class TemplateRegistry {
         }
       },
 
-      clear: (builderId: string): void => {
-        for (const globalKey of this.#nodes.keys()) {
-          if (globalKey.startsWith(`${builderId}:`)) {
-            this.#nodes.delete(globalKey);
+      clear: (builderId?: string): void => {
+        if (builderId) {
+          for (const globalKey of this.#nodes.keys()) {
+            if (globalKey.startsWith(`${builderId}:`)) {
+              this.#nodes.delete(globalKey);
+            }
           }
+          if (builderId?.includes("modal")) console.log(this.#nodes.entries())
+          console.log(`🧹 [TemplateRegistry]: Wiped sync nodes cache for builder ID: "${builderId}"`);
+        } else {
+          this.#nodes.clear();
+          console.log(`🧹 [TemplateRegistry]: Wiped all sync nodes cache.`);
         }
-        console.log(`🧹 [TemplateRegistry]: Wiped sync nodes cache for builder ID: "${builderId}"`);
       },
 
-      set2: (builderInstance: any, typeKey: string, element: HTMLElement, payload: any, multiple: boolean, scopeId: string): any => {
+      set1: (builderInstance: any, typeKey: string, element: HTMLElement, payload: any, multiple: boolean, scopeId: string): any => {
+        // const selectedBuilder = "product-card"
+        // if (builderInstance.builderId/*  === selectedBuilder */) console.log({ builder: builderInstance.builderId, method: `this.nodes.set(${scopeId}, ${typeKey})`, entries: this.#nodes.entries() })
         const id = scopeId;
         const globalStorageKey = `${id}:${typeKey}`;
         let tElement = element;

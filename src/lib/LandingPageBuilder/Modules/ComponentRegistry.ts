@@ -1,5 +1,7 @@
 import type { ComponentBuilderFn, iBasicNode, iBuilderRegistry } from "../interface";
 import { NodeTransformer } from "../Utils/NodeTransformer";
+// import { TemplateRegistry } from "./TemplateRegistry";
+import { Builder } from "../Components/Base";
 
 
 // 💡 DEKLARASI KONTAK LAZY LOAD UNTUK MODEL METADATA (STYLE 3)
@@ -35,6 +37,12 @@ export class ComponentRegistry {
     return this;
   }
 
+  public get(name: string) {
+    if (this.has(name)) {
+      return this.builders.get(name as keyof iBuilderRegistry);
+    }
+  }
+
   public has(name: string): boolean {
     return this.builders.has(name as keyof iBuilderRegistry);
   }
@@ -46,6 +54,9 @@ export class ComponentRegistry {
     const promises = componentNames.map(async (name) => {
       const fn = this.builders.get(name as any);
       if (!fn) return;
+
+      // Skip synchronous component builders (which do not take the load callback)
+      if (fn.length < 2) return; // <= hack fix coding agent untuk mengatasi bug pangkat 2
 
       const matchedData = NodeTransformer.getBuilderNode(pagesData as iBasicNode[], name);
 
@@ -122,25 +133,22 @@ export class ComponentRegistry {
   }
 
 
-  // TODO redesign the build method its hacky, sould accept 2nd optional parameter on .create
   public build<K extends keyof iBuilderRegistry>(name: K, data: any): any {
     const fn = this.builders.get(name);
     if (!fn) return null;
 
-    // Ambil data konfigurasi kustom tema yang terparkir di gudang pusat kita
+    // 1. Fetch dynamic theme configuration registered at runtime via setConfig()
     const activeThemeConfig = this._dynamicConfigs.get(name) || {};
-    const contentPayload = data?.content || data;
+    const contentPayload = data?.content !== undefined ? data.content : data;
 
+    // 2. Handle preloaded class components (Style 3)
     const PreloadedBuilderClass = this._resolvedCache.get(name);
-    // console.log(typeof PreloadedBuilderClass)
-
     if (typeof PreloadedBuilderClass === "function") {
       if (typeof PreloadedBuilderClass.create === "function") {
         return PreloadedBuilderClass.create(contentPayload, activeThemeConfig);
       }
 
       const instance = new PreloadedBuilderClass(activeThemeConfig);
-      console.log({ instance, type: typeof instance })
       if (instance && typeof instance === "object") {
         const existingConfig = (instance as any).config || {};
         (instance as any).config = {
@@ -149,43 +157,37 @@ export class ComponentRegistry {
           selectors: { ...(existingConfig.selectors || {}), ...(activeThemeConfig.selectors || {}) }
         };
 
-        // Salinkan parameter luar ke permukaan objek instans
         Object.entries(activeThemeConfig).forEach(([cKey, cValue]) => {
           if (cKey !== "selectors") (instance as any)[cKey] = cValue;
         });
+        if (typeof instance.create === "function") {
+          return instance.create(contentPayload, activeThemeConfig);
+        }
       }
-
-      console.log(`[Registry Cache Lock] Configuration successfully fused into cached class instance: "${String(name)}"`);
-      return instance.create(contentPayload, activeThemeConfig);
     }
 
-    // console.log(`[Registry Fallback Link] Component "${String(name)}" is running under synchronous legacy fallback pipeline.`);
-
-    // Pastikan wadah objek config bawaan database Sheets eksis di level data mentah
+    // 3. Prepare merged configuration for synchronous builder functions
     const finalMergedConfig = {
-      ...data.config,
+      ...(data?.config || {}),
       ...activeThemeConfig,
       selectors: {
-        ...(data.config?.selectors || {}),
+        ...(data?.config?.selectors || {}),
         ...(activeThemeConfig?.selectors || {})
       }
     };
 
-    // Eksekusi fungsi pabrik asli untuk memicu pembentukan instans awal
-    const result = fn(data, finalMergedConfig);
-
-    // 💡 THE SAKRAL RE-ROUTING TRANSITION FLUID:
-    // Jika 'result' ternyata mengembalikan sebuah HTMLElement utuh (karena fungsi pendaftarnya hardcoded),
-    // kita gunakan taktik Dynamic Prototype Overriding untuk memintas konfigurasinya!
-    if (result instanceof HTMLElement) {
-      // Jika Anda sudah merubah CarouselBuilder agar .create() menerima parameter kedua,
-      // pastikan fungsi bungkusan di main.ts diseragamkan kelak. 
-      // Untuk malam ini, kita paksa las data konfigurasinya langsung ke level data input!
+    // Stamp merged config onto input data before invoking builder factory
+    if (data && typeof data === "object") {
       data.config = finalMergedConfig;
-      return fn(data, () => Promise.resolve({}));
     }
 
-    // Jika result mengembalikan objek manifest instans sejati, ledakkan parameter keduanya!
+    // 4. Invoke builder factory function
+    const result = fn(data, finalMergedConfig);
+
+    if (result instanceof HTMLElement) {
+      return result;
+    }
+
     if (result && typeof result === "object" && typeof (result as any).create === "function") {
       const legacyInstance = result as any;
       if (!legacyInstance.config) legacyInstance.config = finalMergedConfig;
@@ -193,11 +195,10 @@ export class ComponentRegistry {
     }
 
     if (result instanceof Promise) return result;
-    if (result instanceof HTMLElement) return result;
     if (result && typeof result === "object") return result;
 
     return null;
-  }
+  };
 
 
   private injectStyle(sheet: CSSStyleSheet): void {
@@ -206,8 +207,6 @@ export class ComponentRegistry {
       document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
     }
   }
-
-  // Inside Modules/ComponentRegistry.ts -> THE FINAL FORCED INJECTION CONTRACT
 
   public setConfig(builderName: keyof iBuilderRegistry, newConfig: Record<string, any>): void {
     console.log(`[Registry Config Central] Storing live configuration inject request for: "${String(builderName)}"`);
@@ -224,6 +223,26 @@ export class ComponentRegistry {
     });
 
     console.log(`[Registry Success] Configuration for "${String(builderName)}" officially sealed in dynamic config state.`);
+  }
+
+  public clear(): void {
+
+    this._dynamicConfigs.clear();
+    this.registeredSheets = new Set<CSSStyleSheet>();
+
+    // if (typeof TemplateRegistry !== "undefined" && typeof TemplateRegistry.nodes?.clear === "function") {
+    //   TemplateRegistry.nodes.clear();
+    // }
+
+    if (typeof Builder !== "undefined" && typeof Builder.resetCounters === "function") {
+      Builder.resetCounters();
+    }
+
+    console.log(`🧹 [ComponentRegistry]: Cleaned node registries and instance identity counters.`);
+  }
+
+  public destroy() {
+
   }
 
 }
