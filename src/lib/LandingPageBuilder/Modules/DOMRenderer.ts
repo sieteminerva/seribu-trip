@@ -251,18 +251,18 @@ export class DOMRenderer<
         /**
          * Mengizinkan komponen mendaftarkan fungsi template override secara manual dari dalam onCreated
          */
-        register: (id: string, handler: any) => {
+        register: (themeId: string, selectorKey: string, handler: any) => {
           if (TemplateRegistry && typeof TemplateRegistry.register === "function") {
-            console.log(`[DOMRenderer Lifecycle] Manual template registration triggered for token: "${id}"`);
-            TemplateRegistry.register(id, handler);
+            console.log(`[DOMRenderer Lifecycle] Manual template registration triggered for token: "${selectorKey}"`);
+            TemplateRegistry.register(themeId, selectorKey, handler);
           }
         },
         /**
          * Mengizinkan komponen mencabut fungsi template miliknya saat unmount jika dibutuhkan
          */
-        unregister: (id: string) => {
+        unregister: (themeId: string, selectorKey: string) => {
           if (TemplateRegistry && typeof TemplateRegistry.unregister === "function") {
-            TemplateRegistry.unregister(id);
+            TemplateRegistry.unregister(themeId, selectorKey);
           }
         }
       };

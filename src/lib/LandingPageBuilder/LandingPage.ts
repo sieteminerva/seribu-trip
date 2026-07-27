@@ -4,7 +4,7 @@ import { DOMRenderer } from "./Modules/DOMRenderer";
 import { ThemeRenderer } from "./Modules/ThemeRenderer";
 import { EventEmitter } from "./Services/EventEmitter";
 import { NodeTransformer } from "./Utils/NodeTransformer";
-import { HashRouter, type iRouteState } from "./Modules/HashRouter";
+import { HashRouter, type iRouteState } from "./Services/HashRouter";
 
 export interface iLandingPageBuilderConfig {
   container: HTMLElement | string;
@@ -187,7 +187,7 @@ export class LandingPageBuilder {
     this.renderedNodesMap.clear();
 
     // Pancarkan sebelum render untuk kebutuhan plugin luar, data sudah 100% matang ter-hydrate!
-    // this.events.emit("beforeRender", payload as any);
+    this.events.emit("beforeRender", payload as any);
 
     // console.log(payload)
     // 1. Jalankan Kompilasi & Penempelan Navbar Menu
@@ -273,6 +273,8 @@ export class LandingPageBuilder {
 
       // 2. RUNTIME PRE-LOAD PIPELINE TERMINAL (Berdasarkan data master asli)
       const metaReport = NodeTransformer.scanMetaNodes(rawBlocks);
+      const meta2 = NodeTransformer.scanPageLayout(rawBlocks, this.currentRoute);
+      console.log({ metaReport, meta2 })
       const requiredBuilders = Object.keys(metaReport.hasComponent).filter(
         (key) => (metaReport.hasComponent as any)[key].active === true
       );

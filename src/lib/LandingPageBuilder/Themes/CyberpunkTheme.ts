@@ -57,7 +57,7 @@ export class CyberpunkTheme implements iThemeModule {
     // ====================================================
     const themeTemplates = this.templates();
     Object.entries(themeTemplates).forEach(([selectorKey, handler]) => {
-      TemplateRegistry.register(`${this.themeId}${selectorKey}`, handler);
+      TemplateRegistry.resolve(this.themeId, selectorKey, handler);
     });
 
     // Siram nama kelas kosmetik ke seluruh blok halaman utama
@@ -74,8 +74,8 @@ export class CyberpunkTheme implements iThemeModule {
   /**
    * KATEGORI 1: BEHAVIORAL ACTIVATION (Post-Render)
    */
-  public activate(shell: HTMLElement, elements: HTMLElement[]): void {
-    if (elements) console.log("Cyberpunk Themes element ready", elements);
+  public activate(shell: HTMLElement, _elements: HTMLElement[]): void {
+    // if (elements) console.log("Cyberpunk Themes element ready", elements);
     shell.className = "page theme-cyberpunk";
     console.log("[CyberpunkTheme] System secure. Neon structural overrides painted successfully.");
   }
@@ -90,7 +90,7 @@ export class CyberpunkTheme implements iThemeModule {
     // 🔒 AMAN TOTAL LINTAS ROUTE: Otomatis memecat sisa token berdasarkan keys objek kita sendiri!
     const themeTemplates = this.templates();
     Object.keys(themeTemplates).forEach((selectorKey) => {
-      TemplateRegistry.unregister?.(`${this.themeId}${selectorKey}`);
+      TemplateRegistry.unregister?.(this.themeId, selectorKey);
     });
 
     console.log("[CyberpunkTheme] Deactivated safely. System returned to default vertical bounds.");

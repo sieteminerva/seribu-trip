@@ -108,6 +108,25 @@ export type BuilderFunctionsMap = {
 
 
 /**
+ * 
+ */
+export interface iNodeRecords {
+  records: iNodeRecordItem[]
+}
+
+export interface iNodeRecordItem {
+  element: HTMLElement,
+  raw: any;
+  relations?: {
+    scope?: string;
+    key?: string;
+    parent: string | null; // "builderId:typeKey" milik bapak angkatnya
+    children: string[]     // Array [...builderId:typeKey] milik anak cucunya
+  };
+  proxy: any;
+}
+
+/**
  * CONTRACT SPECIFICATION: Base Contract for all Architectural Themes.
  * Every theme MUST implement this interface to be recognized by the ThemeRenderer.
  */
@@ -171,6 +190,7 @@ export interface iActionProperty extends iElementProperty {
   href?: string;
   src?: string;
   isActive?: boolean;
+  isRoot?: boolean;
   type?: 'button' | 'submit' | 'reset' | InputType;
   onClick?: (event: MouseEvent) => void;
 }
@@ -287,6 +307,7 @@ export interface iPageMetaReport {
   };
   // Tambahan info taktis: Daftar seluruh ID seksi dan label nama seksi untuk timeline
   timelinePaths: Array<{ id: string; name: string; type: string }>;
+  graphRelationsBlueprint?: any
 }
 
 

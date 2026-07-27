@@ -46,7 +46,7 @@ export class ThemeRenderer {
 
       if (targetTheme && typeof targetTheme.beforePageRender === "function") {
 
-        console.log(`[ThemeEngine] Hooking on "beforePageRender" via generic event pipeline for theme: "${currentThemeId}"`);
+        // console.log(`[ThemeEngine] Hooking on "beforePageRender" via generic event pipeline for theme: "${currentThemeId}"`);
 
         // 💡 JALUR SAKRAL ANDA TERWUJUD: 
         // Suapkan data dan objek secureThemeContext ke dalam beforePageRender tema!
@@ -66,7 +66,7 @@ export class ThemeRenderer {
 
     // 🧙‍♂️ TAHAP 1: Intercept Struktur Objek via Pass-by-Reference Mutation (Pre-Render)
     this.page.events.on("ready", (eventData: any) => {
-      console.log(`[ThemeEngine] Hooking on "ready" via generic event pipeline for theme: "${this.page.currentThemeId}"`);
+      // console.log(`[ThemeEngine] Hooking on "ready" via generic event pipeline for theme: "${this.page.currentThemeId}"`);
 
       const currentThemeId = (this.page as any).currentThemeId;
 

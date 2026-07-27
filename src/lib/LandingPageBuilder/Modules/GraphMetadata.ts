@@ -1,105 +1,74 @@
-import type { iBuilderRegistry } from "../interface";
-import { ComponentRegistry } from "./ComponentRegistry";
-
-export interface iGraphMetadataNode {
-  nodeId: string;               // ID Unik Node (Format: "route:builderId:entityId" atau "route:plain-dom-id")
-  routePath: string;           // Rute pemilik (e.g., "blog", "product", "gallery")
-  themeId: string;             // Terikat dengan ThemeRenderer mana saat dicetak
-
-  // 🎭 KASTA 1: POINTER UTAMAA ELEMEN FISIK
-  element: HTMLElement;
-
-  // 🎭 KASTA 2: METADATA SILSILAH (THE PARENT-CHILD RELATION LINKER)
-  parentId: string | null;     // Menunjuk nodeId milik bapak yang melahirkannya
-  childrenIds: Set<string>;    // Daftar seluruh nodeId anak cucu yang lahir di dalam perutnya
-
-  // 🎭 KASTA 3: STATUS KESEGARAN DATA
-  builderName: string | null;  // Mengidentifikasi builder pemilik (e.g., "product-card", null jika plain HTML)
-  dataSnapshot: string;        // Hasil JSON.stringify(data) asli server Sheets untuk validasi cache
-  status: "active" | "cached" | "detached"; // State daur hidup di level RAM
-}
-
+import type { iNodeRecordItem, iNodeRecords } from "../interface";
 
 export class GraphMetadata {
-  // Pangkalan militer tunggal pelacak silsilah lintas semesta komponen Anda
-  private static registry = new Map<string, iGraphMetadataNode>();
-
-  // Penunjuk ambien rute dan bapak aktif saat ini
-  public static currentActiveRoute: string = "home";
+  // Pangkalan penanda global penentu rahim bapak aktif saat ini
+  public static activeParentScopeKey: string | null = null;
 
   /**
-   * 🚀 GERBANG AUTOMATED RESOLVE PARENT (KUNCIAN REVOLUSIONER UNTUK EVENT EMITTER ANDA!)
-   * Cerdas memburu siapa bapak pemilik elemen kontainer hantaran dari event payload JIT!
+   * 📌 PIPELINE WELD: Menjahit data korelasi silsilah parent-child murni di level RAM objek
    */
-  public static resolveParentIdByElement(childElement: HTMLElement, currentBuilderId: string): string | null {
-    // 1. Jika anak lahir dari constructor normal, gunakan ambient parent scope aktif
-    if (this.currentActiveRoute && currentBuilderId === "landing-page") {
-      return `${this.currentActiveRoute}:root`;
-    }
+  public static attach(scopeId: string, typeKey: string, element: HTMLElement, raw: any, proxy: any): iNodeRecordItem {
+    const globalStorageKey = `${scopeId}:${typeKey}`;
+    const currentParentKey = GraphMetadata.activeParentScopeKey;
 
-    // 2. 🧙‍♂️ SIHIR EVENT EMITTER: Cari di level live DOM tree bapak terdekatnya 
-    // yang sudah terdaftar legal di dalam Map registry global kita!
-    let currentParentDOM = childElement.parentElement;
+    const newItem: iNodeRecordItem = {
+      element,
+      relations: {
+        parent: (currentParentKey !== globalStorageKey) ? currentParentKey : null,
+        children: []
+      },
+      raw,
+      proxy
+    };
 
-    while (currentParentDOM) {
-      for (const [nodeId, nodeRecord] of this.registry.entries()) {
-        if (nodeRecord.element === currentParentDOM) {
-          // KETEMU! Kembalikan Node ID bapak angkatnya tempat ia menempel di Event!
-          return nodeId;
+    // Cari instansi bapak di dalam pool memori (jika ada), lalu daftarkan token kunci si anak!
+    if (currentParentKey && currentParentKey !== globalStorageKey) {
+      // Akses secara sunyi bypass lewat penunjuk internal map hantaran global
+      const parentRecord = (GraphMetadata as any)._nodesProxyRef?.get(currentParentKey);
+      if (parentRecord && parentRecord.records.length > 0) {
+        const activeParentItem = parentRecord.records[parentRecord.records.length - 1];
+        if (activeParentItem && !activeParentItem.relations.children.includes(globalStorageKey)) {
+          activeParentItem.relations.children.push(globalStorageKey);
+          console.log(`👶 [Graph Engine]: Linked child "${globalStorageKey}" safely into parent "${currentParentKey}"`);
         }
       }
-      currentParentDOM = currentParentDOM.parentElement; // Merangkak naik ke atas pohon DOM HTML
     }
 
-    // Fallback keamanan: Jika lahir mengambang tanpa bapak (portal), ikat langsung ke root halaman aktif
-    return `${this.currentActiveRoute}:root`;
+    return newItem;
   }
 
   /**
-   * 🚀 TRACK NODE: Mencatat kelahiran elemen fresh dari pipa mana pun secara terpadu
+   * 💥 PURGE CASCADE REKURSIF: Penghancur massal silsilah bersarang yang 100% aman anti-leak!
    */
-  public static track(nodeId: string, node: iGraphMetadataNode): void {
-    this.registry.set(nodeId, node);
+  public static purge(scopeId: string, nodesMap: Map<string, iNodeRecords>): void {
+    // Sediakan jembatan bypass internal untuk fungsi weld di atas agar tidak kembung circular import
+    (GraphMetadata as any)._nodesProxyRef = nodesMap;
 
-    // Update daftar children di level bapaknya secara otomatis agar hubungan dua arah terkunci!
-    if (node.parentId && this.registry.has(node.parentId)) {
-      this.registry.get(node.parentId)!.childrenIds.add(nodeId);
-    }
-  }
+    const prefixFilter = `${scopeId}:`;
 
-  /**
-   * 💥 OBLITERATE CASCADE: Pemusnah massal rekursif saat tab berganti 
-   * atau modal ditutup via destroyOnClose=true!
-   */
-  public static obliterate(nodeId: string): void {
-    const node = this.registry.get(nodeId);
-    if (!node) return;
+    for (const [globalKey, record] of nodesMap.entries()) {
+      if (globalKey.startsWith(prefixFilter)) {
 
-    console.log(`💀 [Graph Matrix Purge]: Deep cleaning family node tree for: "${nodeId}"`);
+        record.records.forEach((item) => {
+          // 🟢 AMUNISI REKURSIF PROPOSAL DEWA ANDA: Babat habis seluruh anak cucunya!
+          if (item.relations!.children.length > 0) {
+            item.relations!.children.forEach((childGlobalKey) => {
+              console.log(`🔥 [Graph Purge]: Obliterating nested dynamic child relation node: "${childGlobalKey}"`);
 
-    // 🟢 REKURSIF SWEEP: Buru dan hancurkan seluruh anak cucu keturunannya sampai ke akar atomik!
-    if (node.childrenIds.size > 0) {
-      node.childrenIds.forEach((childId) => {
-        this.obliterate(childId); // Turun ke anak di lantai bawah secara rekursif!
-      });
-      node.childrenIds.clear();
-    }
+              const childRecord = nodesMap.get(childGlobalKey);
+              if (childRecord) {
+                childRecord.records.forEach(r => r.element?.remove()); // Cabut fisik dari DOM
+              }
+              nodesMap.delete(childGlobalKey); // Sapu resik memorinya dari RAM pusat!
+            });
+          }
+          // Cabut bodi fisik dirinya sendiri dari layar browser
+          if (item.element && typeof item.element.remove === "function") item.element.remove();
+        });
 
-    // Cabut fisik DOM-nya dari layar peramban browser
-    if (node.element && typeof node.element.remove === "function") {
-      node.element.remove();
-    }
-
-    // Likuidasi instansi buildernya dari pool ComponentRegistry untuk mencuci bersih RAM
-    if (node.builderName) {
-      const builderInstance = new ComponentRegistry();
-      builderInstance.get(node.builderName as keyof iBuilderRegistry)
-      if (builderInstance && typeof builderInstance.destroy === "function") {
-        builderInstance.destroy();
+        nodesMap.delete(globalKey);
       }
     }
-
-    // Hapus total catatan koordinatnya dari Map pusat global (0B leak secured!)
-    this.registry.delete(nodeId);
+    console.log(`🧹 [Graph Engine]: Wiped tracking relations nodes context for builder scope: "${scopeId}"`);
   }
 }

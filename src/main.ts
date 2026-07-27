@@ -132,9 +132,9 @@ if (app) {
     .register(new HorizontalTheme())
     .register(new CyberpunkTheme());
 
-  builder.theme?.renderSwitcher({ position: "bottom-left", duration: 10000 });
-
   builder.render();
+
+  builder.theme?.renderSwitcher({ position: "bottom-left", duration: 10000 }); // should be called after `.render` or it will break
 
   builder.events.on("elementAdded", (data) => {
     if (data.builder === "menu" && data.type === "@menu>actions") {

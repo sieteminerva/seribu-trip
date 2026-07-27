@@ -1,7 +1,7 @@
 import type { ComponentBuilderFn, iBasicNode, iBuilderRegistry } from "../interface";
 import { NodeTransformer } from "../Utils/NodeTransformer";
-// import { TemplateRegistry } from "./TemplateRegistry";
 import { Builder } from "../Components/Base";
+import { DOMTreeMemory } from "./DOMTreeMemory";
 
 
 // 💡 DEKLARASI KONTAK LAZY LOAD UNTUK MODEL METADATA (STYLE 3)
@@ -230,9 +230,9 @@ export class ComponentRegistry {
     this._dynamicConfigs.clear();
     this.registeredSheets = new Set<CSSStyleSheet>();
 
-    // if (typeof TemplateRegistry !== "undefined" && typeof TemplateRegistry.nodes?.clear === "function") {
-    //   TemplateRegistry.nodes.clear();
-    // }
+    if (typeof DOMTreeMemory !== "undefined" && typeof DOMTreeMemory?.clear === "function") {
+      DOMTreeMemory.clear();
+    }
 
     if (typeof Builder !== "undefined" && typeof Builder.resetCounters === "function") {
       Builder.resetCounters();

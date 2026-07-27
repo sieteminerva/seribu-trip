@@ -54,7 +54,6 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
    * Mengatur daur hidup pembuatan elemen dan menahan duplikasi fisik di DOM browser
    */
   public prepare(contentPayload: any): { open: () => void; close: () => void; unmount: () => void; element: HTMLElement } {
-
     // 💡 POTENSI ANTI-KEMBUNG: Ambil dari live DOM jika mode reuse aktif
     const existingDOMElement = document.getElementById(this.config.id);
     if (existingDOMElement && !this.config.destroyOnClose) {
@@ -196,8 +195,8 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
     return fallbackDiv;
   }
 
-  private _getControlInterfaces(currentModal?: HTMLElement) {
-    console.log("same element:", currentModal?.isEqualNode(this.currentModal)) // ❌ hasilnya false padahal sama 
+  private _getControlInterfaces(_currentModal?: HTMLElement) {
+    // console.log("same element:", currentModal?.isEqualNode(this.currentModal)) // ❌ hasilnya false padahal sama 
     const overlay = this.load("@container") as HTMLElement || this.currentModal;
     return {
       element: overlay as HTMLElement,

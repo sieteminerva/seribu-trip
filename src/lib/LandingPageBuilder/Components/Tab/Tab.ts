@@ -226,7 +226,7 @@ export class TabBuilder extends Builder<TabElementType, iTabConfig> {
 
 
   private _createMenu(menuContent: any[]): HTMLElement {
-    console.log({ menuContent })
+    // console.log({ menuContent })
     const menu = this.render("@tab>menu")!;
 
     menuContent.forEach((meta, idx) => {

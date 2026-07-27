@@ -439,4 +439,134 @@ export class NodeTransformer {
 
   }
 
+
+  /**
+   * 👑 SCAN PAGE LAYOUT
+   * Membedah secara mendalam silsilah Page DOM makro hingga komponen mikro yang beranak-pinak!
+   */
+  static scanPageLayout(pages: any | any[], pageScopeId: string): iPageMetaReport {
+    const isArray = Array.isArray(pages);
+    const nodesArray = isArray ? pages : [pages];
+
+    const report: iPageMetaReport = {
+      isArray,
+      totalSections: 0,
+      hasComponent: {},
+      timelinePaths: [],
+      graphRelationsBlueprint: {} // Tempat menampung kavling silsilah pra-nikah
+    };
+
+    // Jalankan mesin pemindai rekursif tunggal, pasang root container page sebagai leluhur awal
+    this._executePageDeepInspection(nodesArray, "root", `${pageScopeId}:@container`, pageScopeId, report);
+
+    return report;
+  }
+
+  static _executePageDeepInspection(
+    nodes: any[],
+    parentSelectorPath: string,
+    activeParentGlobalKey: string | null,
+    currentScopeId: string,
+    report: iPageMetaReport
+  ) {
+    if (!nodes || !Array.isArray(nodes)) return;
+
+    // Track pencatatan index dinamis per jenis komponen di level page untuk mengunci penomoran Multi-Instance
+    const instanceCounters: Record<string, number> = {};
+
+    for (const [index, node] of nodes.entries()) {
+      if (!node || typeof node !== "object") continue;
+
+      if (parentSelectorPath === "root") {
+        report.totalSections++;
+      }
+
+      // 1. Ekstrak data penanda selector CSS pasif bawaan rumus cerdas awal Anda
+      const tagName = node.tagName || node.tag || "div";
+      const idToken = node.id ? `#${node.id.trim()}` : "";
+      const firstClass = node.className ? `.${node.className.trim().split(/\s+/)[0]}` : "";
+
+      const currentSelector = `${tagName}${idToken}${firstClass}`;
+      const fullSelectorPath = parentSelectorPath === "root"
+        ? currentSelector
+        : `${parentSelectorPath} > ${currentSelector}`;
+
+      let nextParentGlobalKey = activeParentGlobalKey;
+      let localScopeId = currentScopeId;
+
+      // =========================================================================
+      // 🛡️ AMUNISI UTAMAA: INTERSEPTOR SILSILAH COMPONENT DYNAMIC (THE SPLIT MATRIX)
+      // =========================================================================
+      if (node.builder && typeof node.builder === "string") {
+        const bName = node.builder.toLowerCase();
+
+        // Inisialisasi nomor antrean index multi-instance jika jenis komponen baru pertama kali nongkrong
+        if (instanceCounters[bName] === undefined) {
+          instanceCounters[bName] = 0;
+        } else {
+          instanceCounters[bName]++;
+        }
+
+        const activeIndex = instanceCounters[bName];
+        localScopeId = `${bName}:inst-${bName}-${activeIndex}`; // e.g. "carousel:inst-carousel-0"
+
+        const childGlobalKey = `${localScopeId}:@container`;
+
+        // A. Amankan pendaftaran logistik hasComponent lama Anda untuk penargetan CSS factory
+        if (!report.hasComponent[bName as keyof iBuilderRegistry]) {
+          report.hasComponent[bName as keyof iBuilderRegistry] = { active: true, container: fullSelectorPath, count: 0, instances: [] };
+          report.hasComponent[bName as keyof iBuilderRegistry]!.count++;
+          report.hasComponent[bName as keyof iBuilderRegistry]!.instances.push(node.content);
+        }
+
+        // B. 💥 RESOLUSI MULTI-INSTANCE BLUEPRINT:
+        // Daftarkan kavling hubungan b b bapak-anak reaktifnya dengan menyertakan indeks koordinat RAM yang presisi!
+        report.graphRelationsBlueprint[childGlobalKey] = {
+          scope: localScopeId,
+          key: "@container",
+          parent: activeParentGlobalKey, // Menunjuk langsung ke target bapak slot fisiknya lintas builder!
+          children: []
+        };
+
+        // C. ⚡ SEKRUP HUBUNGAN DUA ARAH: Masukkan nama anak ber-index ini ke saku children bapak terluarnya!
+        if (activeParentGlobalKey && report.graphRelationsBlueprint[activeParentGlobalKey]) {
+          const parentSpec = report.graphRelationsBlueprint[activeParentGlobalKey];
+          // Masukkan format komposit "childGlobalKey:index" utuh agar kebal dari bahaya node hantu
+          const indexedChildKey = `${childGlobalKey}:${activeIndex}`;
+          if (parentSpec && !parentSpec.children.includes(indexedChildKey)) {
+            parentSpec.children.push(indexedChildKey);
+            console.log(`📌 [AST Blueprint Compiler]: Connected dynamic node "${indexedChildKey}" as a child of "${activeParentGlobalKey}"`);
+          }
+        }
+
+        // Geser tongkat estafet bapak aktif ke anak ini untuk loop rekursif anak di lantai bawahnya
+        nextParentGlobalKey = childGlobalKey;
+      }
+
+      // 2. Kumpulkan jalur timeline bawaan rumus orisinal Anda untuk navigasi scroll tema
+      if (parentSelectorPath === "root" || node.id || node.name) {
+        const sectionId = node.id || node.name?.toLowerCase().replace(/\s+/g, "-") || `section-${index}`;
+        const sectionName = node.name || node.attrs?.["data-name"] || sectionId.replace(/[-_]/g, " ").toUpperCase();
+
+        if (!report.timelinePaths.some(t => t.id === sectionId)) {
+          report.timelinePaths.push({ id: sectionId, name: sectionName, type: node.builder || "standard_layout" });
+        }
+      }
+
+      // 3. REKURSI: Telusuri lebih dalam ke anak-anak properti 'content' membawa penunjuk bapak teranyar
+      if (node.content && typeof node.content === "object" && !(node.content instanceof HTMLElement)) {
+        const childNodes = Array.isArray(node.content) ? node.content : [node.content];
+        this._executePageDeepInspection(childNodes, fullSelectorPath, nextParentGlobalKey, localScopeId, report);
+      }
+
+      // Dukung model Advanced Mode (String Selectors key) bawaan kebiasaan koding kustom Anda
+      Object.keys(node).forEach(key => {
+        if ((key.includes('.') || key.includes('#')) && typeof node[key] === "object") {
+          this._executePageDeepInspection([node[key]], fullSelectorPath, nextParentGlobalKey, localScopeId, report);
+        }
+      });
+    }
+  }
+
+
 }
