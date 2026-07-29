@@ -51,8 +51,8 @@ export class GraphMetadata {
 
         record.records.forEach((item) => {
           // 🟢 AMUNISI REKURSIF PROPOSAL DEWA ANDA: Babat habis seluruh anak cucunya!
-          if (item.relations!.children.length > 0) {
-            item.relations!.children.forEach((childGlobalKey) => {
+          if (item.relations!.children!.length > 0) {
+            item.relations!.children?.forEach((childGlobalKey) => {
               console.log(`🔥 [Graph Purge]: Obliterating nested dynamic child relation node: "${childGlobalKey}"`);
 
               const childRecord = nodesMap.get(childGlobalKey);

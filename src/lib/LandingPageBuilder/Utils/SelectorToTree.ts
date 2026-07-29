@@ -34,8 +34,8 @@ export function selectorToTree(scopeId: string, selectors: Record<string, any>):
       }
 
       scopedRelation[currentKey].parent = parentTypeKey;
-      if (!scopedRelation[parentTypeKey].children.includes(currentKey)) {
-        scopedRelation[parentTypeKey].children.push(globalCurrentKey);
+      if (!scopedRelation[parentTypeKey].children?.includes(currentKey)) {
+        scopedRelation[parentTypeKey].children?.push(globalCurrentKey);
       }
     }
     else {
@@ -47,8 +47,8 @@ export function selectorToTree(scopeId: string, selectors: Record<string, any>):
         }
 
         scopedRelation[currentKey].parent = globalContainerKey;
-        if (!scopedRelation[globalContainerKey].children.includes(currentKey)) {
-          scopedRelation[globalContainerKey].children.push(currentKey);
+        if (!scopedRelation[globalContainerKey].children?.includes(currentKey)) {
+          scopedRelation[globalContainerKey].children?.push(currentKey);
         }
       } else if (currentKey === "@container" || !hasContainerRoot) {
         if (hasAmbientParent) {

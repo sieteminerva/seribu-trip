@@ -2,9 +2,126 @@ import type { iNodeRecordItem, iNodeRecords } from "../interface";
 
 export class DOMTreeMemory {
   static #nodes = new Map<string, iNodeRecords>();
+  public static activeParentScopeKey: string | null = null;
+
+  // Handler referensi agar kita bisa melakukan unbind saat destroy jika diperlukan
+  private static bornListenerRef: ((e: Event) => void) | null = null;
+  private static mutationListenerRef: ((e: Event) => void) | null = null;
+
+  /**
+   * 👑 RECEIVE LIVE BORN EVENT (GERBANG JEMBATAN LANGSUNG KARYA DEWA ANDA!)
+   * Kebal 100% dari ranjau kebutaan DocumentFragment browser!
+   * @param detail Paket metadata silsilah orisinal hantaran langsung dari rahim BuilderBase
+   * @param childElement Elemen fisik asli yang baru saja dilahirkan JIT di level bawah
+   */
+  public static receiveLiveBornEvent(detail: { relations: any; raw: any; proxy: any }, childElement: HTMLElement): void {
+    const { relations, raw, proxy } = detail;
+    if (!relations) return;
+
+    const globalStorageKey = this.resolveKey(relations);
+
+    // 1. Eksekusi pengisian data reaktif satu pintu via .set() wrapper kebanggaan Anda!
+    this.set(relations, childElement, raw, false);
+
+    // Update manual alamat proxy asli milik anak ke dalam records di level pusat global
+    const globalBox = this.#nodes.get(globalStorageKey);
+    if (globalBox && globalBox.records.length > 0) {
+      const centralItem = globalBox.records[globalBox.records.length - 1];
+      if (centralItem) centralItem.proxy = proxy; // Kunci kedaulatan proxy hidup!
+    }
+
+    // 2. ⚡ REAL-TIME GRAPH WELDING: Ambil alamat bapak klan statisnya
+    const parentGlobalKey = relations.parent;
+
+    if (parentGlobalKey && this.#nodes.has(parentGlobalKey)) {
+      const parentBox = this.#nodes.get(parentGlobalKey);
+      const parentItem = parentBox?.records[parentBox.records.length - 1];
+
+      if (parentItem && parentItem.relations) {
+        if (!parentItem.relations.children) parentItem.relations.children = [];
+        if (!parentItem.relations.children.includes(globalStorageKey)) {
+          parentItem.relations.children.push(globalStorageKey);
+          console.log(`📌 [JIT Direct Channel -> Connected]: Fast-linked dynamic child "${globalStorageKey}" into static parent "${parentGlobalKey}"`);
+        }
+      }
+    }
+  }
+
+  /**
+   * 👑 THE CENTRAL RADAR ACTIVATOR (SAKELAR UTAMAA EVENT POOLING ANDA!)
+   * Dipanggil 1x saja di hulu aplikasi (misal di constructor LandingPageBuilder / App Init)
+   */
+  public static listen(): void {
+    if (this.bornListenerRef) return;
+
+    console.log("🛰️ [DOMTreeMemory -> Radar]: Central Intelligence Listener is ONLINE and tracking...");
+
+    this.bornListenerRef = (e: any) => {
+      // 🧙‍♂️ EKSTRAK SILSILAH MATANG: Ambil paket relations orisinal hasil didikan this.hierarchy[key] anak!
+      const { relations, raw, element } = e.detail;
+      const childElement = element as HTMLElement || (e.target as HTMLElement);
+
+      if (!relations) return;
+
+      // 🟢 HUBUNGKAN SEKRUP SATU PINTU: Tembak langsung metode .set() dengan menyodorkan relations asli!
+      this.set(relations, childElement, raw, false);
+
+      // ⚡ HUBUNGKAN SILSILAH DUA ARAH LINTAS KLAN SECARA INSTAN O(1) COMPLEXITY!
+      const childGlobalKey = this.resolveKey(relations);
+      const parentGlobalKey = relations.parent; // Alamat GPS bapak absolutnya sudah langsung terbawa!
+
+      if (parentGlobalKey && this.#nodes.has(parentGlobalKey)) {
+        const parentBox = this.#nodes.get(parentGlobalKey);
+        const parentItem = parentBox?.records[parentBox.records.length - 1];
+
+        if (parentItem && parentItem.relations) {
+          if (!parentItem.relations.children) {
+            parentItem.relations.children = [];
+          }
+          if (!parentItem.relations.children.includes(childGlobalKey)) {
+            parentItem.relations.children.push(childGlobalKey);
+            console.log(`📌 [Central Pooling]: Fast-linked dynamic node "${childGlobalKey}" into parent "${parentGlobalKey}"`);
+          }
+        }
+      }
+    };
+
+    this.mutationListenerRef = (e: any) => {
+      const { key, updatedTarget, element } = e.detail;
+      const childElement = element as HTMLElement || (e.target as HTMLElement);
+
+      for (const [globalKey, record] of this.#nodes.entries()) {
+        const matchItem = record.records.find(r => r.element === childElement);
+        if (matchItem && matchItem.relations?.key === key) {
+          matchItem.raw = updatedTarget;
+          console.log(`⚡ [Central Pooling -> Data Sync]: Synchronized for node: "${globalKey}"`);
+          break;
+        }
+      }
+    };
+
+    document.addEventListener("builder:created", this.bornListenerRef);
+    document.addEventListener("builder:mutation", this.mutationListenerRef);
+  }
+
+
+  /**
+   * 🛑 MATIKAN RADAR: Digunakan saat seluruh aplikasi di-destroy penuh
+   */
+  public static shutdown(): void {
+    if (this.bornListenerRef) {
+      document.removeEventListener("builder:created", this.bornListenerRef);
+      this.bornListenerRef = null;
+    }
+    if (this.mutationListenerRef) {
+      document.removeEventListener("builder:mutation", this.mutationListenerRef);
+      this.mutationListenerRef = null;
+    }
+    console.log("🛰️ [DOMTreeMemory -> Radar]: Central Intelligence Listener is SHUTDOWN.");
+  }
 
   private static resolveKey(tree: iNodeRecordItem["relations"]) {
-    // console.log(tree)
+    if (!tree?.scope || !tree?.key) return "global:unknown";
     const key = [tree?.scope, tree?.key].join(":");
     return key;
   }
@@ -40,6 +157,7 @@ export class DOMTreeMemory {
 
     // const selectedBuilder = "modal"
     // if (builderId === selectedBuilder) console.log({ builder: builderId, method: `this.nodes.set(${builderId}, ${tree?.key})`, entries: this.#nodes.entries() })
+    // console.log({ method: `this.nodes.set(${tree?.scope}, ${tree?.key})`, entries: this.#nodes.entries() })
     const tElement = element;
 
     // Kunci penanda dasar Singleton murni bawaan spesifikasi asli Anda
@@ -98,9 +216,7 @@ export class DOMTreeMemory {
     }
 
     // JALUR PUTARAN PERTAMA (INITIAL PAINT)
-    this.#nodes.set(globalStorageKey, {
-      records: [newItem],
-    });
+    this.#nodes.set(globalStorageKey, { records: [newItem] });
 
     return singleProxyObj;
   }

@@ -1,19 +1,9 @@
 import type { iBuilderRegistry, iBuilderConfig, iElementProperty, iActionProperty, iBasicNode, iNodeRecordItem, iNodeRecords, iBuilderSelectorsConfig } from "../interface";
-import { DOMTreeMemory } from "../Modules/DOMTreeMemory";
 import { TemplateRegistry } from "../Modules/TemplateRegistry";
+import { setMetadata } from "../Utils/Metadata";
 import { selectorToTree } from "../Utils/SelectorToTree";
 
-declare global {
-  interface HTMLElement {
-    __outer?: HTMLElement;
-    __inner?: HTMLElement;
-    __payload?: any;
-    __index?: number;
-  }
-}
-
-const GLOBAL_INSTANCE_COUNTER = new Map<string, number>();
-
+export const GLOBAL_INSTANCE_COUNTER = new Map<string, number>();
 /**
  * Abstract Core Base Class representing the definitive declarative rendering engine blueprint.
  * Orchestrates a unidirectional 5-Phase lifecycle execution stream to parse configurations,
@@ -54,8 +44,6 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
   /**
    * Internal reference holder pointing directly to the raw, unmutated data node extracted from the spreadsheet database.
    */
-  protected instanceId: string = "";
-
   protected activeLiveThemeId: string = "default";
 
   protected hierarchy: Record<string, any> = {}
@@ -87,11 +75,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
   public abstract initialize(el?: HTMLElement, payload?: any, context?: any): void;
 
   constructor() {
-    const isRegistryPresent = typeof DOMTreeMemory !== "undefined";
-    // const isRegistryPresent = false;
-    if (!isRegistryPresent) {
-      this.errorHandler();
-    }
+
   }
 
   /**
@@ -135,29 +119,19 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     }) as Required<C>;
   }
 
-  private ensureIdentity(config?: TConfig): Record<string, any> {
-    if (!this.instanceId) {
-      const baseId = this.builderId;
+  protected ensureIdentity(config?: TConfig): Record<string, any> {
 
-      // Ambil urutan angka kelahiran instansi string ini di dalam RAM
-      let currentCount = GLOBAL_INSTANCE_COUNTER.get(baseId) || 0;
-      currentCount++;
-      GLOBAL_INSTANCE_COUNTER.set(baseId, currentCount);
+    const baseId = this.builderId;
+    // Ambil urutan angka kelahiran instansi string ini di dalam RAM
+    let currentCount = GLOBAL_INSTANCE_COUNTER.get(baseId) || 0;
+    currentCount++;
+    GLOBAL_INSTANCE_COUNTER.set(baseId, currentCount);
 
-      // 💥 BUM! Jika instansi lahir lebih dari 1x, otomatis berikan ekor penanda numerik yang konsisten!
-      // Contoh: Putaran 1 tetap "product-card", Putaran 2 otomatis menjadi "product-card:instance-2", dst!
-      this.instanceId = currentCount > 1
-        ? `${baseId}:instance-${currentCount}`
-        : baseId;
-
-      // console.log(`🤖 [Instance Fingerprint]: Auto-assigned identity scope: "${this.instanceId}"`);
-    }
-
-    const hierarchy = selectorToTree(this.instanceId, config?.selectors as Record<string, any>);
+    const hierarchy = selectorToTree(this.builderId + "$" + currentCount, config?.selectors as Record<string, any>);
     return hierarchy;
   }
 
-  private errorHandler() {
+  public errorHandler() {
     const id = this.builderId;
     console.warn(
       `⚠️ [Framework Degraded Mode]: TemplateRegistry is not present!\n` +
@@ -166,146 +140,154 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     );
   }
 
-  // nodes builder
   #nodes = new Map<TType | string, iNodeRecords>();
-  protected nodes() {
-    const isRegistryPresent = typeof DOMTreeMemory !== "undefined";
-    // const isRegistryPresent = false;
 
+  protected nodes() {
     const registerTheme = (key: TType, element: HTMLElement, payload: any, selector: iBuilderSelectorsConfig[TType]) => {
       if (typeof TemplateRegistry !== "undefined" && typeof TemplateRegistry.resolve === "function") {
-        // Register Template
         try {
           const registryLookupKey = (key === "@container") ? `@${String(this.builderId)}:container` : key;
+          const activeHandler = TemplateRegistry.resolve("default", registryLookupKey as string, null);
 
-          const activeHandler = TemplateRegistry.resolve(
-            "default",
-            registryLookupKey as string,
-            null // Sediakan null agar Registry luar tahu tidak ada callback fallback bawaan yang kaku
-          );
-
-          // Hanya tembak jika desainer luar memang nyata meregistrasikan fungsi kustom!
           if (typeof activeHandler === "function") {
             activeHandler(registryLookupKey as string, element, payload, selector);
           }
-
         } catch (securityError) {
-          // Menangkap eror runtime secara sunyi agar eksekusi kompilasi komponen anak tidak terhenti
           console.warn(`[Builder Security Bypass] TemplateRegistry evaluation skipped for key "${String(key)}":`, securityError);
         }
       }
       return;
-    }
+    };
 
-    // 🛡️ BOM PERINGATAN ASAL USUL JELAS PILIHAN ANDA:
-    if (!isRegistryPresent) {
-      const resolveLocalKey = (k: TType) => k; // `${this.instanceId}:${k as TType}`;
-      return {
-        has: (key: TType): boolean => this.#nodes.has(resolveLocalKey(key)),
-        get: (key: TType, index: number | "all" = 0): any => {
-          const node = this.#nodes.get(resolveLocalKey(key));
-          if (!node || !node.records || node.records.length === 0) return null;
+    const resolveLocalKey = (k: TType) => k;
 
-          // Jika komponen meminta seluruh barisan elemen saudara (e.g. load(..., "all"))
-          if (index === "all") {
-            return node.records;
-          }
-          // Kembalikan murni 1 elemen fisik spesifik berdasarkan nomor indeks array-nya!
-          return node.records[index] || null;
-        },
-        set: (key: TType, element: HTMLElement, payload: any, multiple: boolean) => {
-          const lKey = resolveLocalKey(key);
-
-
-          // if (this.builderId === "masonry") console.log({ builder: this.builderId, method: "this.nodes().set()", entries: this.#nodes.entries() })
-          if (this.#nodes.has(lKey) && !multiple) {
-            console.warn(
-              `🚨 [Framework Architectural Violation]: ElemenlKey "${String(lKey)}" has already been rendered in builder "${this.builderId}"!\n` +
-              `Re-rendering a Singleton node is strictly prohibited.\n` +
-              `Please use "this.render('${String(lKey)}', payload, true)" if it is a multiple item or \n` +
-              `"this.load('${String(lKey)}')" instead to retrieve the active live memory pointer.`
-            );
-            return this.#nodes.get(lKey)?.records[0].proxy
-          };
-
-          const rawObj = payload && typeof payload === "object" ? { ...payload } : { value: payload };
-          const newItem: iNodeRecordItem = { element, relations: this.hierarchy[key], raw: rawObj, proxy: rawObj }; // Tanpa Proxy penangkap
-
-          if (this.#nodes.has(lKey)) {
-            this.#nodes.get(lKey)!.records.push(newItem);
-            return rawObj;
-          }
-
-          registerTheme(key, element, rawObj, this.config.selectors?.[key]!)
-
-          this.#nodes.set(lKey, { records: [newItem] });
-
-          return rawObj;
-        },
-        delete: (key: TType, index: number | "all" = "all"): void => {
-          const lKey = resolveLocalKey(key);
-          const rec = this.#nodes.get(lKey);
-          if (index === "all") {
-            rec?.records.forEach(item => item.element?.remove());
-            this.#nodes.delete(lKey);
-          } else if (typeof index === "number") {
-            rec?.records[index]?.element?.remove();
-            rec?.records.splice(index, 1);
-          }
-        },
-        clear: () => {
-          this.#nodes.forEach(rec => rec.records.forEach(item => item.element?.remove()));
-          this.#nodes.clear();
-          console.log(`🧹 [Local Memory Guard]: Wiped 100% standalone RAM buffer for "${this.instanceId}"`);
-        },
-        restore: (typeKey: TType, incomingPayload: any): HTMLElement | null => {
-          const lKey = resolveLocalKey(typeKey);
-          const rec = this.#nodes.get(lKey);
-          if (!rec || rec.records.length === 0) return null;
-          const cachedItem = rec.records[rec.records.length - 1];
-          if (cachedItem.raw !== incomingPayload && JSON.stringify(cachedItem.raw) !== JSON.stringify(incomingPayload)) {
-            this.nodes().delete(typeKey, "all"); // Overwrite hapus jika data Sheets berubah!
-            return null;
-          }
-          return cachedItem.element;
-        },
-        payload: (key: TType, index: number | "all" = 0): any => {
-          const mainRecord = this.#nodes.get(resolveLocalKey(key));
-          if (!mainRecord || !mainRecord.records || mainRecord.records.length === 0) return null;
-          // Periksa parameter string "all" secara eksplisit pada array .records!
-          if (index === "all") return mainRecord.records.map(n => n.proxy);
-          return mainRecord.records[index as number]?.proxy || null;
-        },
-        load: (key: TType, index: number | "all" = 0): any => {
-          const mainRecord = this.#nodes.get(resolveLocalKey(key));
-          if (!mainRecord || !mainRecord.records || mainRecord.records.length === 0) return null;
-          if (index === "all") return mainRecord.records.map(n => n.element);
-          return mainRecord.records[index as number]?.element || null;
-        }
-      }
-    }
     return {
-      has: (key: TType): boolean => DOMTreeMemory.has(this.hierarchy[key as TType]),
-      get: (key: TType, index: number | "all" = 0): HTMLElement | HTMLElement[] => DOMTreeMemory.get(this.hierarchy[key as TType], index),
+      has: (key: TType): boolean => this.#nodes.has(resolveLocalKey(key)),
+
+      get: (key: TType, index: number | "all" = 0): any => {
+        const node = this.#nodes.get(resolveLocalKey(key));
+        if (!node || !node.records || node.records.length === 0) return null;
+        if (index === "all") return node.records;
+        return node.records[index] || null;
+      },
+
+      /**
+       * 👑 METODE SET LOKAL (100% SINKRON REAKTIF MEMELUK PROXY TRAP SEPAKET!)
+       */
       set: (key: TType, element: HTMLElement, payload: any, multiple: boolean) => {
-        registerTheme(key, element, payload, this.config.selectors?.[key]!)
-        return DOMTreeMemory.set(this.hierarchy[key as TType], element, payload, multiple);
+        const lKey = resolveLocalKey(key);
+
+        if (this.#nodes.has(lKey) && !multiple) {
+          console.warn(
+            `🚨 [Framework Architectural Violation]: Elemen lKey "${String(lKey)}" has already been rendered in builder "${this.builderId}"!\n` +
+            `Re-rendering a Singleton node is strictly prohibited.\n` +
+            `Please use "this.render('${String(lKey)}', payload, true)" if it is a multiple item or \n` +
+            `"this.load('${String(lKey)}')" instead to retrieve the active live memory pointer.`
+          );
+          return this.#nodes.get(lKey)?.records[0].proxy;
+        }
+
+        const rawObj = payload && typeof payload === "object" ? { ...payload } : { value: payload };
+
+        // =========================================================================
+        // 🧙‍♂️ THE LOCAL PROXY TRAP INTEGRATION (TAMENG REAKTIVITAS MANDIRI ANDA!)
+        // =========================================================================
+        const singleProxyObj = new Proxy(rawObj, {
+          set: (target: any, prop: string, value: any) => {
+            target[prop] = value;
+
+            // 💥 PICU METABOLISME REAKTIF: Hamburkan sinyal mutasi bubbling ke udara!
+            document.dispatchEvent(new CustomEvent("builder:mutation", {
+              bubbles: false,
+              detail: {
+                key,
+                updatedTarget: target,
+                element
+              }
+            }));
+            return true;
+          }
+        });
+
+        const relations = this.hierarchy[key] || { scope: this.builderId, key: key as string, parent: null, children: [] };
+
+        // Simpan ke dalam rekor, pisahkan kasta raw penunjuk dengan tameng proxy reaktifnya!
+        const newItem: iNodeRecordItem = {
+          element,
+          relations,
+          raw: rawObj,
+          proxy: singleProxyObj // 🟢 Amankan objek reaktif Proxy!
+        };
+
+        if (this.#nodes.has(lKey)) {
+          this.#nodes.get(lKey)!.records.push(newItem);
+          return singleProxyObj;
+        }
+
+        // Pemicuan hidrasi kosmetik gaya visual desainer luar
+        registerTheme(key, element, singleProxyObj, this.config.selectors?.[key]!);
+
+        this.#nodes.set(lKey, { records: [newItem] });
+
+        document.dispatchEvent(new CustomEvent("builder:created", {
+          bubbles: false,
+          detail: {
+            key: key as string,
+            instanceId: this.builderId + "-$" + GLOBAL_INSTANCE_COUNTER.get(this.builderId),
+            builderId: this.builderId,
+            relations,
+            raw: rawObj,
+            proxy: singleProxyObj,
+            element
+          }
+        }));
+
+        // Kembalikan objek proxy agar data binding satu pintu terkunci intim!
+        return singleProxyObj;
       },
-      delete: (key: TType, index: number | "all" = "all"): void => DOMTreeMemory.delete(this.hierarchy[key as TType], index),
-      clear: (): void => DOMTreeMemory.clear(),
+
+      delete: (key: TType, index: number | "all" = "all"): void => {
+        const lKey = resolveLocalKey(key);
+        const rec = this.#nodes.get(lKey);
+        if (index === "all") {
+          rec?.records.forEach(item => item.element?.remove());
+          this.#nodes.delete(lKey);
+        } else if (typeof index === "number") {
+          rec?.records[index]?.element?.remove();
+          rec?.records.splice(index, 1);
+        }
+      },
+
+      clear: () => {
+        this.#nodes.forEach(rec => rec.records.forEach(item => item.element?.remove()));
+        this.#nodes.clear();
+        // console.log(`🧹 [Local Memory Guard]: Wiped 100% standalone RAM buffer for "${this.builderId}"`);
+      },
+
+      restore: (typeKey: TType, incomingPayload: any): HTMLElement | null => {
+        const lKey = resolveLocalKey(typeKey);
+        const rec = this.#nodes.get(lKey);
+        if (!rec || rec.records.length === 0) return null;
+        const cachedItem = rec.records[rec.records.length - 1];
+        if (cachedItem.raw !== incomingPayload && JSON.stringify(cachedItem.raw) !== JSON.stringify(incomingPayload)) {
+          this.nodes().delete(typeKey, "all");
+          return null;
+        }
+        return cachedItem.element;
+      },
+
       payload: (key: TType, index: number | "all" = 0): any => {
-        // Panggil TemplateRegistry.nodes.get secara legal
-        const nodes = DOMTreeMemory.get(this.hierarchy[key as TType], index);
-        if (!nodes) return null;
-        // Jika pusat mengembalikan array (karena index === "all")
-        if (Array.isArray(nodes)) return nodes.map(n => n.proxy);
-        return nodes.proxy; // Mengambil properti .proxy dari dalam boks iNodeRecordItem sejati!
+        const mainRecord = this.#nodes.get(resolveLocalKey(key));
+        if (!mainRecord || !mainRecord.records || mainRecord.records.length === 0) return null;
+        if (index === "all") return mainRecord.records.map(n => n.proxy);
+        return mainRecord.records[index as number]?.proxy || null;
       },
+
       load: (key: TType, index: number | "all" = 0): any => {
-        const nodes = DOMTreeMemory.get(this.hierarchy[key as TType], index);
-        if (!nodes) return null;
-        if (Array.isArray(nodes)) return nodes.map(n => n.element);
-        return nodes.element;
+        const mainRecord = this.#nodes.get(resolveLocalKey(key));
+        if (!mainRecord || !mainRecord.records || mainRecord.records.length === 0) return null;
+        if (index === "all") return mainRecord.records.map(n => n.element);
+        return mainRecord.records[index as number]?.element || null;
       }
     };
   }
@@ -326,11 +308,12 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
       this.nodes().clear();
       // Jalankan persiapan rajutan silsilah milik komponen anak
       const DOMTree = this.prepare(content, this.config) as HTMLElement;
-      if (this.builderId === "tab") console.log(`${this.builderId} Elements Map`, this.#nodes.entries())
+      // if (this.builderId === "tab") console.log(`${this.builderId} Elements Map`, this.#nodes.entries())
 
       // Detonasi event bindings interaktif klik browser
       this.initialize(DOMTree, content);
 
+      // Panggil free function utils pasif kita, 0% mengotori kesucian return HTMLElement!
       return DOMTree;
     } finally {
 
@@ -370,12 +353,10 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
 
       const restoredDOM = this.nodes().restore!(typeKey, payload);
       if (restoredDOM) {
-        console.log(`🎉 [Framework Restore Hit]: Successfully re-attached full memory matrix tree for "${this.instanceId}"`);
+        console.log(`🎉 [Framework Restore Hit]: Successfully re-attached full memory matrix tree for "${this.builderId}"`);
         return restoredDOM; // Bypass total rebuild visual visual!
       }
     }
-
-
 
     if (!selector) return undefined;
 
@@ -395,6 +376,10 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
         (el as any).__inner = el;
       }
     }
+
+    // attach metadata for HTMLElement.getMetadata()
+    // console.log(this.hierarchy[typeKey])
+    setMetadata(el, [this.nodes().get(typeKey) || {}], typeKey as string);
 
     if (this.config?.emit !== undefined) {
       this.config.emit?.("elementAdded", {
@@ -455,8 +440,6 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     // ====================================================
     const rootElement = this.nodes().load(typeKey || "@container" as TType) as HTMLElement
 
-    console.log({ rootElement })
-
     if (rootElement) {
       // Cabut dari silsilah induk bodi HTML jika memiliki parentNode aktif di browser
       if (rootElement.parentNode) {
@@ -475,155 +458,6 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     // console.log(`[Lifecycle Security] _nodes Map successfully liquidated. Memory state at 0B leak.`);
   }
 
-  /**
-   * 👶 METODE ADOPT MANUAL (GERBANG PENJAHIT SILSILAH EKSPLISIT HASIL IDE DEWA ANDA!)
-   * 0% Pukul rata prototype! 100% Mengontrol penandaan elemen fisik secara sadar!
-   * 
-   * @param childTarget Elemen fisik HTMLElement milik komponen anak yang mau diadopsi daur hidupnya.
-   * @public
-   */
-  public adopt(root: HTMLElement | TType | any, ...targets: Array<HTMLElement | TType | any>): this {
-    if (!targets || targets.length === 0) return this;
-
-    const parentScopeId = this.instanceId || this.builderId;
-    const parentGlobalKey = `${parentScopeId}:${root}`;
-    const allNodesMap = DOMTreeMemory.getAll();
-
-    // Loop massal menyisir barisan target hantaran batch Anda
-    targets.forEach((target) => {
-      if (!target) return;
-
-      let childEl: HTMLElement | null = null;
-      let targetLookupKey: string | null = null;
-
-      // Saringan Kasus A: Jika target yang dikirim adalah string token kustom (e.g. "@form>body")
-      if (typeof target === "string") {
-        const resolvedEl = this.nodes().get(target as TType);
-        childEl = resolvedEl?.element || resolvedEl;
-        targetLookupKey = `${parentScopeId}:${target}`;
-      } else {
-        // Saringan Kasus B: Jika target berupa elemen fisik HTMLElement asli atau return wrapper
-        childEl = target.element || target;
-      }
-
-      if (!(childEl instanceof HTMLElement)) return;
-
-      let childGlobalKey: string | null = targetLookupKey;
-      let childRecordItem: any = null;
-
-      // Jika belum memegang kunci koordinat (kasus elemen fisik anonim dari cara ketiga)
-      if (!childGlobalKey) {
-        for (const [globalKey, record] of allNodesMap.entries()) {
-          const matchItem = record.records?.find((rec: any) => rec.element === childEl);
-          if (matchItem) {
-            childGlobalKey = globalKey;
-            childRecordItem = matchItem;
-            break;
-          }
-        }
-      } else {
-        // Jika kunci koordinat sudah diketahui dari string token, jemput boks item-nya
-        const record = allNodesMap.get(childGlobalKey);
-        childRecordItem = record?.records?.find((rec: any) => rec.element === childEl);
-      }
-
-      // LAUNCH PENJAHITAN GRAF SILSILAH DUA ARAH REAKTIF!
-      if (parentGlobalKey && childGlobalKey && childRecordItem) {
-        const parentRecord = allNodesMap.get(parentGlobalKey);
-
-        if (parentRecord && parentRecord.records.length > 0) {
-          const activeParentItem = parentRecord.records[parentRecord.records.length - 1];
-
-          if (activeParentItem) {
-            // A. Las silsilah bapak ke dalam tubuh internal si anak!
-            childRecordItem.relations.parent = parentGlobalKey;
-
-            // B. Dorong token kunci si anak masuk ke saku Array children milik si bapak!
-            if (!activeParentItem?.relations!.children.includes(childGlobalKey)) {
-              activeParentItem?.relations!.children.push(childGlobalKey);
-              console.log(`📌 [Batch Graph Weld]: "${parentGlobalKey}" adopted child node "${childGlobalKey}" successfully.`);
-            }
-          }
-        }
-      }
-    });
-
-    return this;
-  }
-
-  public _setRelations(rootSelector: TType, childSelectors: Array<TType | string | HTMLElement | any>): this {
-    if (!childSelectors || childSelectors.length === 0) return this;
-
-    const scopeId = this.instanceId;
-    const isRegistryPresent = typeof DOMTreeMemory !== "undefined";
-
-    if (!isRegistryPresent) return this;
-
-    // 1. Rangkai kunci komposit global sejati milik si bapak
-    const parentGlobalKey = `${scopeId}:${rootSelector as string}`;
-    const allNodesMap = DOMTreeMemory.getAll();
-
-    // Pastikan boks record bapaknya memang nyata-nyata eksis di RAM
-    const parentRecord = allNodesMap.get(parentGlobalKey);
-    if (!parentRecord || parentRecord.records.length === 0) {
-      console.warn(`⚠️ [setRelations Cache Miss]: Parent key "${parentGlobalKey}" not found in RAM yet.`);
-      return this;
-    }
-
-    const activeParentItem = parentRecord.records[parentRecord.records.length - 1];
-    if (!activeParentItem) return this;
-
-    // 2. Loop linear menyisir barisan anak hantaran parameter Anda
-    childSelectors.forEach((childTarget) => {
-      if (!childTarget) return;
-
-      let childGlobalKey: string | null = null;
-      let childRecordItem: any = null;
-
-      // Kasus A: Jika anak dikirim berupa string token selektor (e.g. "@form")
-      if (typeof childTarget === "string") {
-        // Jika token anak membawa nama klan builder lain (e.g. "form:inst-1:@form")
-        if (childTarget.includes(":")) {
-          childGlobalKey = childTarget;
-        } else {
-          childGlobalKey = `${scopeId}:${childTarget}`;
-        }
-
-        const record = allNodesMap.get(childGlobalKey);
-        childRecordItem = record?.records?.[record.records.length - 1];
-      }
-      // Kasus B: Jika anak dikirim dalam wujud fisik HTMLElement asli atau return wrapper
-      else {
-        const childEl = childTarget.element || childTarget;
-        if (!(childEl instanceof HTMLElement)) return;
-
-        // Hunt pointer koordinat anak di level RAM
-        for (const [globalKey, record] of allNodesMap.entries()) {
-          const matchItem = record.records?.find((rec: any) => rec.element === childEl);
-          if (matchItem) {
-            childGlobalKey = globalKey;
-            childRecordItem = matchItem;
-            break;
-          }
-        }
-      }
-
-      // 3. 💥 EKSEKUSI LAS MANUAL (STABILISASI PIPELINE SEPATU EMAS ANDA!)
-      if (childGlobalKey && childRecordItem) {
-        // A. Sambungkan penunjuk alamat bapak ke tubuh si anak
-        childRecordItem.relations.parent = parentGlobalKey;
-
-        // B. Masukkan nama kunci si anak ke dalam saku gerbong children milik si bapak
-        if (!activeParentItem.relations!.children.includes(childGlobalKey)) {
-          activeParentItem.relations!.children.push(childGlobalKey);
-          console.log(`🔒 [setRelations Link Secured]: Wrapped "${childGlobalKey}" into parent trunk "${parentGlobalKey}"`);
-        }
-      }
-    });
-
-    return this;
-  }
-
 
   public attach(childElement: HTMLElement | any, globalSlotPathKey: string): void {
     if (!childElement) return;
@@ -639,7 +473,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     }
 
     // Memanggil fungsi .load() pusat milik registry yang sudah Anda sinkronkan!
-    const parentElement = DOMTreeMemory.get(this.hierarchy[targetTypeKey as TType]) as HTMLElement;
+    const parentElement = this.nodes().get("@container" as TType) //DOMTreeMemory.get(this.hierarchy[targetTypeKey as TType]) as HTMLElement;
 
     if (!parentElement) {
       console.warn(`⚠️ [Slotting Warning]: Target semesta "${targetBuilderId}:${targetTypeKey}" tidak aktif di RAM.`);

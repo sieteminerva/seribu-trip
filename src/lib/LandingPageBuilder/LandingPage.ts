@@ -5,6 +5,7 @@ import { ThemeRenderer } from "./Modules/ThemeRenderer";
 import { EventEmitter } from "./Services/EventEmitter";
 import { NodeTransformer } from "./Utils/NodeTransformer";
 import { HashRouter, type iRouteState } from "./Services/HashRouter";
+import { DOMTreeMemory } from "./Modules/DOMTreeMemory";
 
 export interface iLandingPageBuilderConfig {
   container: HTMLElement | string;
@@ -25,7 +26,7 @@ export class LandingPageBuilder {
   private _menuData: iBasicNode | null = null;
   private footer: HTMLElement | iBasicNode | null = null;
   private pages: Record<string, (iNodeContent<any> | iBasicNode)[]> = {};
-  private renderedNodesMap = new Map<string, HTMLElement>();
+  #nodes = new Map<string, HTMLElement>();
 
   /* ROUTE */
   private defaultRoute!: string;
@@ -59,6 +60,8 @@ export class LandingPageBuilder {
       this.theme = new ThemeRenderer();
       this.component = new ComponentRegistry();
 
+      DOMTreeMemory.listen();
+
       this.container = resolved;
       this.useMenu = config.useMenu ?? true;
       this.useFooter = config.useFooter ?? true;
@@ -84,6 +87,7 @@ export class LandingPageBuilder {
 
         this.pendingFragment = state.fragment;
         this.render(state.route);
+
       });
 
       const urlState = this.router.parseUrlHash();
@@ -141,6 +145,74 @@ export class LandingPageBuilder {
   }
 
 
+  /**
+   * 👑 ON PAGE REBUILD (PUNCAK PENYATUAN BLUEPRINT METADATA SYSTEM ANDA!)
+   * Menyerap rekor halaman dari DOMRenderer, menjahit hubungan darah dua arah lintas klan builder,
+   * dan mengamankan status kestabilan memori RAM pusat sekejap mata!
+   * 
+   * @param route Nama rute aktif yang sedang dikunjungi (e.g. "home", "admin")
+   * @param pageMetadata Paket objek metadata berisi records container terluar hantaran DOMRenderer
+   */
+  private onPageRebuild(route: string, payload: any): void {
+    // Pancarkan sebelum render untuk kebutuhan plugin luar, data sudah 100% matang ter-hydrate!
+    this.events.emit("beforeRender", payload as any);
+
+    const metadata = { records: [] } as any;
+
+    const getShellSelector = (shell: HTMLElement) => {
+      const tagName = shell?.tagName.toLowerCase() || "div";
+      const className = `${shell?.className ? "." + shell?.className : ""}`;
+      const id = `${shell?.id ? "#" + shell?.id : ""}`;
+      const attr = `${shell?.hasAttribute("name") ? "[name=" + shell.getAttribute("name") + "]" : ""}`
+      return tagName + id + className + attr;
+    }
+
+    const buildElement = (namedKey: string, data: any, _metadata: any, shell: HTMLElement) => {
+      const parentKey = getShellSelector(shell!);
+      const el = this.compile(data);
+      const meta = el?.getMetadata!({ scopeId: route, parentKey })
+      _metadata.records.push(meta[0]);
+      if (el) {
+        this.#nodes.set(namedKey, el);
+        shell?.appendChild(el);
+      }
+    }
+
+    // 1. Jalankan Kompilasi & Penempelan Navbar Menu
+    if (this.useMenu && payload?.menu) {
+      buildElement("system-navbar", payload.menu, metadata, this.shell!)
+    }
+
+    // 2. Jalankan Kompilasi & Penempelan Seluruh Urutan Blok Halaman
+    payload?.pages.forEach((block: any, index: number) => {
+      const nodeKey = block.id || block.name || `section-block-${index}`;
+      buildElement(nodeKey, block, metadata, this.shell!)
+    });
+
+    // 3. Jalankan Kompilasi & Penempelan Footer
+    if (this.useFooter && payload?.footer) {
+      buildElement("system-footer", payload.footer, metadata, this.shell!)
+    }
+
+    console.log("[metadata]:", metadata.records)
+
+    console.log("domtreememory #nodes", DOMTreeMemory.getAll().entries())
+
+    // SCROLL ANCHOR & ONREADY
+    window.setTimeout(() => {
+      // console.log(`[Lifecycle Scroll Lock] Invoking smooth glide animation to section anchor: #${this.pendingFragment}`);
+      this._handleScrollSection();
+    });
+
+    this.events.emit("ready", {
+      shell: this.shell as HTMLElement,
+      elements: new Map(this.#nodes),
+      context: payload?.context
+    });
+  }
+
+
+
   private restore(target: HTMLElement | null): iBasicNode | null {
     if (!target) return null;
     if (target instanceof HTMLElement) {
@@ -184,52 +256,14 @@ export class LandingPageBuilder {
     }
 
     (this.shell as HTMLElement).innerHTML = "";
-    this.renderedNodesMap.clear();
+    this.#nodes.clear();
 
-    // Pancarkan sebelum render untuk kebutuhan plugin luar, data sudah 100% matang ter-hydrate!
-    this.events.emit("beforeRender", payload as any);
+    this.onPageRebuild(route, payload) // <= ini proses penyatuan metadatanya dengan parameter metadata dari page
 
-    // console.log(payload)
-    // 1. Jalankan Kompilasi & Penempelan Navbar Menu
-    if (this.useMenu && payload?.menu) {
-      const renderedMenu = this.compile(payload?.menu);
-      if (renderedMenu) {
-        this.renderedNodesMap.set("system-navbar", renderedMenu);
-        this.shell?.appendChild(renderedMenu);
-      }
-    }
 
-    // 2. Jalankan Kompilasi & Penempelan Seluruh Urutan Blok Halaman
-    payload?.pages.forEach((block: any, index: number) => {
-      const renderedBlock = this.compile(block);
-      if (renderedBlock) {
-        const nodeKey = block.id || block.name || `section-block-${index}`;
-        this.renderedNodesMap.set(nodeKey, renderedBlock);
-        this.shell?.appendChild(renderedBlock);
-      }
-    });
 
-    // 3. Jalankan Kompilasi & Penempelan Footer
-    if (this.useFooter && payload?.footer) {
-      const renderedFooter = this.compile(payload?.footer);
-      if (renderedFooter) {
-        this.renderedNodesMap.set("system-footer", renderedFooter);
-        this.shell?.appendChild(renderedFooter);
-      }
-    }
-
-    // SCROLL ANCHOR & ONREADY
-    window.setTimeout(() => {
-      // console.log(`[Lifecycle Scroll Lock] Invoking smooth glide animation to section anchor: #${this.pendingFragment}`);
-      this._handleScrollSection();
-    });
-
-    this.events.emit("ready", {
-      shell: this.shell as HTMLElement,
-      elements: new Map(this.renderedNodesMap),
-      context: payload?.context
-    });
   }
+
 
 
   private _prepareDataSnapshot() {
@@ -247,7 +281,7 @@ export class LandingPageBuilder {
   private async prepare(): Promise<{ pages: any, menu: any, footer: any, context: any } | undefined> {
     try {
       // 0. Clean up previous page/route node registries & instance identity counters
-      // this.component?.clear();
+      this.component?.clear();
 
       // 1. Amankan snapshot memori imutabel (Data master murni)
       const snapshot = this._prepareDataSnapshot();
@@ -273,8 +307,7 @@ export class LandingPageBuilder {
 
       // 2. RUNTIME PRE-LOAD PIPELINE TERMINAL (Berdasarkan data master asli)
       const metaReport = NodeTransformer.scanMetaNodes(rawBlocks);
-      const meta2 = NodeTransformer.scanPageLayout(rawBlocks, this.currentRoute);
-      console.log({ metaReport, meta2 })
+      // console.log({ metaReport, snapshot })
       const requiredBuilders = Object.keys(metaReport.hasComponent).filter(
         (key) => (metaReport.hasComponent as any)[key].active === true
       );
@@ -291,10 +324,6 @@ export class LandingPageBuilder {
         footer: rawFooter,
         context
       }
-
-      this.events.emit("beforeRender", payload);
-
-
       // // 4. EMBARK FINAL RENDERING COMPILER PIPELINE
       return payload;
 
@@ -312,7 +341,7 @@ export class LandingPageBuilder {
     if (!node || typeof node !== "object") return null;
     if (node instanceof HTMLElement) return node;
 
-    const resolvedBlueprint = NodeTransformer.resolveContentNode(node);
+    const DOMSchema = NodeTransformer.resolveContentNode(node);
 
     const buildComponent = (name: keyof iBuilderRegistry, data: any): HTMLElement | null => {
       if (this.component && this.component.has(name)) {
@@ -323,13 +352,15 @@ export class LandingPageBuilder {
       return null;
     };
 
-    this.renderComponent([resolvedBlueprint]);
+    // console.log({ DOMSchema })
 
-    const renderedElement = this.factory?.render(resolvedBlueprint, this.compile.bind(this), buildComponent as any);
+    this.renderComponent([DOMSchema]);
 
-    if (renderedElement instanceof HTMLElement && this.shell instanceof HTMLElement) {
-      this.events.emit("elementAdded", { element: renderedElement, parent: this.shell });
-      return renderedElement;
+    const DOMTree = this.factory?.render(DOMSchema, this.compile.bind(this), buildComponent as any);
+
+    if (DOMTree instanceof HTMLElement && this.shell instanceof HTMLElement) {
+      this.events.emit("elementAdded", { element: DOMTree, parent: this.shell });
+      return DOMTree as HTMLElement;
     }
 
     return null;
@@ -420,3 +451,43 @@ export class LandingPageBuilder {
 
 }
 
+export class LandingPageBuilder2 {
+  constructor() {
+    // 1. menginit value dari property-property yang ada
+    // 2. men-setup routes
+    // 3. emit event error kalau gagal
+  }
+
+
+  render() {
+    // 1. tugasnya hanya mengorkestrasi
+    // - memisahkan menu, pages, footer lalu ditransform oleh `prepare` kemudian difinishing oleh `compile` masing-masing
+
+  }
+
+  prepare() {
+    // 1. men-clone data snapshot dari source
+    // 2. scanning metadata
+    // 3. emit event. dimana data yang diemit ini nanti disubscribe oleh themeRenderer,
+    // jadi bisa dirubah sebelum di compile menjadi dom.
+
+  }
+
+  compile() {
+    // 1. men-transformasi json data source yang ditulis dengan format iBasicNode = basic user friendly,
+    // ke iNodeContent <= DOMRenderer object format
+    // 2. mengumpulkan object mana saja yang memiliki property `builder` ini akan diarahkan ke saluran `ComponentRegistry` untuk diarahkan 
+    // ke component buildernya masing-masing sesuail value dari property builder ini. ini dihandle helper `_renderComponent` nanti outputnya 
+    // dikembalikan lagi namun property contentnya bukan lagi json data tapi .content => HTMLElement
+    // 3. transformasi data dari step satu, dan dua disatukan kembali lalu diproses DOMRenderer untuk menjadi page penuh.
+  }
+
+
+  destroy() {
+    // mencabut `shell: HTMLElement` dari DOM
+    // memanggil ComponentRegistry.clear()
+    // emit event
+  }
+
+
+}

@@ -110,6 +110,23 @@ export type BuilderFunctionsMap = {
 /**
  * 
  */
+
+export interface iMetadataContext {
+  scopeId: string;         // Identitas wilayah domain pengenal (e.g. "home" atau "form-panel")
+  parentKey: string | null; // Alamat penunjuk bapak sejati tempat elemen anak ini hinggap fisik
+}
+
+declare global {
+  interface HTMLElement {
+    __outer: HTMLElement;
+    __inner: HTMLElement;
+    __payload: any;
+    __index: number;
+    getMetadata: ((context: iMetadataContext) => any) | undefined | null;
+    mount: (compositeOutput: iCompositeBuilderOutput | HTMLElement | null | any) => void;
+  }
+}
+
 export interface iNodeRecords {
   records: iNodeRecordItem[]
 }
@@ -120,10 +137,16 @@ export interface iNodeRecordItem {
   relations?: {
     scope?: string;
     key?: string;
-    parent: string | null; // "builderId:typeKey" milik bapak angkatnya
-    children: string[]     // Array [...builderId:typeKey] milik anak cucunya
+    template?: string;
+    parent?: string | null; // "builderId:typeKey" milik bapak angkatnya
+    children?: string[]     // Array [...builderId:typeKey] milik anak cucunya
   };
   proxy: any;
+}
+
+export interface iCompositeBuilderOutput {
+  element: HTMLElement;
+  metadata: iNodeRecords;
 }
 
 /**

@@ -194,9 +194,9 @@ export const HomePageContent: iBasicNode[] = [
               if (modal) {
                 (modal as any).open()
               }
-              console.log("content.ts>HomePageContent>CTA.onCreated", modal)
+              // console.log("content.ts>HomePageContent>CTA.onCreated", modal)
             });
-            el.appendChild(btn);
+            el.mount(btn);
           }
         }
       }
@@ -223,7 +223,7 @@ export const HomePageContent: iBasicNode[] = [
       {
         className: "column full compact",
         builder: "accordion",
-        isRoot: true,
+        // isRoot: true,
         content: [
           { title: "Apakah ada batas minimal peserta untuk booking?", description: "Tidak. Kami siap membantu rombongan kecil maupun besar, dan kami akan menyesuaikan paket sesuai kebutuhan Kakak." },
           { title: "Apakah bisa reschedule jika cuaca buruk?", description: "Ya. Jika operasional dibatalkan karena faktor cuaca atau otoritas pelabuhan, kami akan membantu penjadwalan ulang dengan transparan." },

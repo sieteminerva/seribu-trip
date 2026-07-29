@@ -1,8 +1,6 @@
 import type { iBuilderConfig, iBuilderRegistry } from "../../interface";
 import { Builder } from "../Base";
 
-
-
 export type InputType =
   | "text"
   | "textarea"
@@ -65,6 +63,7 @@ export interface iBasicInputConfig {
 export interface iBasicInputNode extends iBuilderConfig<InputElementType> {
   type?: InputType;
   id?: string;
+  formId?: string | null;
   name?: string;
   title?: string;
   placeholder?: string;
@@ -113,6 +112,7 @@ export class InputBuilder extends Builder<InputElementType> {
     this.config = this.resolveConfig(defaultConfig, config);
 
   }
+
 
   public prepare(inputObj: Partial<iBasicInputNode>, _config?: Required<iBuilderConfig<InputElementType>> | undefined): HTMLElement | Record<string, any | HTMLElement> {
     this.#input = this.resolvePayload(inputObj);

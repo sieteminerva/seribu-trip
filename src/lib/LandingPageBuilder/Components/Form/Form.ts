@@ -123,7 +123,7 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
               fieldset.insertAdjacentHTML("beforeend", innerInput as any);
             } else {
               // InputBuilder melahirkan HTMLElement murni dengan isRoot internalnya sendiri
-              const inputEl = innerInput instanceof HTMLElement ? innerInput : new InputBuilder().create(innerInput);
+              const inputEl = innerInput instanceof HTMLElement ? innerInput : new InputBuilder({ formId: formId } as any).create(innerInput);
               const foundId = this.scanForSubmitButton(inputEl, formId);
               if (foundId) this.submitButtonId = foundId;
 
@@ -149,7 +149,7 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
       // ==========================================
       else {
         // InputBuilder.prepare() mengelola isRoot dan melahirkan <div class="input-wrapper"> murni
-        const inputEl = new InputBuilder().create(input);
+        const inputEl = new InputBuilder({ formId: formId } as any).create(input);
         if (this.config.submitButton) {
           this.submitButtonId = this.scanForSubmitButton(inputEl, formId) || this.submitButtonId;
         }
