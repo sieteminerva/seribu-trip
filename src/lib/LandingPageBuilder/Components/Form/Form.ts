@@ -1,5 +1,6 @@
 import type { iBuilderConfig, iBuilderRegistry } from "../../interface";
 import { Builder } from "../Base";
+import { TableBuilder } from "../Table/Table";
 import { FileUploader } from "./FileUploader";
 import { InputBuilder } from "./Input";
 
@@ -72,6 +73,7 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
       footer: null,
       themeId: "default",
       selectors: defaultSelectors,
+      namespace: null,
       emit: null
     };
     this.config = this.resolveConfig(defaultConfig, config);
@@ -112,35 +114,8 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
       // KASUS C: Input berupa Group Node (<fieldset>)
       // ==========================================
       else if (input && typeof input === "object" && "group" in input) {
+        const fieldset = this.renderGroup(input, formId);
         // console.log("group", { input })
-        const fieldset = this.render("@form>group", input, true) as HTMLElement; // Multiple true loop!
-        if (input.group && Array.isArray(input.group)) {
-          input.group.forEach((innerInput: any) => {
-            // console.log({ innerInput })
-            if (typeof innerInput === "string") {
-              const foundId = this.scanForSubmitButton(innerInput, formId);
-              if (foundId) this.submitButtonId = foundId;
-              fieldset.insertAdjacentHTML("beforeend", innerInput as any);
-            } else {
-              // InputBuilder melahirkan HTMLElement murni dengan isRoot internalnya sendiri
-              const inputEl = innerInput instanceof HTMLElement ? innerInput : new InputBuilder({ formId: formId } as any).create(innerInput);
-              const foundId = this.scanForSubmitButton(inputEl, formId);
-              if (foundId) this.submitButtonId = foundId;
-
-              // Langsung dorong element fisiknya ke dalam tumpukan fieldset
-              fieldset.append(inputEl as any);
-            }
-          });
-
-        }
-
-        // Iterasi anak-anak di dalam group secara murni
-        if (input.submitButton) {
-          const submitBtn = this.render("@form>actions>submit", { isGroupBtn: true, formId }, true) as HTMLButtonElement;
-          this.submitButtonId = submitBtn.id;
-          fieldset.appendChild(submitBtn)
-        }
-
         form.appendChild(fieldset);
       }
 
@@ -179,6 +154,60 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
 
     // console.log(form)
     return this.load("@container") as HTMLElement;
+  }
+
+  /**
+   * Recursively renders a group (fieldset) and its child inputs or sub-groups.
+   */
+  private renderGroup(groupInput: any, formId: string): HTMLElement {
+    const fieldset = this.render("@form>group", groupInput, true) as HTMLElement;
+
+    if (groupInput.group && Array.isArray(groupInput.group)) {
+      groupInput.group.forEach((innerInput: any, _index: number) => {
+        // console.log(hasTable, index)
+
+        // Case 1: Raw HTML String
+        if (typeof innerInput === "string") {
+          const foundId = this.scanForSubmitButton(innerInput, formId);
+          if (foundId) this.submitButtonId = foundId;
+          fieldset.insertAdjacentHTML("beforeend", innerInput as any);
+
+        }
+        // Case 2: Nested Group Object -> RECURSE!
+        else if (innerInput && typeof innerInput === "object" && "group" in innerInput) {
+          const nestedFieldset = this.renderGroup(innerInput, formId);
+          if (innerInput.table !== undefined) {
+            // console.log(innerInput.table.content)
+
+            const tableEl = new TableBuilder(innerInput.table.content).create()
+            // console.log(tableEl)
+            nestedFieldset.appendChild(tableEl);
+          }
+          fieldset.appendChild(nestedFieldset);
+
+        }
+        // Case 3: Regular Input Item or DOM Element
+        else {
+          const inputEl = innerInput instanceof HTMLElement
+            ? innerInput
+            : new InputBuilder({ formId: formId } as any).create(innerInput);
+
+          const foundId = this.scanForSubmitButton(inputEl, formId);
+          if (foundId) this.submitButtonId = foundId;
+
+          fieldset.append(inputEl as any);
+        }
+      });
+    }
+
+    // Handle submit button per group level if specified
+    if (groupInput.submitButton) {
+      const submitBtn = this.render("@form>actions>submit", { isGroupBtn: true, formId }, true) as HTMLButtonElement;
+      this.submitButtonId = submitBtn.id;
+      fieldset.appendChild(submitBtn);
+    }
+
+    return fieldset;
   }
 
 

@@ -334,3 +334,40 @@ document.getElementById("admin-dashboard-container").appendChild(liveCmsControlP
 3.  Complete Vendor Lock-In Independence: This framework does not tie you down to an expensive hosting infrastructure or specific server stack. You can host the compiled static files anywhere in the world—hooked into Google Sheets cloud infrastructure or an enterprise corporate SQL database server via simple HTTP requests.
 
 ---
+
+```ts
+export class LandingPageBuilder2 {
+  constructor() {
+    // 1. menginit value dari property-property yang ada
+    // 2. men-setup routes
+    // 3. emit event error kalau gagal
+  }
+
+  render() {
+    // 1. tugasnya hanya mengorkestrasi
+    // - memisahkan menu, pages, footer lalu ditransform oleh `prepare` kemudian difinishing oleh `compile` masing-masing
+  }
+
+  prepare() {
+    // 1. men-clone data snapshot dari source
+    // 2. scanning metadata
+    // 3. emit event. dimana data yang diemit ini nanti disubscribe oleh themeRenderer,
+    // jadi bisa dirubah sebelum di compile menjadi dom.
+  }
+
+  compile() {
+    // 1. men-transformasi json data source yang ditulis dengan format iBasicNode = basic user friendly,
+    // ke iNodeContent <= DOMRenderer object format
+    // 2. mengumpulkan object mana saja yang memiliki property `builder` ini akan diarahkan ke saluran `ComponentRegistry` untuk diarahkan
+    // ke component buildernya masing-masing sesuail value dari property builder ini. ini dihandle helper `_renderComponent` nanti outputnya
+    // dikembalikan lagi namun property contentnya bukan lagi json data tapi .content => HTMLElement
+    // 3. transformasi data dari step satu, dan dua disatukan kembali lalu diproses DOMRenderer untuk menjadi page penuh.
+  }
+
+  destroy() {
+    // mencabut `shell: HTMLElement` dari DOM
+    // memanggil ComponentRegistry.clear()
+    // emit event
+  }
+}
+```

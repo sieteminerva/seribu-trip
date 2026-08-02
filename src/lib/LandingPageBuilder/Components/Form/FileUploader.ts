@@ -600,7 +600,7 @@ export class FileUploader {
       const close = document.createElement("div");
       // Step 8: Create the close/remove button.
       close.classList.add("close", "button");
-      close.innerHTML = /* `<i class="trash alternate icon"></i>` */ "❌";
+      close.innerHTML = `<i class="icon trash"></i>`;
       // Step 9: Attach the event listener for removing the item.
       this._onCloseRemoveItem(file, close, item);
 
@@ -697,7 +697,7 @@ export class FileUploader {
       const close = document.createElement("div");
       // Step 7: Create the close/remove button.
       close.classList.add("close", "button");
-      close.innerHTML = `<i class="close icon"></i>`;
+      close.innerHTML = `<i class="icon close"></i>`;
       // Step 8: Attach the event listener for removing the item.
       this._onCloseRemoveItem(file, close, item);
 
@@ -770,7 +770,7 @@ export class FileUploader {
 
       const exImg = document.createElement("div");
       exImg.classList.add("thumbnail", "image");
-      exImg.innerHTML = `<i class="file alternate icon"></i>`;
+      exImg.innerHTML = `<i class="icon file"></i>`;
 
       const content = document.createElement("div");
       content.classList.add("content");
@@ -788,7 +788,7 @@ export class FileUploader {
       info.textContent = msg; // Step 2f: Safely insert the validation message as text content.
 
       const icon = document.createElement("i");
-      icon.classList.add("times", "circle", "icon");
+      icon.classList.add("icon", "cross", "circle");
       info.appendChild(icon);
 
       messageGroup.append(filename, info);
@@ -804,14 +804,14 @@ export class FileUploader {
       filename.classList.add("filename");
       filename.style.color = "var(--unallowed-color)";
       // TODO use emoji or svg content in `FileUploader.css`
-      filename.innerHTML = `<i class="file alternate icon"></i> ${messageText}`;
+      filename.innerHTML = `<i class="icon file"></i> ${messageText}`;
 
       const info = document.createElement("div");
       info.classList.add("info", "unallowed");
       info.textContent = msg; // Step 3d: Safely insert the validation message as text content.
 
       const icon = document.createElement("i");
-      icon.classList.add("times", "circle", "icon");
+      icon.classList.add("icon", "close", "circle");
       info.appendChild(icon);
 
       item.append(filename, info);
@@ -861,19 +861,19 @@ export class FileUploader {
     // TODO use emoji or svg content in `FileUploader.css` to replace `<i class="* icon"></i>`
     const totalFilesMsg = `
       <div class="message">
-        <i class="copy outline icon"></i>
+        <i class="copy file icon"></i>
         ${messages.selectedFiles(allSelectedFiles)}
       </div>`;
     // Step 2: Generates HTML strings for allowed files.
     const allowedFilesMsg = `
       <div class="message allowed">
-        <i class="check circle outline icon"></i>
+        <i class="checkmark circle icon"></i>
         ${messages.readyFiles(totalAllowedFiles)}
       </div>`;
     // Step 2: Generates HTML strings for unallowed files.
     const unAllowedFilesMsg = `
       <div class="message unallowed">
-        <i class="times circle outline icon"></i>
+        <i class="cross circle icon"></i>
         ${messages.unAllowedFiles(allSelectedFiles - totalAllowedFiles)}
       </div>`;
 
@@ -927,9 +927,9 @@ export class FileUploader {
     wrapper.classList.add("message");
 
     const icons = {
-      allowed: `<i class="check circle icon"></i>`,
-      unallowed: `<i class="times circle icon"></i>`,
-      warning: `<i class="circle exclamation icon"></i>`,
+      allowed: `<i class="checkmark circle icon"></i>`,
+      unallowed: `<i class="cross circle icon"></i>`,
+      warning: `<i class="error icon"></i>`,
     };
 
     const filename = document.createElement("div");
@@ -1158,12 +1158,12 @@ export class FileUploader {
           allowed: `<i class="check circle icon"></i>`,
           unallowed: `<i class="times circle icon"></i>`,
           warning: `<i class="circle exclamation icon"></i>`,
-          image: `<i class="file image outline icon"></i>`,
-          audio: `<i class="file audio outline icon"></i>`,
-          video: `<i class="file video outline icon"></i>`,
-          pdf: `<i class="file pdf outline icon"></i>`,
-          file: `<i class="file outline icon"></i>`,
-          files: `<i class="copy outline icon"></i>`
+          image: `<i class="file image icon"></i>`,
+          audio: `<i class="file audio icon"></i>`,
+          video: `<i class="file video icon"></i>`,
+          pdf: `<i class="file pdf icon"></i>`,
+          file: `<i class="file icon"></i>`,
+          files: `<i class="copy file icon"></i>`
         },
         messages: {
           selectedFiles: (count) => `${count} selected file(s)`,
@@ -1468,11 +1468,11 @@ export class FileUploader {
    */
   _getFileIconSVG(file: File) {
     const type = file.type;
-    if (type.startsWith("image/")) return `<i class="file image outline icon"></i>`;
-    if (type.startsWith("audio/")) return `<i class="file audio outline icon"></i>`;
-    if (type.startsWith("video/")) return `<i class="file video outline icon"></i>`;
-    if (type === "application/pdf") return `<i class="file pdf outline icon"></i>`;
-    return `<i class="file outline icon"></i>`;
+    if (type.startsWith("image/")) return `<i class="file jpg icon"></i>`;
+    if (type.startsWith("audio/")) return `<i class="file mp3 icon"></i>`;
+    if (type.startsWith("video/")) return `<i class="file mp4 icon"></i>`;
+    if (type === "application/pdf") return `<i class="file pdf icon"></i>`;
+    return `<i class="file icon"></i>`;
   }
 
   /**

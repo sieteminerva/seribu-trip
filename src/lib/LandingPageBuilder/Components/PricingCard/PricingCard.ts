@@ -38,6 +38,7 @@ export class PricingCardBuilder extends Builder<PricingCardElementType, iPricing
 
     const defaultConfig: Required<iPricingCardConfig> = {
       themeId: "default",
+      namespace: null,
       emit: () => { },
       selectors: defaultSelectors,
     };
@@ -79,7 +80,7 @@ export class PricingCardBuilder extends Builder<PricingCardElementType, iPricing
    * PHASE 5: Attaches dynamic event interactions securely onto computed DOM paths.
    */
   public initialize(): void {
-    const actionData = this.getPayload("@card>actions");
+    const actionData = this.payload("@card>actions");
     if (actionData && actionData.onClick) {
       // TODO handle attach listeners
       const buttonElement = (this.load("@card>actions") as HTMLElement)?.firstChild;

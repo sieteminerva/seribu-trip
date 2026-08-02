@@ -1,5 +1,5 @@
 import type { iBasicNode } from "./lib/LandingPageBuilder/interface";
-import { NodeTransformer } from "./lib/LandingPageBuilder/Utils/NodeTransformer";
+import { FormSchemaTransformer } from "./lib/LandingPageBuilder/Utils/FormSchemaTransformer";
 
 export const HomePageContent: iBasicNode[] = [
   {
@@ -7,6 +7,20 @@ export const HomePageContent: iBasicNode[] = [
     tagName: "section",
     id: "hero-section",
     className: "section row align-mid stackable",
+    options: {
+      fieldTypes: {
+        selector: {
+          "p.eyebrow": "text",
+          "h2.title": "text",
+          "p.description": "textarea"
+        },
+        property: {
+          "image": "file",
+          "title": "text",
+          "description": "textarea"
+        }
+      },
+    },
     content: [
       {
         tagName: "div",
@@ -22,51 +36,54 @@ export const HomePageContent: iBasicNode[] = [
         id: "carousel-container",
         className: "column half",
         builder: "carousel",
+        options: {
+          mode: "table" // normal which is unwrapped, the other mode is "table", use single set based input set, and current data will be rendered in table
+        },
         content: [
           {
-            image: "https://placehold.co/640x420/1e3a5f/ffffff?text=Kepulauan+Seribu",
             title: "Eksplorasi Keindahan",
-            description: "Nikmati perjalanan privat yang nyaman dan tenang bersama keluarga."
-          },
-          {
-            image: "https://placehold.co/640x420/8764b5/ffffff?text=Pantai+Pasir+Putih",
-            title: "Pantai Pasir Putih",
-            description: "Menghabiskan waktu dengan pemandangan sunset yang luar biasa."
-          },
-          {
-            image: "https://placehold.co/640x420/3c2554/ffffff?text=Petualangan+Seru",
-            title: "Aktivitas Menyenangkan",
-            description: "Snorkeling dan aktivitas air lain yang disesuaikan untuk semua umur."
-          },
-          {
+            description: "Nikmati perjalanan privat yang nyaman dan tenang bersama keluarga.",
             image: "https://placehold.co/640x420/1e3a5f/ffffff?text=Kepulauan+Seribu",
-            title: "Eksplorasi Keindahan",
-            description: "Nikmati perjalanan privat yang nyaman dan tenang bersama keluarga."
           },
           {
-            image: "https://placehold.co/640x420/8764b5/ffffff?text=Pantai+Pasir+Putih",
             title: "Pantai Pasir Putih",
-            description: "Menghabiskan waktu dengan pemandangan sunset yang luar biasa."
+            description: "Menghabiskan waktu dengan pemandangan sunset yang luar biasa.",
+            image: "https://placehold.co/640x420/8764b5/ffffff?text=Pantai+Pasir+Putih",
           },
           {
-            image: "https://placehold.co/640x420/3c2554/ffffff?text=Petualangan+Seru",
             title: "Aktivitas Menyenangkan",
-            description: "Snorkeling dan aktivitas air lain yang disesuaikan untuk semua umur."
+            description: "Snorkeling dan aktivitas air lain yang disesuaikan untuk semua umur.",
+            image: "https://placehold.co/640x420/3c2554/ffffff?text=Petualangan+Seru",
           },
           {
+            title: "Eksplorasi Keindahan",
+            description: "Nikmati perjalanan privat yang nyaman dan tenang bersama keluarga.",
             image: "https://placehold.co/640x420/1e3a5f/ffffff?text=Kepulauan+Seribu",
-            title: "Eksplorasi Keindahan",
-            description: "Nikmati perjalanan privat yang nyaman dan tenang bersama keluarga."
           },
           {
-            image: "https://placehold.co/640x420/8764b5/ffffff?text=Pantai+Pasir+Putih",
             title: "Pantai Pasir Putih",
-            description: "Menghabiskan waktu dengan pemandangan sunset yang luar biasa."
+            description: "Menghabiskan waktu dengan pemandangan sunset yang luar biasa.",
+            image: "https://placehold.co/640x420/8764b5/ffffff?text=Pantai+Pasir+Putih",
           },
           {
-            image: "https://placehold.co/640x420/3c2554/ffffff?text=Petualangan+Seru",
             title: "Aktivitas Menyenangkan",
-            description: "Snorkeling dan aktivitas air lain yang disesuaikan untuk semua umur."
+            description: "Snorkeling dan aktivitas air lain yang disesuaikan untuk semua umur.",
+            image: "https://placehold.co/640x420/3c2554/ffffff?text=Petualangan+Seru",
+          },
+          {
+            title: "Eksplorasi Keindahan",
+            description: "Nikmati perjalanan privat yang nyaman dan tenang bersama keluarga.",
+            image: "https://placehold.co/640x420/1e3a5f/ffffff?text=Kepulauan+Seribu",
+          },
+          {
+            title: "Pantai Pasir Putih",
+            description: "Menghabiskan waktu dengan pemandangan sunset yang luar biasa.",
+            image: "https://placehold.co/640x420/8764b5/ffffff?text=Pantai+Pasir+Putih",
+          },
+          {
+            title: "Aktivitas Menyenangkan",
+            description: "Snorkeling dan aktivitas air lain yang disesuaikan untuk semua umur.",
+            image: "https://placehold.co/640x420/3c2554/ffffff?text=Petualangan+Seru",
           }
         ],
       }
@@ -76,35 +93,49 @@ export const HomePageContent: iBasicNode[] = [
     name: "Stats",
     id: "stats-section",
     tagName: "section",
+    // where is the best place to put the .options ?
+    options: {
+      fieldTypes: {
+        selector: {
+          "p.eyebrow": "text",
+          ".rating": "text",
+          ".description": "textarea"
+        }
+      },
+    },
     content: [
       {
         className: "column full compact",
+        // because we can also put it here <= ?
         content: {
           tagName: "p", className: "eyebrow", content: "Keunggulan perusahaan",
         }
       },
       {
         className: "row card",
+        options: {
+          mode: "table" // normal which is unwrapped, the other mode is "table", use single set based input set, and current data will be rendered in table
+        },
         content: [
           {
             className: "column stat",
             content: [
-              { tagName: "strong", content: "4.9/5" },
-              { tagName: "span", content: "rating keluarga yang telah berangkat" }
+              { tagName: "strong", className: "rating", content: "4.9/5" },
+              { tagName: "span", className: "description", content: "rating keluarga yang telah berangkat" }
             ]
           },
           {
             className: "column stat",
             content: [
-              { tagName: "strong", content: "24/7" },
-              { tagName: "span", content: "support lapangan dan koordinasi darurat" }
+              { tagName: "strong", className: "rating", content: "24/7" },
+              { tagName: "span", className: "description", content: "support lapangan dan koordinasi darurat" }
             ]
           },
           {
             className: "column stat",
             content: [
-              { tagName: "strong", content: "100%" },
-              { tagName: "span", content: "tim lokal asal pulau dan kru yang terpercaya" }
+              { tagName: "strong", className: "rating", content: "100%" },
+              { tagName: "span", className: "description", content: "tim lokal asal pulau dan kru yang terpercaya" }
             ]
           }
         ]
@@ -112,7 +143,7 @@ export const HomePageContent: iBasicNode[] = [
     ],
   },
   {
-    name: "Tentang Kami",
+    name: "About",
     id: "about-section",
     tagName: "section",
     className: "row card",
@@ -140,37 +171,73 @@ export const HomePageContent: iBasicNode[] = [
     ],
   },
   {
-    name: "About",
+    name: "Benefit",
+    id: "benefit-section",
     className: "row",
     tagName: "section",
-
-
+    options: {
+      fieldTypes: {
+        selector: {
+          "h3.title": "text",
+          "p.description": "textarea",
+        },
+      },
+    },
     content: [
       {
         name: "Kenapa Memilih Kami",
         id: "benefits-section",
         className: "column card",
+        options: {
+          mode: "table" // normal which is unwrapped, the other mode is "table", use single set based input set, and current data will be rendered in table
+        },
         content: [
-          { tagName: "h3", className: "title", content: "Trip privat", },
-          { tagName: "p", className: "description", content: "Trip privat dan tidak digabungkan dengan kelompok lain." },
-          { tagName: "h3", className: "title", content: "Harga jelas" },
-          { tagName: "p", className: "description", content: "Estimasi harga yang jelas sebelum pembayaran." },
-          { tagName: "h3", className: "title", content: "Support penuh" },
-          { tagName: "p", className: "description", content: "Tim lapangan yang siap membantu dari keberangkatan hingga kembali." },
+          {
+            tagName: "div", className: "row", content: [
+              { tagName: "h3", className: "title", content: "Trip privat", },
+              { tagName: "p", className: "description", content: "Trip privat dan tidak digabungkan dengan kelompok lain." },
+            ]
+          },
+          {
+            tagName: "div", className: "row", content: [
+              { tagName: "h3", className: "title", content: "Harga jelas" },
+              { tagName: "p", className: "description", content: "Estimasi harga yang jelas sebelum pembayaran." },
+            ]
+          },
+          {
+            tagName: "div", className: "row", content: [
+              { tagName: "h3", className: "title", content: "Support penuh" },
+              { tagName: "p", className: "description", content: "Tim lapangan yang siap membantu dari keberangkatan hingga kembali." },
+            ]
+          },
         ],
-
       },
       {
         name: "Rencana Perjalanan",
         id: "itinerary-section",
         className: "column card",
+        options: {
+          mode: "table" // normal which is unwrapped, the other mode is "table", use single set based input set, and current data will be rendered in table
+        },
         content: [
-          { tagName: "h3", className: "title", content: "1. Persiapan & Keberangkatan" },
-          { tagName: "p", className: "description", content: "Koordinasi yang jelas, jadwal kumpul yang rapi, dan transportasi yang sudah dipilih sesuai kebutuhan." },
-          { tagName: "h3", className: "title", content: "2. Aktivitas di Pulau" },
-          { tagName: "p", className: "description", content: "Snorkeling, santai di pantai, sunset, dan pilihan add-ons yang dapat disesuaikan dengan usia anggota keluarga." },
-          { tagName: "h3", className: "title", content: "3. Kembali dengan Kenangan" },
-          { tagName: "p", className: "description", content: "Semua dokumen, tiket, dan informasi trip akan dikirimkan dengan rapi untuk memudahkan perjalanan pulang." },
+          {
+            tagName: "div", className: "row", content: [
+              { tagName: "h3", className: "title", content: "1. Persiapan & Keberangkatan" },
+              { tagName: "p", className: "description", content: "Koordinasi yang jelas, jadwal kumpul yang rapi, dan transportasi yang sudah dipilih sesuai kebutuhan." },
+            ]
+          },
+          {
+            tagName: "div", className: "row", content: [
+              { tagName: "h3", className: "title", content: "2. Aktivitas di Pulau" },
+              { tagName: "p", className: "description", content: "Snorkeling, santai di pantai, sunset, dan pilihan add-ons yang dapat disesuaikan dengan usia anggota keluarga." },
+            ]
+          },
+          {
+            tagName: "div", className: "row", content: [
+              { tagName: "h3", className: "title", content: "3. Kembali dengan Kenangan" },
+              { tagName: "p", className: "description", content: "Semua dokumen, tiket, dan informasi trip akan dikirimkan dengan rapi untuk memudahkan perjalanan pulang." },
+            ]
+          },
         ],
       },
     ]
@@ -218,12 +285,26 @@ export const HomePageContent: iBasicNode[] = [
     id: "faq-section",
     tagName: "section",
     className: "row",
+    options: {
+      fieldTypes: {
+        selector: {
+          "h2.title": "text",
+        },
+        property: {
+          title: "text",
+          description: "textarea"
+        }
+      },
+    },
     content: [
       { tagName: "h2", className: "title txt-center", content: "Pertanyaan Populer (FAQ)" },
       {
         className: "column full compact",
         builder: "accordion",
         // isRoot: true,
+        options: {
+          mode: "table" // normal which is unwrapped, the other mode is "table", use single set based input set, and current data will be rendered in table
+        },
         content: [
           { title: "Apakah ada batas minimal peserta untuk booking?", description: "Tidak. Kami siap membantu rombongan kecil maupun besar, dan kami akan menyesuaikan paket sesuai kebutuhan Kakak." },
           { title: "Apakah bisa reschedule jika cuaca buruk?", description: "Ya. Jika operasional dibatalkan karena faktor cuaca atau otoritas pelabuhan, kami akan membantu penjadwalan ulang dengan transparan." },
@@ -485,7 +566,6 @@ export const PackagePageContent = [
 export const GalleryPageContent = [
   {
     name: "Gallery",
-
     content: [
       {
         className: "column full txt-center",
@@ -547,15 +627,19 @@ function getFormPageContent(content: any[]) {
 
   const injectionRules = [
     { selector: "p.eyebrow", inputType: "text" },
-    { selector: "h2.title", inputType: "textarea" },
+    { selector: "h2.title", inputType: "text" },
     { selector: "p.description", inputType: "textarea" },
+    { selector: ".rating", inputType: "text" },
     { selector: "img", inputType: "file" },
     // 💡 JEMBATAN BARU: Tambahkan aturan agar scanner mendeteksi komponen kompleks otomatis!
-    { selector: ".compact", inputType: "textarea" }
+    { property: "image", inputType: "file" },
+    { property: "title", inputType: "text" },
+    { property: "description", inputType: "textarea" },
+    { property: "src", inputType: "file" }
   ];
 
-  const reverseNode = NodeTransformer.toFormNode(content, injectionRules);
-  // console.log({ reverseNode })
+  const reverseNode = FormSchemaTransformer.toFormNode(content, injectionRules);
+  console.log({ reverseNode })
 
   const tabMenu: string[] = [];
   const tabBody: any[] = [];
@@ -588,6 +672,9 @@ export const ProductPageContent = [
         "uid": "dsr7524x",
         "name": "O-Neck Standard",
         "category": "T-Shirt",
+        "title": "Standard O-neck",
+        "description": "",
+        "price": "getPrice",
         "fabrics": [
           {
             "color": "white",
@@ -632,17 +719,15 @@ export const ProductPageContent = [
             "ribs_lefthand": "",
             "ribs_righthand": ""
           }
-        },
-        "caption": {
-          "title": "Standard O-neck",
-          "description": ""
-        },
-        "price": "getPrice"
+        }
       },
       {
         "uid": "dsr7523s",
         "name": "Man Long Sleeve",
         "category": "Shirt",
+        "title": "Man Long Sleeve",
+        "description": "",
+        "price": "getPrice",
         "fabrics": [
           {
             "color": "black",
@@ -683,17 +768,15 @@ export const ProductPageContent = [
             "ribs_lefthand": "",
             "ribs_righthand": ""
           }
-        },
-        "caption": {
-          "title": "Man Long Sleeve",
-          "description": ""
-        },
-        "price": "getPrice"
+        }
       },
       {
         "uid": "dsr7534e",
         "name": "Event's Balloon",
         "category": "Merchandise",
+        "title": "Event's Balloon",
+        "description": "",
+        "price": "getPrice",
         "fabrics": [
           {
             "color": "black",
@@ -738,17 +821,15 @@ export const ProductPageContent = [
             "ribs_lefthand": "",
             "ribs_righthand": ""
           }
-        },
-        "caption": {
-          "title": "Event's Balloon",
-          "description": ""
-        },
-        "price": "getPrice"
+        }
       },
       {
         "uid": "dsk7524m",
         "name": "Standard Mug",
         "category": "Merchandise",
+        "title": "Standard Mug",
+        "description": "",
+        "price": "getPrice",
         "fabrics": [
           {
             "color": "black",
@@ -773,17 +854,15 @@ export const ProductPageContent = [
             "ribs_lefthand": "",
             "ribs_righthand": ""
           }
-        },
-        "caption": {
-          "title": "Standard Mug",
-          "description": ""
-        },
-        "price": "getPrice"
+        }
       },
       {
         "uid": "psr4524b",
         "name": "Pin",
         "category": "Merchandise",
+        "title": "Pin",
+        "description": "",
+        "price": "getPrice",
         "fabrics": [
           {
             "color": "black",
@@ -816,17 +895,15 @@ export const ProductPageContent = [
             "ribs_lefthand": "",
             "ribs_righthand": ""
           }
-        },
-        "caption": {
-          "title": "Pin",
-          "description": ""
-        },
-        "price": "getPrice"
+        }
       },
       {
         "uid": "dsf7454a",
         "name": "Cushion",
         "category": "Accesories",
+        "title": "Cushion",
+        "description": "",
+        "price": "getPrice",
         "fabrics": [
           {
             "color": "black",
@@ -864,11 +941,6 @@ export const ProductPageContent = [
             "ribs_righthand": ""
           }
         },
-        "caption": {
-          "title": "Cushion",
-          "description": ""
-        },
-        "price": "getPrice"
       }
     ]
   }

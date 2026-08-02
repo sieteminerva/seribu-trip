@@ -27,6 +27,7 @@ export class AccordionBuilder extends Builder<AccordionElementType, iAccordionCo
         "@accordion>content": { tagName: "div", className: "content" },
         "@accordion>content>desc": { tagName: "p", className: "desc" },
       },
+      namespace: null,
       emit: () => { }
     }
 

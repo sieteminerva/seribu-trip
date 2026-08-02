@@ -1,4 +1,4 @@
-import type { iBuilderConfig, iBuilderRegistry } from "../../interface";
+import type { iActionProperty, iBuilderConfig, iBuilderRegistry } from "../../interface";
 import { Builder } from "../Base";
 
 export type InputType =
@@ -47,7 +47,7 @@ export interface iBasicInputConfig {
   position?: "left" | "right";
   icon?: string;
   content?: string | Record<string, unknown>;
-  action?: { mode?: string } | null;
+  actions?: { mode?: string } | Array<Record<"add|remove|edit|save", iActionProperty>> | null;
   actionMode?: string;
   wide?: number | null;
   useLabel?: boolean;
@@ -106,6 +106,7 @@ export class InputBuilder extends Builder<InputElementType> {
     const defaultConfig: Required<iBuilderConfig<InputElementType>> = {
       themeId: "default",
       selectors: defaultSelectors,
+      namespace: null,
       emit: () => { }
     };
 
@@ -117,22 +118,22 @@ export class InputBuilder extends Builder<InputElementType> {
   public prepare(inputObj: Partial<iBasicInputNode>, _config?: Required<iBuilderConfig<InputElementType>> | undefined): HTMLElement | Record<string, any | HTMLElement> {
     this.#input = this.resolvePayload(inputObj);
     const elementId = this._sanitizeId(this.#input.id || this.#input.title || `input-${Math.random().toString(36).slice(2, 10)}`);
-    const wrapper = this.render("@field", this.#input);
+    const wrapper = this.render("@field", this.#input, true);
 
     if (this.#input.title && this.#input.config?.useLabel) {
-      const label = this.render("@field>label", { id: elementId, text: this.#input.title })!;
+      const label = this.render("@field>label", { id: elementId, text: this.#input.title }, true)!;
       wrapper?.appendChild(label);
     }
 
     switch (this.#input.type) {
       case "textarea": {
-        const textarea = this.render("@field>textarea", { id: elementId, config: this.#input });
+        const textarea = this.render("@field>textarea", { id: elementId, config: this.#input }, true);
         wrapper?.appendChild(textarea!);
         break;
       }
 
       case "select": {
-        const select = this.render("@field>select", { id: elementId, config: this.#input });
+        const select = this.render("@field>select", { id: elementId, config: this.#input }, true);
 
         // Buat Baris Placeholder awal
         const placeholderOpt = document.createElement("option");
@@ -162,14 +163,14 @@ export class InputBuilder extends Builder<InputElementType> {
       case "checkbox":
       case "radio": {
         const typeKey = this.#input.type === "checkbox" ? "@field>checkbox" : "@field>radio";
-        const input = this.render(typeKey as any, { id: elementId, config: this.#input });
+        const input = this.render(typeKey as any, { id: elementId, config: this.#input }, true);
         wrapper?.appendChild(input!);
         break;
       }
 
       case "file": {
-        console.log(this.#input)
-        const fileInput = this.render("@field>file", { id: elementId, ...this.#input }) as HTMLInputElement;
+        // console.log(this.#input)
+        const fileInput = this.render("@field>file", { id: elementId, ...this.#input }, true) as HTMLInputElement;
         fileInput.type = "file";
         wrapper?.appendChild(fileInput!);
         break;
@@ -177,7 +178,7 @@ export class InputBuilder extends Builder<InputElementType> {
 
       // Default klan input text, number, email standard kaku
       default: {
-        const input = this.render("@field>input", { id: elementId, config: this.#input });
+        const input = this.render("@field>input", { id: elementId, config: this.#input }, true);
         wrapper?.appendChild(input!);
         break;
       }
@@ -185,7 +186,7 @@ export class InputBuilder extends Builder<InputElementType> {
 
     // Suntikkan teks petunjuk info kecil di lantai terbawah boks input wrapper
     if (this.#input.info) {
-      const info = this.render("@field>info", this.#input);
+      const info = this.render("@field>info", this.#input, true);
       wrapper?.appendChild(info!);
     }
 

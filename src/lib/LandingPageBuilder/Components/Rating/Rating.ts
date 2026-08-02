@@ -43,6 +43,7 @@ export class RatingBuilder extends Builder<RatingElementType, iRatingConfig> {
       max: 5,
       animate: true,
       selectors: defaultSelectors,
+      namespace: null,
       emit: () => { }
     };
 

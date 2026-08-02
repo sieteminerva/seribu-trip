@@ -41,6 +41,7 @@ export class FooterBuilder extends Builder<FooterElementType, iFooterConfig> {
       useInfo: true,
       useCopyright: true,
       selectors: defaultSelectors,
+      namespace: null,
       emit: () => { }
     };
 

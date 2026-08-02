@@ -74,7 +74,7 @@ export class NodeTransformer {
     // 2. Kumpulkan semua atribut kustom (seperti src, href, alt) selevel tag dasar
     const reservedKeys = [
       'tag', 'tagName', 'id', 'className', 'builder', 'content',
-      'onCreated', 'onDestroy', 'attrs', 'isRoot',
+      'onCreated', 'onDestroy', 'attrs', 'isRoot', "options",
       'config', 'selectors' // 🟢 AMAN: Dua satpam pelindung baru pilihan Anda!
     ];
 
@@ -125,31 +125,6 @@ export class NodeTransformer {
     return result;
   }
 
-  /**
-  * 🧙‍♂️ ABAKADABRA: Menyisir iBasicNode[] visual secara rekursif, menerapkan aturan selektor,
-  * menerapkan algoritma fallback variabel, dan LANGSUNG memutahkan skema Form Builder (Categorized Form Group).
-  */
-  public static toFormNode(nodes: iBasicNode[], rules: iInjectionRule[]): any {
-    const formGroupsMap = new Map<string, any[]>();
-
-    // Jalankan fungsi rekursif hibrida terpaduss
-    this.deepExtractAndBuildForm(nodes, "generic", rules, formGroupsMap);
-
-    // Bungkus seluruh field yang terkumpul ke dalam susunan Fieldset Form Builderssss
-    const finalizedFormSchema: any[] = [];
-    formGroupsMap.forEach((fields, categoryName) => {
-
-      finalizedFormSchema.push({
-
-        legend: `Panel: ${categoryName.toUpperCase()}`,
-        className: `segment group-${categoryName}`,
-        group: fields
-
-      });
-    });
-
-    return finalizedFormSchema;
-  }
 
 
   public static getBuilderNode(nodes: iBasicNode[] | iBasicNode, name: string, visited = new Set()): iBasicNode | undefined {
@@ -192,7 +167,6 @@ export class NodeTransformer {
   }
 
 
-
   /**
  * 🧙‍♂️ GLOBAL INTROSPECTOR: Scans iBasicNode or iBasicNode[] in a single-pass loop
  * and returns a highly detailed structural metadata manifest report.
@@ -230,136 +204,14 @@ export class NodeTransformer {
 
 
 
-  private static deepExtractAndBuildForm(
-    items: any,
-    currentGroupName: string,
-    rules: iInjectionRule[],
-    formGroupsMap: Map<string, any[]>
-  ) {
-    if (!items) return;
-    const itemsArray = Array.isArray(items) ? items : [items];
 
-    itemsArray.forEach((node: any) => {
-      // Perbarui nama group-nya secara dinamis jika ada property 'name'
-      let activeGroupName = currentGroupName;
-      if (node.name && typeof node.name === "string") {
-        activeGroupName = this._sanitizeKey(node.name);
-      }
 
-      let isFieldProcessed = false;
 
-      // ==========================================
-      // JALUR 1: MANUAL OVERRIDE BYPASS (Kasta Tertinggi 👑)
-      // ==========================================
-      if (node._field && typeof node._field === "string" && node._field.trim().startsWith("@")) {
-        const rawFieldValue = node._field.trim();
-        const [rawGroupKey, explicitInputType = "text"] = rawFieldValue.split("~");
-        const [explicitGroupName, explicitFieldKey] = rawGroupKey.slice(1).split(":");
 
-        if (explicitGroupName && explicitFieldKey) {
-          const finalGroup = this._sanitizeKey(explicitGroupName);
 
-          if (!formGroupsMap.has(finalGroup)) formGroupsMap.set(finalGroup, []);
 
-          formGroupsMap.get(finalGroup)!.push({
-            type: node.builder ? "textarea" : explicitInputType,
-            id: `admin-field-${finalGroup}-${explicitFieldKey}`,
-            name: `${finalGroup}_${explicitFieldKey}`,
-            title: `Sunting ${explicitFieldKey.replace(/_([a-z])/g, ' $1').toUpperCase()}`,
-            value: this._extractNodeValue(node),
-            config: {
-              useLabel: true,
-              ...(node.builder ? { info: `Manual Override - Component: ${node.builder}` } : { info: "Kunci Manual Override Aktif" })
-            }
-          });
 
-          // Tandai bahwa elemen ini sudah diproses lewat jalur manual, jangan izinkan injectionRules menyentuhnya!
-          isFieldProcessed = true;
-        }
-      }
 
-      // ==========================================
-      // JALUR 2: AUTOMATIC INJECTION RULES (Smart Default Fallback 🤖)
-      // ==========================================
-      if (!isFieldProcessed) {
-        rules.forEach((rule) => {
-          if (this._matchSelector(node, rule.selector)) {
-            const fieldKey = this._generateFallbackFieldKey(node);
-            const formInputType = rule.inputType || "text";
-
-            if (!formGroupsMap.has(activeGroupName)) {
-              formGroupsMap.set(activeGroupName, []);
-            }
-
-            formGroupsMap.get(activeGroupName)!.push({
-              type: node.builder ? "textarea" : formInputType,
-              id: `admin-field-${activeGroupName}-${fieldKey}`,
-              name: `${activeGroupName}_${fieldKey}`,
-              title: `Sunting ${fieldKey.replace(/_([a-z])/g, ' $1').toUpperCase()}`,
-              value: this._extractNodeValue(node),
-              config: {
-                useLabel: true,
-                ...(node.builder ? { info: `Auto Generated - Component: ${node.builder}` } : {})
-              }
-            });
-          }
-        });
-      }
-
-      // 3. Telusuri sub-layout di dalam properti 'content' secara rekursif
-      if (node.content && typeof node.content === "object" && !(node.content instanceof HTMLElement)) {
-        this.deepExtractAndBuildForm(node.content, activeGroupName, rules, formGroupsMap);
-      }
-
-      // 4. Dukung deteksi rekursif untuk Advanced Mode (String Selectors)
-      Object.keys(node).forEach(key => {
-        if ((key.includes('.') || key.includes('#')) && typeof node[key] === "object") {
-          this.deepExtractAndBuildForm(node[key], activeGroupName, rules, formGroupsMap);
-        }
-      });
-    });
-  }
-
-  /**
-   * Helper: Mengekstrak isi konten secara aman dan melakukan stringify jika mendeteksi array/object data
-   */
-  private static _extractNodeValue(node: any): any {
-    if (typeof node.content === "object" && node.content !== null && !(node.content instanceof HTMLElement)) {
-      return JSON.stringify(node.content, null, 2);
-    }
-    return node.content;
-  }
-
-  private static _matchSelector(node: any, selector: string): boolean {
-    const match = selector.match(/^([a-z0-9]+)?(?:\.([a-z0-9_-]+))?$/i);
-    if (!match) return false;
-
-    const [, targetTag, targetClass] = match;
-    const currentTag = node.tagName || node.tag;
-    const currentClass = node.className || "";
-
-    const tagMatches = !targetTag || (currentTag && currentTag.toLowerCase() === targetTag.toLowerCase());
-    const classMatches = !targetClass || currentClass.split(/\s+/).includes(targetClass);
-
-    return !!(tagMatches && classMatches);
-  }
-
-  private static _generateFallbackFieldKey(node: any): string {
-    if (node.id) return this._sanitizeKey(node.id);
-    if (node.className) {
-      const firstClass = node.className.trim().split(/\s+/);
-      if (firstClass && firstClass !== "column" && firstClass !== "row" && firstClass !== "section") {
-        return this._sanitizeKey(firstClass[0]);
-      }
-    }
-    const fallbackTag = node.tagName || node.tag || "input";
-    const randomHash = Math.random().toString(36).substring(2, 6);
-    return `${fallbackTag}_${randomHash}`;
-  }
-
-  private static _sanitizeKey(value: string): string {
-    return value.toLowerCase().trim().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "");
-  }
 
 
   /**

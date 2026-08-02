@@ -59,6 +59,7 @@ export class MenuBuilder extends Builder<MenuElementType, iMenuConfig> {
       routes: ["home", "package", "gallery", "form"],
       emit: () => { },
       onNavigate(href?: string) { return href ? true : false; },
+      namespace: null,
       ...config
     };
 

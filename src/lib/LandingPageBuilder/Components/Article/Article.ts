@@ -53,6 +53,7 @@ export class ArticleBuilder extends Builder<ArticleModuleElementType, iArticleCo
     const defaultConfig: Required<iArticleConfig> = {
       themeId: "default",
       selectors: defaultSelectors,
+      namespace: null,
       emit: () => { },
       navigate: () => { },
     };

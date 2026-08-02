@@ -71,6 +71,7 @@ export class ProductCardBuilder extends Builder<ProductCardElementType, iProduct
       selectors: defaultSelectors,
       onSelected: () => { },
       onCheckout: () => { },
+      namespace: null,
       emit: () => { }
     }
 

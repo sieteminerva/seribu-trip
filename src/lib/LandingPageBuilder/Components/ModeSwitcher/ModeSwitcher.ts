@@ -40,11 +40,12 @@ export class ModeSwitcherBuilder extends Builder<ModeSwitcherElementType, iModeS
     };
 
     // Deep merge terisolasi agar selectors anak tidak hilang terpotong
-    const defaultConfig = {
+    const defaultConfig: Required<iModeSwitcherConfig> = {
       themeId: "default",
       selectors: defaultSelectors,
+      namespace: null,
       emit: () => { },
-    } as Required<iModeSwitcherConfig>;
+    };
 
     this.config = this.resolveConfig(defaultConfig, config)
   }

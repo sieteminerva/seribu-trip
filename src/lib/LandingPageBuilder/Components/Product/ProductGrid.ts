@@ -54,8 +54,8 @@ export class ProductGridBuilder extends Builder<"@grid" | "@grid>container", any
       // Bungkus kembali ke dalam properti internal state
       const productItem = {
         id: productData.uid || `prod-${Math.random().toString(36).substring(7)}`,
-        title: productData.caption?.title || productData.name || "T-Shirt",
-        description: productData.caption?.description || "",
+        title: productData.title || productData.name || "T-Shirt",
+        description: productData.description || "",
         price: productData.price === "getPrice" ? "Rp 85.000" : String(productData.price), // Fallback sample price tag
         variants: mappedVariants
       };

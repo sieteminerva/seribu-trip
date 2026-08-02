@@ -1,6 +1,7 @@
 import type { iBuilderRegistry, iBuilderConfig, iElementProperty, iActionProperty, iBasicNode, iNodeRecordItem, iNodeRecords, iBuilderSelectorsConfig } from "../interface";
 import { TemplateRegistry } from "../Modules/TemplateRegistry";
-import { setMetadata } from "../Utils/Metadata";
+import { buildNamespace, setMetadata } from "../Utils/Metadata";
+import { ElementCreatedEventBus, StateMutationEventBus } from "../Services/EventBus";
 import { selectorToTree } from "../Utils/SelectorToTree";
 
 export const GLOBAL_INSTANCE_COUNTER = new Map<string, number>();
@@ -8,17 +9,81 @@ export const GLOBAL_INSTANCE_COUNTER = new Map<string, number>();
  * Abstract Core Base Class representing the definitive declarative rendering engine blueprint.
  * Orchestrates a unidirectional 5-Phase lifecycle execution stream to parse configurations,
  * traverse hierarchical tree registries, mutate content templates, and emit runtime state safely.
- * 
+ *
  * @template TType - A strict string literal union constraining the allowed sub-element tokens for the child component.
- * 
+ *
  * @author YMGH
  * @version 1.0.0
  */
 export abstract class Builder<TType extends string = string, TConfig extends iBuilderConfig<TType> = iBuilderConfig<TType>> {
+  static #namespaceStack: string[] = [];
 
   public static resetCounters(): void {
     GLOBAL_INSTANCE_COUNTER.clear();
+    this.#namespaceStack = [];
     console.log(`🧹 [Builder]: Wiped all instance identity counters.`);
+  }
+
+  /**
+   * Orchestrates identity resolution: generates stable seed, resolves namespace,
+   * builds selector hierarchy, and manages the static namespace stack.
+   * Replaces: buildNamespaceSeed(), resolveNamespace(), pushNamespace(), popNamespace(), ensureIdentity().
+   */
+  protected ensureIdentity(
+    content: any,
+    config?: TConfig,
+    options?: {
+      /** Push resolved namespace onto static stack (for nested builders) */
+      pushNamespace?: boolean;
+      /** Pop namespace from stack after resolution (for nested builders) */
+      popNamespace?: boolean;
+      /** Explicit namespace to use instead of resolving */
+      explicitNamespace?: string;
+      /** Optional config overrides for seed generation */
+      seedConfig?: Partial<TConfig>;
+    }
+  ): {
+    /** The resolved unique namespace string */
+    namespace: string;
+    /** Selector hierarchy tree for this identity */
+    hierarchy: Record<string, any>;
+    /** The stable hash seed used for namespace generation */
+    seed: string;
+    /** Whether a new namespace was pushed onto the stack */
+    pushed: boolean;
+  } {
+    // 1. Generate stable hash seed from content + config
+    const seed = buildNamespace(content, (options?.seedConfig ?? config) as TConfig | undefined);
+
+    // 2. Resolve namespace (explicit > parent stack > builderId:seed)
+    const explicitNamespace = options?.explicitNamespace ?? (config as any)?.namespace ? String((config as any).namespace).trim() : "";
+    const parentNamespace = Builder.#namespaceStack[Builder.#namespaceStack.length - 1] || null;
+    const baseNamespace = explicitNamespace || (
+      parentNamespace
+        ? `${parentNamespace}:${String(this.builderId)}:${seed}`
+        : `${String(this.builderId)}:${seed}`
+    );
+
+    // 3. Cache resolved namespace on instance
+    this.instanceNamespace = baseNamespace;
+
+    // 4. Optionally push onto static namespace stack for nested builders
+    let pushed = false;
+    if (options?.pushNamespace) {
+      Builder.#namespaceStack.push(baseNamespace);
+      // Builder.pushNamespace(baseNamespace);
+      pushed = true;
+    }
+
+    // 5. Build selector hierarchy tree from namespace + config selectors
+    const hierarchy = selectorToTree(baseNamespace, (config as any)?.selectors as Record<string, any>);
+
+    // 6. Optionally pop namespace (for nested builder cleanup)
+    if (options?.popNamespace && pushed) {
+      Builder.#namespaceStack.pop();
+    }
+
+    return { namespace: baseNamespace, hierarchy, seed, pushed };
   }
 
   /**
@@ -40,6 +105,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
    * The frozen state configuration container holding consolidated options, emitters, and structural selectors.
    */
   public config!: Required<TConfig>;
+  protected instanceNamespace: string | null = null;
 
   /**
    * Internal reference holder pointing directly to the raw, unmutated data node extracted from the spreadsheet database.
@@ -50,7 +116,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
 
   /**
  * 👑 THE SEPARATED HYDRATION VALVE (POS KEMENTERIAN PENGISIAN RAHIM DATA)
- * Murni hanya mengurusi penyemprotan teks data spesifik atomik, 
+ * Murni hanya mengurusi penyemprotan teks data spesifik atomik,
  * terisolasi penuh, rapi, dan kebal dari bug hantu selamanya!
  */
   protected abstract template(typeKey: TType, el: HTMLElement, payload?: any): void;
@@ -58,18 +124,18 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
   /**
    * The public sovereign compiler gateway orchestrating the complete DOM node creation lifecycle stream.
    * Processes input data through a rigid 5-Phase pipeline, returning a live, fully-hydrated HTMLElement.
-   * 
+   *
    * @param content - The raw payload structural object delivered by the central sheet transformer.
    * @param config - Given builder config.
    * @returns A fully materialized, state-bound graphical DOM tree container element.
-   * 
+   *
    * @public
    */
   public abstract prepare(content: any, config?: Required<TConfig>): HTMLElement | Record<string, any | HTMLElement>;
 
   /**
-   * Runtime event-binding hook. 
-   * Triggered at the very end of the creation lifecycleto lock persistent browser click/drag/swipe 
+   * Runtime event-binding hook.
+   * Triggered at the very end of the creation lifecycleto lock persistent browser click/drag/swipe
    * interactive listeners onto the completed DOM structure.
    */
   public abstract initialize(el?: HTMLElement, payload?: any, context?: any): void;
@@ -81,7 +147,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
   /**
    * Consolidates default specifications with third-party configurations into a unified data structure,
    * performing an accurate deep-merge execution specifically isolated for selector dictionaries and HTML attributes.
-   * 
+   *
    * @param defaultOptions - The structural default parameters including core properties and blueprint selectors.
    * @param userConfig - Incoming contextual overrides sent dynamically by themes or framework controllers.
    * @returns A strictly typed, fully populated configuration object ready for runtime ingestion.
@@ -117,18 +183,6 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
       ...userConfig,
       selectors: mergedSelectors
     }) as Required<C>;
-  }
-
-  protected ensureIdentity(config?: TConfig): Record<string, any> {
-
-    const baseId = this.builderId;
-    // Ambil urutan angka kelahiran instansi string ini di dalam RAM
-    let currentCount = GLOBAL_INSTANCE_COUNTER.get(baseId) || 0;
-    currentCount++;
-    GLOBAL_INSTANCE_COUNTER.set(baseId, currentCount);
-
-    const hierarchy = selectorToTree(this.builderId + "$" + currentCount, config?.selectors as Record<string, any>);
-    return hierarchy;
   }
 
   public errorHandler() {
@@ -197,14 +251,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
             target[prop] = value;
 
             // 💥 PICU METABOLISME REAKTIF: Hamburkan sinyal mutasi bubbling ke udara!
-            document.dispatchEvent(new CustomEvent("builder:mutation", {
-              bubbles: false,
-              detail: {
-                key,
-                updatedTarget: target,
-                element
-              }
-            }));
+            StateMutationEventBus.broadcast(String(key), target, element);
             return true;
           }
         });
@@ -229,18 +276,15 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
 
         this.#nodes.set(lKey, { records: [newItem] });
 
-        document.dispatchEvent(new CustomEvent("builder:created", {
-          bubbles: false,
-          detail: {
-            key: key as string,
-            instanceId: this.builderId + "-$" + GLOBAL_INSTANCE_COUNTER.get(this.builderId),
-            builderId: this.builderId,
-            relations,
-            raw: rawObj,
-            proxy: singleProxyObj,
-            element
-          }
-        }));
+        ElementCreatedEventBus.broadcastCreated({
+          key: key as string,
+          instanceId: this.instanceNamespace || String(this.builderId),
+          builderId: this.builderId,
+          relations,
+          raw: rawObj,
+          proxy: singleProxyObj,
+          element
+        });
 
         // Kembalikan objek proxy agar data binding satu pintu terkunci intim!
         return singleProxyObj;
@@ -296,7 +340,13 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
   public create(content: iBasicNode, config?: Partial<TConfig>): HTMLElement {
     const effectiveConfig = config || (content && typeof content === "object" ? (content as any).config : undefined);
     if (effectiveConfig) this.config = this.resolveConfig(this.config, effectiveConfig);
-    this.hierarchy = this.ensureIdentity(this.config);
+
+    // Unified identity orchestration: seed, namespace, hierarchy, stack management
+    const identity = this.ensureIdentity(content, this.config, { pushNamespace: true, popNamespace: true });
+    this.hierarchy = identity.hierarchy;
+
+    // console.log("hierarchy", identity)
+
     try {
 
       // console.count(`📊 [Core Lifecycle Audit] ${this.builderId.toUpperCase()} .create() called`);
@@ -316,30 +366,30 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
       // Panggil free function utils pasif kita, 0% mengotori kesucian return HTMLElement!
       return DOMTree;
     } finally {
-
+      // Namespace stack managed by ensureIdentity({ popNamespace: true })
     }
 
   }
 
   /**
-   * The localized internal layout factory. 
+   * The localized internal layout factory.
    * Contains hardcoded default structuralblueprints to populate HTML content elements if no external override handler is resolved.
    * @rules
    * `Rule 1`: Selectors Are for "Containers Only"
-   * When defining the selectors map, only map elements that act as structural layout boxes or repeating array loops. 
+   * When defining the selectors map, only map elements that act as structural layout boxes or repeating array loops.
    * Never map basic value text nodes or terminal leaf elements.
    * - `Bad`: `@card>header>title`, `@card>actions>button`, `@card>body>features>item>icon`
    * - `Good`: `@card`, `@card>header`, `@card>body`, `@card>body>features` (The loop container), `@card>actions`
-   * 
+   *
    * `Rule 2`: The Template Method is a `Scoped Decorator`
-   * - Since the selectors only generate layout boxes, your template method is `responsible` 
+   * - Since the selectors only generate layout boxes, your template method is `responsible`
    * for `inserting` the inside contents (text, inline sub-tags, forms) into those specific boxes.
-   * - Do not look for `sub-selectors`. Use the container element passed to you, 
+   * - Do not look for `sub-selectors`. Use the container element passed to you,
    * and build its inner landscape using its clean data payload.
    * @param typeKey - Token nama selektor kaku Anda.
    * @param payload - Data Sheets hantaran yang aktif.
    * @param multiple - True: Elemen loop berulang (Multi-Instance). False: Elemen tunggal (Singleton Guard).
-   * 
+   *
    */
   protected render(typeKey: TType, payload?: any, multiple: boolean = false): HTMLElement | undefined {
     // if (this.builderId === "pricing-card") console.log(this.builderId, "this.render", payload);
@@ -398,16 +448,16 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     return this.nodes().load(key, index);
   }
 
-  protected getPayload(key: TType, index: number | "all" = 0): any {
+  protected payload(key: TType, index: number | "all" = 0): any {
     return this.nodes().payload(key, index) || null;
   }
 
   /**
    * 👑 PINTU 3: THE BULK MASS ELEMENT REMOVER (AMPUTASI MASSA SATU ATOP!)
    * Sekarang mendukung parameter tak terbatas via Rest Parameters (...keys)!
-   * Mencabut belasan fisik elemen dari DOM Tree sekaligus menguras saku RAM browser 
+   * Mencabut belasan fisik elemen dari DOM Tree sekaligus menguras saku RAM browser
    * dalam SEKALI KETUKAN baris kode tanpa boilerplate repetitif!
-   * 
+   *
    * @param keys - Daftar token nama selektor kaku yang mau dihancurkan massal.
    * @protected
    */
@@ -422,7 +472,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
   /**
  * Cleans up instance resources, fires destruction notifications, detaches DOM elements,
  * and clears memory references to guarantee proper garbage collection.
- * 
+ *
  * @public
  */
   public destroy(typeKey?: TType): void {
@@ -454,48 +504,31 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
 
     this.nodes().clear();
     this.config = null as any;
+    this.instanceNamespace = null;
 
     // console.log(`[Lifecycle Security] _nodes Map successfully liquidated. Memory state at 0B leak.`);
   }
 
 
   public attach(childElement: HTMLElement | any, globalSlotPathKey: string): void {
-    if (!childElement) return;
-    const el = childElement.element || childElement;
-    if (!(el instanceof HTMLElement)) return;
+    if (!globalSlotPathKey) return;
 
-    const [targetIdentifier, slotName] = globalSlotPathKey.split("~");
-    const [targetBuilderId, targetTypeKey] = targetIdentifier.split(":");
-
-    if (!targetBuilderId || !targetTypeKey || !slotName) {
-      console.error(`🚨 [Slotting Error]: Expected "builderId:typeKey~slotName", got: "${globalSlotPathKey}"`);
+    const attached = ElementCreatedEventBus.attach(childElement, globalSlotPathKey);
+    if (!attached) {
+      console.warn(`⚠️ [Slotting Warning]: Failed to attach node into target "${globalSlotPathKey}".`);
       return;
     }
 
-    // Memanggil fungsi .load() pusat milik registry yang sudah Anda sinkronkan!
-    const parentElement = this.nodes().get("@container" as TType) //DOMTreeMemory.get(this.hierarchy[targetTypeKey as TType]) as HTMLElement;
-
-    if (!parentElement) {
-      console.warn(`⚠️ [Slotting Warning]: Target semesta "${targetBuilderId}:${targetTypeKey}" tidak aktif di RAM.`);
-      return;
-    }
-
-    let slotTarget: HTMLElement | null = parentElement.getAttribute("data-slot") === slotName
-      ? parentElement
-      : parentElement.querySelector(`[data-slot="${slotName}"]`);
-
-    if (slotTarget) {
-      console.log(`🚀 [Independent Slotting]: Welding "${this.builderId}" node into target "${globalSlotPathKey}"`);
-      slotTarget.appendChild(el);
-    } else {
-      parentElement.appendChild(el);
-    }
+    console.log(`🚀 [Independent Slotting]: Welding "${this.builderId}" node into target "${globalSlotPathKey}"`);
   }
 
   public detach(childElement: HTMLElement | any): void {
     if (!childElement) return;
-    const el = childElement.element || childElement;
-    if (el && el.parentElement) el.remove();
+    const detached = ElementCreatedEventBus.detach(childElement);
+    if (!detached) {
+      const el = childElement.element || childElement;
+      if (el && el.parentElement) el.remove();
+    }
   }
 
   /**
@@ -605,7 +638,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
 // ====================================================
 // 🛡️ BENTENG LAPIS 2: THE SECURE IMMUTABLE PROTOTYPE CHAIN (MAHKOTA PERTAHANAN BARU!)
 // Tepat di bawah deklarasi kelas, kita BEKUKAN total cetakan 'BuilderBase.prototype'.
-// Ini adalah taktik runtime locking paling legal dan aman di JavaScript. 
+// Ini adalah taktik runtime locking paling legal dan aman di JavaScript.
 // Hacker/script luar GARANSI 100% tidak akan bisa mengganti jeroan .create atau .render!
 // ====================================================
 Object.freeze(Builder.prototype);

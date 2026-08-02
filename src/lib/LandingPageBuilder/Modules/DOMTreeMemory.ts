@@ -1,12 +1,11 @@
-import type { iNodeRecordItem, iNodeRecords } from "../interface";
+import { GLOBAL_DISPLAY_LOG, type iNodeRecordItem, type iNodeRecords } from "../interface";
+import { DataLogger } from "../Utils/DataLogger";
+
+const DISPLAY_LOG = GLOBAL_DISPLAY_LOG;
 
 export class DOMTreeMemory {
   static #nodes = new Map<string, iNodeRecords>();
   public static activeParentScopeKey: string | null = null;
-
-  // Handler referensi agar kita bisa melakukan unbind saat destroy jika diperlukan
-  private static bornListenerRef: ((e: Event) => void) | null = null;
-  private static mutationListenerRef: ((e: Event) => void) | null = null;
 
   /**
    * 👑 RECEIVE LIVE BORN EVENT (GERBANG JEMBATAN LANGSUNG KARYA DEWA ANDA!)
@@ -14,8 +13,8 @@ export class DOMTreeMemory {
    * @param detail Paket metadata silsilah orisinal hantaran langsung dari rahim BuilderBase
    * @param childElement Elemen fisik asli yang baru saja dilahirkan JIT di level bawah
    */
-  public static receiveLiveBornEvent(detail: { relations: any; raw: any; proxy: any }, childElement: HTMLElement): void {
-    const { relations, raw, proxy } = detail;
+  public static receiveLiveBornEvent(detail: { relations: any; raw: any; proxy: any; builderId?: string; key?: string; instanceId?: string; element?: HTMLElement }, childElement: HTMLElement): void {
+    const { relations, raw, proxy, builderId, key, instanceId } = detail;
     if (!relations) return;
 
     const globalStorageKey = this.resolveKey(relations);
@@ -30,6 +29,15 @@ export class DOMTreeMemory {
       if (centralItem) centralItem.proxy = proxy; // Kunci kedaulatan proxy hidup!
     }
 
+    const storedEntries = this.#nodes.get(globalStorageKey)?.records?.length || 0;
+    const elementDescriptor = childElement instanceof HTMLElement
+      ? `${childElement.tagName.toLowerCase()}${childElement.id ? "#" + childElement.id : ""}${childElement.className ? "." + String(childElement.className).trim().split(/\s+/).filter(Boolean).join(".") : ""}`
+      : "unknown-element";
+
+    DataLogger(DISPLAY_LOG,
+      { functionName: "🧭 [DOMTreeMemory]", action: `Store` },
+      { builder: builderId || "unknown", key: key, instance: instanceId, globalKey: globalStorageKey, entries: storedEntries + " item(s)", element: elementDescriptor });
+
     // 2. ⚡ REAL-TIME GRAPH WELDING: Ambil alamat bapak klan statisnya
     const parentGlobalKey = relations.parent;
 
@@ -41,89 +49,122 @@ export class DOMTreeMemory {
         if (!parentItem.relations.children) parentItem.relations.children = [];
         if (!parentItem.relations.children.includes(globalStorageKey)) {
           parentItem.relations.children.push(globalStorageKey);
-          console.log(`📌 [JIT Direct Channel -> Connected]: Fast-linked dynamic child "${globalStorageKey}" into static parent "${parentGlobalKey}"`);
+
+          DataLogger(DISPLAY_LOG,
+            { functionName: "📌 [JIT Direct Channel]", action: `Connected` },
+            { message: `[ -> ]: Fast-linked dynamic child "${globalStorageKey}" into static parent "${parentGlobalKey}"` });
+
         }
       }
     }
-  }
-
-  /**
-   * 👑 THE CENTRAL RADAR ACTIVATOR (SAKELAR UTAMAA EVENT POOLING ANDA!)
-   * Dipanggil 1x saja di hulu aplikasi (misal di constructor LandingPageBuilder / App Init)
-   */
-  public static listen(): void {
-    if (this.bornListenerRef) return;
-
-    console.log("🛰️ [DOMTreeMemory -> Radar]: Central Intelligence Listener is ONLINE and tracking...");
-
-    this.bornListenerRef = (e: any) => {
-      // 🧙‍♂️ EKSTRAK SILSILAH MATANG: Ambil paket relations orisinal hasil didikan this.hierarchy[key] anak!
-      const { relations, raw, element } = e.detail;
-      const childElement = element as HTMLElement || (e.target as HTMLElement);
-
-      if (!relations) return;
-
-      // 🟢 HUBUNGKAN SEKRUP SATU PINTU: Tembak langsung metode .set() dengan menyodorkan relations asli!
-      this.set(relations, childElement, raw, false);
-
-      // ⚡ HUBUNGKAN SILSILAH DUA ARAH LINTAS KLAN SECARA INSTAN O(1) COMPLEXITY!
-      const childGlobalKey = this.resolveKey(relations);
-      const parentGlobalKey = relations.parent; // Alamat GPS bapak absolutnya sudah langsung terbawa!
-
-      if (parentGlobalKey && this.#nodes.has(parentGlobalKey)) {
-        const parentBox = this.#nodes.get(parentGlobalKey);
-        const parentItem = parentBox?.records[parentBox.records.length - 1];
-
-        if (parentItem && parentItem.relations) {
-          if (!parentItem.relations.children) {
-            parentItem.relations.children = [];
-          }
-          if (!parentItem.relations.children.includes(childGlobalKey)) {
-            parentItem.relations.children.push(childGlobalKey);
-            console.log(`📌 [Central Pooling]: Fast-linked dynamic node "${childGlobalKey}" into parent "${parentGlobalKey}"`);
-          }
-        }
-      }
-    };
-
-    this.mutationListenerRef = (e: any) => {
-      const { key, updatedTarget, element } = e.detail;
-      const childElement = element as HTMLElement || (e.target as HTMLElement);
-
-      for (const [globalKey, record] of this.#nodes.entries()) {
-        const matchItem = record.records.find(r => r.element === childElement);
-        if (matchItem && matchItem.relations?.key === key) {
-          matchItem.raw = updatedTarget;
-          console.log(`⚡ [Central Pooling -> Data Sync]: Synchronized for node: "${globalKey}"`);
-          break;
-        }
-      }
-    };
-
-    document.addEventListener("builder:created", this.bornListenerRef);
-    document.addEventListener("builder:mutation", this.mutationListenerRef);
-  }
-
-
-  /**
-   * 🛑 MATIKAN RADAR: Digunakan saat seluruh aplikasi di-destroy penuh
-   */
-  public static shutdown(): void {
-    if (this.bornListenerRef) {
-      document.removeEventListener("builder:created", this.bornListenerRef);
-      this.bornListenerRef = null;
-    }
-    if (this.mutationListenerRef) {
-      document.removeEventListener("builder:mutation", this.mutationListenerRef);
-      this.mutationListenerRef = null;
-    }
-    console.log("🛰️ [DOMTreeMemory -> Radar]: Central Intelligence Listener is SHUTDOWN.");
   }
 
   private static resolveKey(tree: iNodeRecordItem["relations"]) {
     if (!tree?.scope || !tree?.key) return "global:unknown";
     const key = [tree?.scope, tree?.key].join(":");
     return key;
+  }
+
+  public static resolveGlobalKey(tree: Pick<NonNullable<iNodeRecordItem["relations"]>, "scope" | "key"> | null | undefined): string {
+    return this.resolveKey(tree as any);
+  }
+
+  public static hasGlobalKey(globalKey: string): boolean {
+    return this.#nodes.has(globalKey);
+  }
+
+  public static getByGlobalKey(globalKey: string, index: number | "all" = 0): any {
+    const mainRecord = this.#nodes.get(globalKey);
+    if (!mainRecord || !mainRecord.records || mainRecord.records.length === 0) return null;
+    if (index === "all") return mainRecord.records;
+    return mainRecord.records[index] || null;
+  }
+
+  public static findGlobalKeyByElement(element: HTMLElement): string | null {
+    for (const [globalKey, record] of this.#nodes.entries()) {
+      if (record.records.some(item => item.element === element)) {
+        return globalKey;
+      }
+    }
+    return null;
+  }
+
+  public static linkChild(parentGlobalKey: string, childElement: HTMLElement): boolean {
+    const childGlobalKey = this.findGlobalKeyByElement(childElement);
+    if (!childGlobalKey) return false;
+
+    const parentRecords = this.getByGlobalKey(parentGlobalKey, "all");
+    const parentRecord = Array.isArray(parentRecords) ? parentRecords[parentRecords.length - 1] : parentRecords;
+    const childRecords = this.getByGlobalKey(childGlobalKey, "all");
+    const childRecord = Array.isArray(childRecords) ? childRecords[childRecords.length - 1] : childRecords;
+
+    if (!parentRecord?.relations || !childRecord?.relations) return false;
+
+    const previousParentKey = childRecord.relations.parent;
+    if (previousParentKey && previousParentKey !== parentGlobalKey) {
+      const previousParentRecords = this.getByGlobalKey(previousParentKey, "all");
+      const previousParentRecord = Array.isArray(previousParentRecords)
+        ? previousParentRecords[previousParentRecords.length - 1]
+        : previousParentRecords;
+
+      if (previousParentRecord?.relations?.children) {
+        previousParentRecord.relations.children = previousParentRecord.relations.children.filter((key: string) => key !== childGlobalKey);
+      }
+    }
+
+    childRecord.relations.parent = parentGlobalKey;
+    if (!Array.isArray(parentRecord.relations.children)) parentRecord.relations.children = [];
+    if (!parentRecord.relations.children.includes(childGlobalKey)) {
+      parentRecord.relations.children.push(childGlobalKey);
+    }
+
+    return true;
+  }
+
+  public static appendToParent(globalKey: string, childElement: HTMLElement, slotName?: string | null): boolean {
+    const parentRecords = this.getByGlobalKey(globalKey, "all");
+    const parentRecord = Array.isArray(parentRecords) ? parentRecords[parentRecords.length - 1] : parentRecords;
+    if (!parentRecord || !parentRecord.element || !(parentRecord.element instanceof HTMLElement)) return false;
+
+    const parentElement = parentRecord.element as HTMLElement;
+    const targetSlot = slotName
+      ? (parentElement.getAttribute("data-slot") === slotName
+        ? parentElement
+        : parentElement.querySelector(`[data-slot="${slotName}"]`) as HTMLElement | null)
+      : parentElement;
+
+    const targetElement = targetSlot || parentElement;
+    targetElement.appendChild(childElement);
+
+    DataLogger(DISPLAY_LOG,
+      { functionName: "🧭 [DOMTreeMemory]", action: `Attach` },
+      { parent: globalKey, slot: slotName || "default", child: `${this.findGlobalKeyByElement(childElement) || childElement.tagName.toLowerCase()}`, childCount: targetElement.children.length });
+
+    return true;
+  }
+
+  public static detachElement(childElement: HTMLElement | string): boolean {
+    const element = typeof childElement === "string"
+      ? (Array.isArray(this.getByGlobalKey(childElement, "all"))
+        ? (this.getByGlobalKey(childElement, "all") as any[]).slice(-1)[0]?.element
+        : this.getByGlobalKey(childElement)?.element)
+      : childElement;
+
+    if (!(element instanceof HTMLElement)) return false;
+    if (element.parentElement) {
+
+      DataLogger(DISPLAY_LOG,
+        { functionName: "🧭 [DOMTreeMemory]", action: `Detach` },
+        {
+          element: `${element.tagName.toLowerCase()}${element.id ? "#" + element.id : ""}`,
+          parent: `${element.parentElement.tagName.toLowerCase()}`
+        });
+
+      element.remove();
+      return true;
+    }
+
+    return false;
   }
 
   public static has(tree: iNodeRecordItem["relations"]): boolean {
@@ -165,12 +206,21 @@ export class DOMTreeMemory {
     // 🛡️ THE STRICT ARCHITECTURAL MULTIPLE DETECTOR GUARD (BENTENG PERINGATAN ANDA!)
     // ====================================================
     if (this.#nodes.has(globalStorageKey) && !multiple) {
-      console.warn(
-        `🚨 [Framework Architectural Violation]: Element key "${String(tree?.key)}" has already been rendered in builder "${globalStorageKey}"!\n` +
-        `Re-rendering a Singleton node is strictly prohibited.\n` +
-        `Please use "this.render('${String(tree?.key)}', payload, true)" if it is a multiple item or \n` +
-        `"this.load('${String(tree?.key)}')" instead to retrieve the active live memory pointer.`
-      );
+      const existingEntries = this.#nodes.get(globalStorageKey)?.records?.length || 0;
+
+      // console.warn(
+      //   `🚨 [Framework Architectural Violation]: Element key "${String(tree?.key)}" has already been rendered in builder "${globalStorageKey}"!\n` +
+      //   `Re-rendering a Singleton node is strictly prohibited.\n` +
+      //   `Please use "this.render('${String(tree?.key)}', payload, true)" if it is a multiple item or \n` +
+      //   `"this.load('${String(tree?.key)}')" instead to retrieve the active live memory pointer.`
+      // );
+
+      DataLogger(DISPLAY_LOG,
+        { functionName: "🧭 [DOMTreeMemory]", action: `Set Skipped` },
+        {
+          globalKey: globalStorageKey, entries: existingEntries + " item(s)", multiple
+        });
+
       const item = this.#nodes.get(globalStorageKey)?.records[0]
       // Fallback penyelamat: Kembalikan payload proxy singleton lama agar tidak crash!
       return item?.proxy;
@@ -212,11 +262,20 @@ export class DOMTreeMemory {
     // JALUR PUTARAN LANJUTAN: Jika gerbong kunci sudah ada, dorong boks kembaran baru ke list array!
     if (this.#nodes.has(globalStorageKey)) {
       this.#nodes.get(globalStorageKey)!.records.push(newItem);
+
+      DataLogger(DISPLAY_LOG,
+        { functionName: "🧭 [DOMTreeMemory]", action: `Set Append` },
+        { globalKey: globalStorageKey, entries: `${this.#nodes.get(globalStorageKey)!.records.length} item(s)`, multiple });
+
       return singleProxyObj;
     }
 
     // JALUR PUTARAN PERTAMA (INITIAL PAINT)
     this.#nodes.set(globalStorageKey, { records: [newItem] });
+
+    DataLogger(DISPLAY_LOG,
+      { functionName: "🧭 [DOMTreeMemory]", action: `Set Create` },
+      { globalKey: globalStorageKey, entries: 1 + " item", multiple });
 
     return singleProxyObj;
   }

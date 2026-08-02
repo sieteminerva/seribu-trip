@@ -1,3 +1,5 @@
+export const GLOBAL_DISPLAY_LOG = false//"DATA"
+
 export interface iRendererLite {
   create: () => void;
   append: () => void;
@@ -62,6 +64,7 @@ export type iBuilderSelectorsConfig<TType extends string = string> = Record<TTyp
 
 export interface iBuilderConfig<TType extends string = string> {
   themeId?: string;
+  namespace?: string | null;
   selectors?: iBuilderSelectorsConfig<TType>;
   emit?: (<K extends keyof iComponentEvents<TType>>(
     event: K,
@@ -94,6 +97,7 @@ export interface iBuilderRegistry {
   input: iBasicInputNode;
   "product-card": iBasicNode;
   "product-card-grid": any;
+  "input-controls": Array<iBasicInputNode>
   // Untuk komponen baru nanti, cukup daftarkan jenis array atomnya di sini:
   // stats: iStatsProperty[];
 }
@@ -198,6 +202,7 @@ export interface iElementProperty {
   attrs?: Record<string, string>;
   isArray?: boolean;
   wrapper?: string;
+  icon?: string;
 }
 // ==========================================
 // 1. INDIVIDUAL ATOM PROPERTIES & DESIGN TOKENS
@@ -214,7 +219,8 @@ export interface iActionProperty extends iElementProperty {
   src?: string;
   isActive?: boolean;
   isRoot?: boolean;
-  type?: 'button' | 'submit' | 'reset' | InputType;
+  icon?: string;
+  type?: 'button' | 'submit' | 'reset' | InputType | InputControlsType;
   onClick?: (event: MouseEvent) => void;
 }
 
@@ -265,6 +271,12 @@ export type InputType =
   | "url"
   | "tel"
   | "hidden";
+
+export type InputControlsType =
+  | "add"
+  | "remove"
+  | "edit"
+  | "save"
 
 export interface InputBuilderSelectorOption {
   value?: string;

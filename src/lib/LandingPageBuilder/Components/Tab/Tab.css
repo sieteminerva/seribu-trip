@@ -12,7 +12,7 @@
   /* POSISI ATAS (TOP) */
   &.position-top {
     flex-direction: column;
-    & .menu {
+    & .menu:not(.pagination) {
       flex-direction: row;
       border-bottom: 2px solid var(--accent-strong);
     }
@@ -21,7 +21,7 @@
   /* POSISI BAWAH (BOTTOM) */
   &.position-bottom {
     flex-direction: column;
-    & .menu {
+    & .menu:not(.pagination) {
       flex-direction: row;
       border-top: 2px solid var(--accent-strong);
       order: 2; /* Turun ke lantai bawah secara visual */
@@ -34,7 +34,7 @@
   /* POSISI KIRI (LEFT) */
   &.position-left {
     flex-direction: row;
-    & .menu {
+    & .menu:not(.pagination) {
       flex-direction: column;
       border-right: 2px solid var(--accent-strong);
       width: 250px;
@@ -48,7 +48,7 @@
   /* POSISI KANAN (RIGHT) */
   &.position-right {
     flex-direction: row-reverse;
-    & .menu {
+    & .menu.menu:not(.pagination) {
       flex-direction: column;
       border-left: 2px solid var(--accent-strong);
       width: 250px;
@@ -62,7 +62,7 @@
   /* ====================================================
      🪐 MENU BUTTON STYLING (CORRECTED CLASSES)
      ==================================================== */
-  & .menu {
+  & .menu:not(.pagination) {
     display: flex;
     gap: 0.5rem;
     padding: 0.5rem 0;

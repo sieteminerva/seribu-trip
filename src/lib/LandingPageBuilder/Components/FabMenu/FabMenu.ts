@@ -48,6 +48,7 @@ export class FabMenuBuilder extends Builder<FabMenuElementType, iFabMenuConfig> 
       closeIcon: "✕",
       displayIcon: "⚙️",
       selectors: defaultSelectors,
+      namespace: null,
       emit: () => { }
     };
 

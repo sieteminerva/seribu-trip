@@ -11,8 +11,6 @@ import type { iNodeRecordItem } from "../interface";
 export function selectorToTree(scopeId: string, selectors: Record<string, any>): Record<string, iNodeRecordItem["relations"]> {
   const allKeys = Object.keys(selectors);
   const hasContainerRoot = allKeys.includes("@container");
-  const ambientActiveParentScope = (globalThis as any).DOMTreeMemory?.activeParentScopeKey;
-  const hasAmbientParent = ambientActiveParentScope && ambientActiveParentScope !== scopeId;
 
   const scopedRelation = {} as Record<string, iNodeRecordItem["relations"]>;
 
@@ -27,14 +25,14 @@ export function selectorToTree(scopeId: string, selectors: Record<string, any>):
       const parts = currentKey.split(">");
       parts.pop();
       const parentTypeKey = parts.join(">");
-      // const globalParentKey = `${scopeId}:${parentTypeKey}`;
+      const globalParentKey = `${scopeId}:${parentTypeKey}`;
 
       if (!scopedRelation[parentTypeKey]) {
         scopedRelation[parentTypeKey] = { scope: scopeId, key: parentTypeKey, parent: null, children: [] };
       }
 
-      scopedRelation[currentKey].parent = parentTypeKey;
-      if (!scopedRelation[parentTypeKey].children?.includes(currentKey)) {
+      scopedRelation[currentKey].parent = globalParentKey;
+      if (!scopedRelation[parentTypeKey].children?.includes(globalCurrentKey)) {
         scopedRelation[parentTypeKey].children?.push(globalCurrentKey);
       }
     }
@@ -47,12 +45,8 @@ export function selectorToTree(scopeId: string, selectors: Record<string, any>):
         }
 
         scopedRelation[currentKey].parent = globalContainerKey;
-        if (!scopedRelation[globalContainerKey].children?.includes(currentKey)) {
-          scopedRelation[globalContainerKey].children?.push(currentKey);
-        }
-      } else if (currentKey === "@container" || !hasContainerRoot) {
-        if (hasAmbientParent) {
-          scopedRelation[currentKey].parent = `${ambientActiveParentScope}:@container`;
+        if (!scopedRelation[globalContainerKey].children?.includes(globalCurrentKey)) {
+          scopedRelation[globalContainerKey].children?.push(globalCurrentKey);
         }
       }
     }

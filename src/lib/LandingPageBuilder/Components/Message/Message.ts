@@ -51,6 +51,7 @@ export class MessageBuilder extends Builder<MessageElementType, iMessageConfig> 
       duration: 3000,
       selectors: defaultSelectors,
       persist: false,
+      namespace: null,
       emit: () => { },
       onOpen: () => { },
       onClose: () => { }

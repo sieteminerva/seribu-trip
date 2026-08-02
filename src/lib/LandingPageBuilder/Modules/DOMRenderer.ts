@@ -2,6 +2,7 @@
 import type { DefaultSelectors, iBuilderRegistry, iNodeContent, iNodeRecordItem } from "../interface";
 import { ensureMetadataIdentity, setMetadata } from "../Utils/Metadata";
 import { TemplateRegistry } from "./TemplateRegistry";
+import { ElementCreatedEventBus } from "../Services/EventBus";
 
 type BuildContext = {
   scopeId: string;
@@ -160,17 +161,25 @@ export class DOMRenderer<
         if (parentValue && (parentValue.isArray || key.includes("$isArray"))) continue;
       }
 
-      // Phase 1: 🏗️ NODE FACTORY
-      const currentElement = this.nodeFactory(baseName, value);
-
-      // Phase 2: 🧱 ATTRIBUTE PROCESSOR
-      this.attributeProcessor(currentElement, value, id, classNames, parsedAttrs);
-
       // ATTACHING METADATA di buildStructure
       let targetSelectorKey = key;
       if (!(value as any).builder && ((value as any).content instanceof HTMLElement || (value as any).isRoot)) {
-        targetSelectorKey = currentElement.tagName.toLowerCase(); // Peras nama tag aslinya!
+        targetSelectorKey = (value as any).content instanceof HTMLElement
+          ? (value as any).content.tagName.toLowerCase()
+          : baseName;
       }
+
+      // Phase 1: 🏗️ NODE FACTORY
+      const relayKey = ensureMetadataIdentity(targetSelectorKey, context.scopeId, "", key).key;
+      const relayedElement = ElementCreatedEventBus.relay(relayKey);
+      let currentElement = relayedElement || this.nodeFactory(baseName, value);
+
+      if (relayedElement) {
+        currentElement.replaceChildren();
+      }
+
+      // Phase 2: 🧱 ATTRIBUTE PROCESSOR
+      this.attributeProcessor(currentElement, value, id, classNames, parsedAttrs);
 
       const identity = ensureMetadataIdentity(targetSelectorKey, context.scopeId, "", key);
       const currentGlobalKey = identity.key;
@@ -222,7 +231,7 @@ export class DOMRenderer<
       }
 
       // Phase 5: RECURSIVE NESTED KEYS TRAVERSAL (Untuk format objek bersarang bawaan DOMRenderer asli)
-      const reservedKeys = ['content', 'onCreated', 'onDestroy', 'builder', 'attrs', 'isRoot', 'isArray', 'config', 'selectors'];
+      const reservedKeys = ['content', 'onCreated', 'onDestroy', 'builder', 'attrs', 'isRoot', 'isArray', 'config', 'selectors', 'options'];
       const childKeys = Object.keys(value).filter(k => !reservedKeys.includes(k));
 
       if (childKeys.length > 0) {

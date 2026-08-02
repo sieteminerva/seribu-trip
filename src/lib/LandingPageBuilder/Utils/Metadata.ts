@@ -84,5 +84,93 @@ export function setMetadata(element: HTMLElement, localRecordsPool: any[], _root
 }
 
 
+/**
+ * @internal Generates a stable hash seed from content + config for namespace derivation.
+ * Extracted from former buildNamespaceSeed() for internal use by ensureIdentity().
+ */
+export function buildNamespace(content: any, config: any) {
+  const stableHash = (input: string): string => {
+    let hash = 5381;
+    for (let i = 0; i < input.length; i++) {
+      hash = ((hash << 5) + hash) ^ input.charCodeAt(i);
+    }
+    return (hash >>> 0).toString(36);
+  };
 
+  const summarize = (value: any, depth: number = 0): string => {
+    if (value === null || value === undefined) return "";
+    if (typeof value === "string") return value.trim();
+    if (typeof value === "number" || typeof value === "boolean") return String(value);
+    if (value instanceof HTMLElement) {
+      const tag = value.tagName ? value.tagName.toLowerCase() : "element";
+      const id = value.id ? `#${value.id}` : "";
+      const cls = value.className && typeof value.className === "string"
+        ? `.${value.className.trim().split(/\s+/).filter(Boolean).join(".")}`
+        : "";
+      return `${tag}${id}${cls}`;
+    }
+    if (Array.isArray(value)) {
+      const firstItems = value.slice(0, 3).map((item) => summarize(item, depth + 1)).filter(Boolean);
+      return `len${value.length}[${firstItems.join("|")}]`;
+    }
+    if (typeof value === "object") {
+      const keys = Object.keys(value).filter((key) => {
+        const current = (value as any)[key];
+        return typeof current !== "function" && typeof current !== "undefined";
+      }).sort();
 
+      const preferredKeys = ["namespace", "id", "name", "title", "slug", "formId", "builder", "key", "category"];
+      const picked: string[] = [];
+
+      for (const key of preferredKeys) {
+        if (key in value) {
+          const current = (value as any)[key];
+          if (current instanceof HTMLElement) {
+            picked.push(`${key}=${summarize(current, depth + 1)}`);
+          } else if (Array.isArray(current)) {
+            picked.push(`${key}=${summarize(current, depth + 1)}`);
+          } else if (current && typeof current === "object") {
+            picked.push(`${key}=${summarize(current, depth + 1)}`);
+          } else if (typeof current !== "function" && typeof current !== "undefined") {
+            picked.push(`${key}=${String(current)}`);
+          }
+        }
+      }
+
+      if (picked.length > 0) return picked.join(";");
+
+      const minimalShape = keys.slice(0, 5).map((key) => {
+        const current = (value as any)[key];
+        if (current instanceof HTMLElement) return `${key}:${summarize(current, depth + 1)}`;
+        if (Array.isArray(current)) return `${key}:len${current.length}`;
+        if (current && typeof current === "object") return `${key}:{${Object.keys(current).slice(0, 3).join(",")}}`;
+        return `${key}:${String(current)}`;
+      });
+
+      return `keys${keys.length}[${minimalShape.join("|")}]`;
+    }
+    return "";
+  };
+
+  const configSeed =
+    (config as any)?.namespace ||
+    (config as any)?.id ||
+    (config as any)?.formId ||
+    (config as any)?.name ||
+    (config as any)?.title ||
+    (config as any)?.slug ||
+    (config as any)?.key ||
+    "";
+
+  const contentSeed =
+    (content && typeof content === "object" ? (content as any).id : "") ||
+    (content && typeof content === "object" ? (content as any).name : "") ||
+    (content && typeof content === "object" ? (content as any).title : "") ||
+    (content && typeof content === "object" ? (content as any).formId : "") ||
+    (content && typeof content === "object" ? (content as any).uid : "") ||
+    (content && typeof content === "object" ? (content as any).slug : "") ||
+    summarize(content);
+
+  const rawSeed = [String(configSeed || "").trim(), String(contentSeed || "").trim()].filter(Boolean).join("::");
+  return rawSeed ? stableHash(rawSeed) : "anonymous";
+}

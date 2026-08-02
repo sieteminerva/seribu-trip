@@ -41,6 +41,7 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
       modalClass: "",
       destroyOnClose: false,
       selectors: defaultSelectors,
+      namespace: null,
       emit: () => { },
       onClose: () => { },
       onOpen: () => { }

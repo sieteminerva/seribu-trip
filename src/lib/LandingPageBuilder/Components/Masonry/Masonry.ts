@@ -92,6 +92,7 @@ export class MasonryBuilder extends Builder<MasonryElementType, iMasonryConfig> 
       loadFn: null, // Default untuk load data baru dari GAS Server
       onScrollEnd: null,    // Meletup saat user menyentuh lantai terbawah dokumen bodi HTML
       onLoadTriggered: null, // Meletup tepat saat hitmundur loading data baru dimulai
+      namespace: null,
       emit: null
     };
 

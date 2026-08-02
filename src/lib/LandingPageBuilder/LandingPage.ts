@@ -1,11 +1,15 @@
 import { ComponentRegistry } from "./Modules/ComponentRegistry";
-import type { iBasicNode, iBuilderRegistry, iLandingPageBuilderSource, iNodeContent } from "./interface";
+import { GLOBAL_DISPLAY_LOG, type iBasicNode, type iBuilderRegistry, type iLandingPageBuilderSource, type iNodeContent } from "./interface";
 import { DOMRenderer } from "./Modules/DOMRenderer";
 import { ThemeRenderer } from "./Modules/ThemeRenderer";
 import { EventEmitter } from "./Services/EventEmitter";
 import { NodeTransformer } from "./Utils/NodeTransformer";
 import { HashRouter, type iRouteState } from "./Services/HashRouter";
 import { DOMTreeMemory } from "./Modules/DOMTreeMemory";
+import { EventBus, RenderingEventBus } from "./Services/EventBus";
+import { DataLogger } from "./Utils/DataLogger";
+
+const DISPLAY_LOG = GLOBAL_DISPLAY_LOG;
 
 export interface iLandingPageBuilderConfig {
   container: HTMLElement | string;
@@ -60,7 +64,7 @@ export class LandingPageBuilder {
       this.theme = new ThemeRenderer();
       this.component = new ComponentRegistry();
 
-      DOMTreeMemory.listen();
+      EventBus.listen();
 
       this.container = resolved;
       this.useMenu = config.useMenu ?? true;
@@ -159,6 +163,13 @@ export class LandingPageBuilder {
 
     const metadata = { records: [] } as any;
 
+    const describeElement = (el: HTMLElement) => {
+      const tag = el?.tagName ? el.tagName.toLowerCase() : "unknown";
+      const id = el?.id ? `#${el.id}` : "";
+      const className = el?.className ? `.${String(el.className).trim().split(/\s+/).filter(Boolean).join(".")}` : "";
+      return `${tag}${id}${className}`;
+    };
+
     const getShellSelector = (shell: HTMLElement) => {
       const tagName = shell?.tagName.toLowerCase() || "div";
       const className = `${shell?.className ? "." + shell?.className : ""}`;
@@ -175,6 +186,17 @@ export class LandingPageBuilder {
       if (el) {
         this.#nodes.set(namedKey, el);
         shell?.appendChild(el);
+        const builderName = data?.builder || data?.raw?.builder || data?.content?.builder || "manual";
+        DataLogger(DISPLAY_LOG, { functionName: "🧱 [LandingPage]", action: "Attach" },
+          {
+            route, slot: namedKey,
+            builder: builderName,
+            element: describeElement(el),
+            records: `${metadata.records.length} item(s)`,
+            shellChildren: `${shell.children.length} element(s)`,
+            payloadType: `${Array.isArray(data?.content) ? "array" : typeof data?.content}`
+          }
+        )
       }
     }
 
@@ -194,8 +216,7 @@ export class LandingPageBuilder {
       buildElement("system-footer", payload.footer, metadata, this.shell!)
     }
 
-    console.log("[metadata]:", metadata.records)
-
+    console.log(`📚 [LandingPage -> Metadata Stats]: route=${route} totalRecords=${metadata.records.length}`, metadata.records);
     console.log("domtreememory #nodes", DOMTreeMemory.getAll().entries())
 
     // SCROLL ANCHOR & ONREADY
@@ -242,6 +263,13 @@ export class LandingPageBuilder {
       this.shell.className = "page";
     }
 
+    const previousRoute = this.currentRoute || route;
+    const detachHandler = RenderingEventBus.handler(previousRoute, this.shell, this.container);
+
+    if (this.shell.parentElement) {
+      detachHandler.detach();
+    }
+
     this.currentRoute = this.normalizeRoute(route);
 
     this._isInternalRendering = true;
@@ -250,15 +278,28 @@ export class LandingPageBuilder {
 
     this._isInternalRendering = false;
 
-    if (this.shell.parentElement !== this.container) {
-      this.container.appendChild(this.shell);
-      this.events.emit("elementAdded", { element: this.shell, parent: this.container });
-    }
-
     (this.shell as HTMLElement).innerHTML = "";
     this.#nodes.clear();
 
+    RenderingEventBus.broadcast("beforeRender", {
+      route,
+      shell: this.shell,
+      payload
+    });
+
     this.onPageRebuild(route, payload) // <= ini proses penyatuan metadatanya dengan parameter metadata dari page
+
+    const attachHandler = RenderingEventBus.handler(this.currentRoute, this.shell, this.container);
+    attachHandler.attach();
+    if (this.shell.parentElement === this.container) {
+      this.events.emit("elementAdded", { element: this.shell, parent: this.container });
+    }
+
+    RenderingEventBus.broadcast("ready", {
+      route,
+      shell: this.shell,
+      payload
+    });
 
 
 
@@ -427,6 +468,7 @@ export class LandingPageBuilder {
     this.events.clear(); // Bersihkan seluruh memory listeners
     this.container.innerHTML = "";
     this.component?.clear();
+    EventBus.shutdown();
   }
 
   // =============================
@@ -451,43 +493,4 @@ export class LandingPageBuilder {
 
 }
 
-export class LandingPageBuilder2 {
-  constructor() {
-    // 1. menginit value dari property-property yang ada
-    // 2. men-setup routes
-    // 3. emit event error kalau gagal
-  }
 
-
-  render() {
-    // 1. tugasnya hanya mengorkestrasi
-    // - memisahkan menu, pages, footer lalu ditransform oleh `prepare` kemudian difinishing oleh `compile` masing-masing
-
-  }
-
-  prepare() {
-    // 1. men-clone data snapshot dari source
-    // 2. scanning metadata
-    // 3. emit event. dimana data yang diemit ini nanti disubscribe oleh themeRenderer,
-    // jadi bisa dirubah sebelum di compile menjadi dom.
-
-  }
-
-  compile() {
-    // 1. men-transformasi json data source yang ditulis dengan format iBasicNode = basic user friendly,
-    // ke iNodeContent <= DOMRenderer object format
-    // 2. mengumpulkan object mana saja yang memiliki property `builder` ini akan diarahkan ke saluran `ComponentRegistry` untuk diarahkan 
-    // ke component buildernya masing-masing sesuail value dari property builder ini. ini dihandle helper `_renderComponent` nanti outputnya 
-    // dikembalikan lagi namun property contentnya bukan lagi json data tapi .content => HTMLElement
-    // 3. transformasi data dari step satu, dan dua disatukan kembali lalu diproses DOMRenderer untuk menjadi page penuh.
-  }
-
-
-  destroy() {
-    // mencabut `shell: HTMLElement` dari DOM
-    // memanggil ComponentRegistry.clear()
-    // emit event
-  }
-
-
-}

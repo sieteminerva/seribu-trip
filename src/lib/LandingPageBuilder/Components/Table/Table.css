@@ -1,0 +1,364 @@
+.table,
+table.table {
+  display: table;
+  position: relative;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-soft);
+  border-radius: 0.28571429rem;
+  overflow: hidden;
+  font-size: 0.95rem;
+}
+
+.table th,
+.table td,
+table.table > thead > tr > th,
+table.table > thead > tr > td,
+table.table > tbody > tr > td,
+table.table > tfoot > tr > th,
+table.table > tfoot > tr > td {
+  padding: 0.78571429em 1em;
+  border-bottom: 1px solid rgba(34, 36, 38, 0.1);
+  vertical-align: middle;
+  text-align: left;
+  display: table-cell;
+  vertical-align: middle;
+  width: min-content;
+  /* max-width: 150px; */
+}
+
+.table thead th,
+table.table > thead > tr > th {
+  background: var(--surface-bg);
+  color: var(--text-main);
+  font-weight: 700;
+  border-bottom: 1px solid rgba(34, 36, 38, 0.15);
+}
+
+table.table > tbody > tr .cell:not(.actions) {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: max-content;
+  border-radius: calc(var(--input-border-radius) / 2);
+  border: 1px solid transparent;
+  color: var(--text-main);
+}
+
+.table tbody tr:nth-child(even) {
+  background: var(--surface-bg);
+}
+
+.table tbody tr:hover {
+  background: var(--surface-muted);
+}
+
+table.table > tbody > tr > td,
+table.table > tbody > tr .cell {
+  overflow: hidden;
+  min-height: 2.5em;
+  padding: 0.4em 0.5em;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+table.table > tbody > tr.sub-row > td:first-child {
+  border-left: 1px solid rgba(34, 36, 38, 0.1);
+}
+
+/* Editing */
+table.table tr.editing > th[contenteditable="true"] > .cell,
+table.table tr.editing > td[contenteditable="true"] > .cell {
+  border: 1px solid rgba(34, 36, 38, 0.15);
+  color: var(--text-muted);
+}
+
+table tr.editing > td[contenteditable="true"],
+table tr.editing > td[contenteditable="true"]:focus,
+table tr.editing > td[contenteditable="true"]:focus-visible {
+  outline: none; /* Remove default outline */
+  background-color: transparent; /* Light blue background */
+}
+
+table.table tr.editing > th[contenteditable="true"]:focus > .cell,
+table.table tr.editing > td[contenteditable="true"]:focus > .cell {
+  border-color: #85b7d9;
+}
+
+table.table tr.editing > th[contenteditable="true"] > .cell:hover:not(:focus),
+table.table tr.editing > td[contenteditable="true"] > .cell:hover:not(:focus) {
+  border-color: rgba(34, 36, 38, 0.35);
+}
+
+/* Actions */
+table.table > tbody > tr > td.actions.cell,
+table.table > tbody > tr .actions.cell,
+.table td.actions.cell,
+table.table td.actions.cell {
+  border-top: none;
+  vertical-align: middle;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  max-width: 120px;
+}
+
+table.table > tbody > tr > td.actions.cell.center.aligned {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  border-left: 1px solid var(--border-soft);
+  /* width: 100%; */
+}
+
+.table .actions-set,
+table.table .actions-set {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  gap: 0.25rem;
+}
+
+.table .actions-set button,
+table.table .actions-set button {
+  background-color: var(--surface-muted);
+  width: 100%;
+  border: 1px solid var(--border-soft);
+}
+
+.table .actions-set .edit-btn,
+.table .actions-set .remove-btn,
+.table .actions-set .add-btn {
+  border-radius: 0.28571429rem;
+  color: #767676;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font: inherit;
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.table .actions-set .edit-btn,
+.table .actions-set .remove-btn,
+.table .actions-set .add-btn {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+}
+
+.table .actions-set .edit-btn:hover,
+.table .actions-set .remove-btn:hover,
+.table .actions-set .add-btn:hover {
+  color: #1f2937;
+}
+
+.table .actions-set .edit-btn {
+  color: var(--editing-color);
+  & .icon {
+    color: var(--editing-color);
+  }
+}
+
+.table .actions-set .edit-btn.active {
+  color: var(--editing-color);
+  border-color: var(--editing-color);
+}
+
+.table .actions-set .edit-btn:hover {
+  border-color: var(--editing-color);
+}
+
+.table .actions-set .remove-btn {
+  color: var(--unallowed-color);
+  & .icon {
+    color: var(--unallowed-color);
+  }
+}
+
+.table .actions-set .remove-btn:hover {
+  /* background: #fff6f6; */
+  border-color: var(--unallowed-color);
+}
+
+.table .actions-set .add-btn {
+  color: #21ba45;
+}
+
+.table .actions-set .add-btn:hover {
+  /* background: #f2fff4; */
+  border-color: #21ba45;
+}
+
+.table .actions-set .edit-btn .icon,
+.table .actions-set .remove-btn .icon,
+.table .actions-set .add-btn .icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.table .actions-set .add-btn {
+  /* padding: 0.6rem 0.9rem; */
+  color: var(--allowed-color);
+  font-weight: 600;
+  & .icon {
+    color: var(--allowed-color);
+  }
+}
+
+.table .actions-set .add-btn:hover {
+  /* background: #f2fff4; */
+  border-color: var(--allowed-color);
+}
+
+.table tfoot .add-row-btn {
+  display: flex;
+  border: 1px solid var(--allowed-color);
+  border-radius: 0.28571429rem;
+  background: transparent;
+  color: var(--allowed-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font: inherit;
+  font-size: smaller;
+  min-width: 90px;
+  height: 2.2rem;
+  padding: 0.2em 0.3em;
+  align-items: center;
+  justify-content: center;
+}
+
+.table tfoot .add-row-btn:hover {
+  /* border-color: var(--allowed-color); */
+  background-color: var(--allowed-color);
+  color: var(--default-inverted-text-color);
+}
+
+/* TFoot */
+table.table > tfoot > tr > th:has(> button) {
+  border-left: none;
+  text-align: center;
+}
+
+table.table > tfoot > tr > th {
+  border-top: 1px solid var(--border-soft);
+  background: var(--surface-muted);
+}
+
+table.table > tfoot > tr > th.sum {
+  background: var(--gsheets-accent-color);
+  font-weight: bolder;
+  border-right: 1px solid rgba(34, 36, 38, 0.1);
+  min-width: 100px;
+  width: fit-content;
+  max-width: 150px;
+}
+
+table.table > tfoot > tr > th.sum > .cell {
+  display: block;
+  position: relative;
+  /* min-width: 100px; */
+  padding: 0 0.5em;
+  height: 100%;
+  font-size: 1em;
+  text-align: right;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+table.table > tfoot > tr > th.sum > .cell:not(:last-child) {
+  padding-bottom: 0.25em;
+}
+
+table.table > tfoot > tr > th.sum > .cell:not(:first-child) {
+  padding-top: 0.25em;
+}
+
+table.table > tfoot > tr > th.sum > .cell > .title {
+  display: block;
+  position: relative;
+  float: left;
+  font-size: 68%;
+  color: var(--primary-color);
+  text-align: left;
+  margin-right: 0.25em;
+}
+
+table.table > tfoot > tr.row-pagination > th,
+table.table > tfoot > tr:has(th > .pagination) > th {
+  background-color: var(--surface-strong);
+}
+
+table.table > tfoot > tr > th:empty {
+  border-left: none;
+}
+
+table.table > tfoot > tr > th:last-child:has(button) {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  align-self: center;
+  border-bottom: none;
+}
+
+.table .pagination.menu {
+  display: inline-flex;
+}
+
+.table .pagination.menu .item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2rem;
+  height: 2.2rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--border-soft);
+  /* border-radius: 0.28571429rem; */
+  color: var(--text-muted);
+  text-decoration: none;
+  background: var(--surface-muted);
+  cursor: pointer;
+}
+
+.table .pagination .item:hover {
+  border: 1px solid var(--accent-strong);
+}
+
+.table .pagination .item.active {
+  background: var(--border-soft);
+  color: var(--text-main);
+  border-color: var(--accent);
+}
+
+.table.small th,
+.table.small td {
+  padding: 0.6em 0.85em;
+}
+
+.table.compact th,
+.table.compact td {
+  padding: 0.55em 0.75em;
+}
+
+.very.compact.table,
+.small.table {
+  font-size: 0.9em;
+}
+
+.very.compact.table > tbody > tr .cell,
+.small.table > tbody > tr .cell
+/* .very.compact.table > tbody > tr > td,
+.small.table > tbody > tr > td { */ {
+  max-height: 20px;
+  padding: 0.37em 0.7em;
+  /* color: red; */
+}
+
+.small.table > tfoot > tr > .cell.no-border,
+.very.compact.table > tfoot > tr > .cell.no-border {
+  min-height: 2.5em;
+  padding: 0.3em 0.5em;
+}

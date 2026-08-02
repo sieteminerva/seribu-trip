@@ -142,6 +142,7 @@ export class CarouselBuilder extends Builder<CarouselElementType, iCarouselConfi
       slideHeight: "",
       slideWidth: "",
       selectors: defaultSelectors,
+      namespace: null,
       emit: null
     };
 

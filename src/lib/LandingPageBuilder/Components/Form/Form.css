@@ -223,6 +223,7 @@ textarea:focus-visible {
 
 /* --- Placeholder Colors vs Active Content Colors --- */
 .input-wrapper input:not([type="checkbox"])::placeholder,
+.input-wrapper textarea::placeholder,
 .input-wrapper select,
 .input-wrapper select:has(> option.placeholder:checked) {
   color: var(--placeholder-color);

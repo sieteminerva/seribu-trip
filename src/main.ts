@@ -1,5 +1,6 @@
 import './style.css';
-import './lib/LandingPageBuilder/Components/Form/Form.css'
+import './lib/LandingPageBuilder/Components/Form/Form.css';
+import "./lib/LandingPageBuilder/Styles/icon.css";
 import './overrides.css';
 
 import { PackagePageContent, GalleryPageContent, HomePageContent, ProductPageContent, FormPageContent, BlogPageContent } from './content';

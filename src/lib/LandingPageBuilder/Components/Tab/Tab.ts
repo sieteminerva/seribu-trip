@@ -79,6 +79,7 @@ export class TabBuilder extends Builder<TabElementType, iTabConfig> {
       lazyload: true,
       minHeight: "400px",
       selectors: defaultTabSelectors,
+      namespace: null,
       emit: () => { }
     };
 

@@ -24,7 +24,7 @@ export class SectionBuilder extends Builder<SectionElementType, iSectionConfig> 
     super();
     // 💡 KEMBALI SUCI: Kamus selektor kaku Anda terbebas murni dari properti isArray kuno!
     const defaultSelectors: Record<SectionElementType, iActionProperty> = {
-      "@section": { tagName: "section", className: "section" },
+      "@section": { tagName: "section", className: "row" },
       "@section>content": { tagName: "div", className: "column" },
       "@section>content>image": { tagName: "img", className: "img-fluid" },
       "@section>content>header": { tagName: "h2", className: "title" },
@@ -36,6 +36,7 @@ export class SectionBuilder extends Builder<SectionElementType, iSectionConfig> 
     const defaultConfig: Required<iSectionConfig> = {
       themeId: "default",
       selectors: defaultSelectors,
+      namespace: null,
       emit: () => { }
     }
 
