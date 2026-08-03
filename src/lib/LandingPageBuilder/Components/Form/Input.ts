@@ -170,7 +170,7 @@ export class InputBuilder extends Builder<InputElementType> {
 
       case "file": {
         // console.log(this.#input)
-        const fileInput = this.render("@field>file", { id: elementId, ...this.#input }, true) as HTMLInputElement;
+        const fileInput = this.render("@field>file", { id: elementId, config: this.#input }, true) as HTMLInputElement;
         fileInput.type = "file";
         wrapper?.appendChild(fileInput!);
         break;

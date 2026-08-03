@@ -48,6 +48,22 @@
   gap: 0.6rem;
 }
 
+.nav .actions .item {
+  border-radius: var(--radius-component);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  color: var(--text-main);
+}
+
+.nav .actions .item:hover {
+  background-color: var(--surface-muted);
+  transform: translateY(-1px) !important;
+  box-shadow: var(--shadow-soft);
+  transition: all 200ms ease;
+}
+
 .hamburger-btn {
   display: none;
   background: none;

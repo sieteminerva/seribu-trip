@@ -40,7 +40,7 @@ if (app) {
         { label: 'FAQ', href: '#faq-section' },
         { label: 'Merchandise', href: '#merchandise' },
         { label: 'Blog', href: '#blog' },
-        { label: 'Admin', href: '#form' },
+        // { label: 'Admin', href: '#form' },
       ]
     }
 
@@ -137,10 +137,20 @@ if (app) {
 
   builder.theme?.renderSwitcher({ position: "bottom-left", duration: 10000 }); // should be called after `.render` or it will break
 
+  function createAdminItemMenu() {
+    const item = document.createElement("a")
+    item.href = "#form";
+    item.className = "item";
+    item.title = "Admin Dashboard";
+    item.innerHTML = `<i class="user settings icon" style="transform:scale(2);"></i>`;
+    item.style.width = "1.8rem"
+    item.style.height = "1.8rem"
+    return item;
+  }
   builder.events.on("elementAdded", (data) => {
     if (data.builder === "menu" && data.type === "@menu>actions") {
       // console.log(data)
-      data.element.appendChild(builder.component?.build("mode-switcher", {}))
+      data.element.append(builder.component?.build("mode-switcher", {}), createAdminItemMenu())
     }
   });
 

@@ -109,14 +109,15 @@ export class FormSchemaTransformer {
             : value;
         });
       });
-
+      const randomSuffix = Math.random().toString(36).substring(7);
       // 4. Kembalikan objek baru tanpa mutasi langsung pada array asal (Immutability)
       return {
         legend: item.legend,
-        className: "",
+        id: `group-${randomSuffix}`,
         group: cleanSchema,
+        // submitButton: true,
         table: {
-          id: `${item.legend}-table`,
+          id: `table-${randomSuffix}`,
           className: "form table",
           builder: "table",
           content: {

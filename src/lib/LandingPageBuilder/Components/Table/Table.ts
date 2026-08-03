@@ -795,7 +795,7 @@ export class TableBuilder {
    * 5. **Return Body DOM Model**: Returns the array of `BodyRowModel` objects for the current page.
    */
   _createBodyDomModel(bodyInput: any[], config: TableConfig): TableRowModel[] {
-    console.log("_createBodyDomModel > bodyInput:", bodyInput);
+    // console.log("_createBodyDomModel > bodyInput:", bodyInput);
     const pageSize = config.pageSize;
     const start = pageSize ? (this.currentPage - 1) * pageSize : 0;
     const end = pageSize ? Math.min(bodyInput.length, start + pageSize) : bodyInput.length;
@@ -1119,7 +1119,7 @@ export class TableBuilder {
       this._applyInsertionPagination(domModel);
     }
 
-    console.log({ header: domModel.header, body: domModel.body, footer: domModel.footer });
+    // console.log({ header: domModel.header, body: domModel.body, footer: domModel.footer });
     // Step 9: Return the final, processed DOM model.
     return domModel;
   }

@@ -6,11 +6,46 @@ import { selectorToTree } from "../Utils/SelectorToTree";
 
 export const GLOBAL_INSTANCE_COUNTER = new Map<string, number>();
 /**
- * Abstract Core Base Class representing the definitive declarative rendering engine blueprint.
- * Orchestrates a unidirectional 5-Phase lifecycle execution stream to parse configurations,
- * traverse hierarchical tree registries, mutate content templates, and emit runtime state safely.
+ * @classdesc
+ * Builder is the abstract foundation for declarative landing-page components.
+ * It provides a unified lifecycle for resolving configuration, generating stable namespaces,
+ * creating reactive DOM node records, and managing component teardown without leaking state.
  *
- * @template TType - A strict string literal union constraining the allowed sub-element tokens for the child component.
+ * Concrete builders extend this class to define their own builder identity, stylesheet,
+ * render strategy, and initialization behavior while inheriting the shared lifecycle engine.
+ *
+ * Builder — core lifecycle engine for component-based page rendering
+ *
+ * @example
+ * class HeroBuilder extends Builder<"container" | "title", HeroConfig> {
+ *   readonly builderId = "hero";
+ *   readonly name = "hero";
+ *   readonly stylesheet = "/hero.css";
+ *
+ *   protected template(typeKey, el, payload) {
+ *     if (typeKey === "title") el.textContent = payload?.value ?? "Welcome";
+ *   }
+ *
+ *   public prepare(content, config) {
+ *     return this.render("container", content);
+ *   }
+ *
+ *   public initialize() {}
+ * }
+ *
+ * const builder = new HeroBuilder();
+ * const element = builder.create({ title: "Hello" });
+ *
+ * ========== Public Lifecycle API ==========
+ *
+ * @example
+ * builder.create(data, config);
+ * builder.destroy();
+ * builder.attach(node, "slot.path");
+ * builder.detach(node);
+ *
+ * @template TType - A string literal union representing the allowed selector tokens for the child component.
+ * @template TConfig - The builder-specific configuration interface compatible with iBuilderConfig.
  *
  * @author YMGH
  * @version 1.0.0
@@ -25,9 +60,21 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
   }
 
   /**
-   * Orchestrates identity resolution: generates stable seed, resolves namespace,
-   * builds selector hierarchy, and manages the static namespace stack.
-   * Replaces: buildNamespaceSeed(), resolveNamespace(), pushNamespace(), popNamespace(), ensureIdentity().
+   * @description
+   * Resolves the component's stable runtime identity by generating a deterministic seed,
+   * combining it with the current namespace context, and building a selector hierarchy tree.
+   * This method also manages a static namespace stack for nested builders and supports
+   * explicit overrides when a caller needs to pin a namespace manually.
+   *
+   * @param content - The source payload used to derive the namespace seed.
+   * @param config - Optional builder configuration that can contribute selectors or namespace metadata.
+   * @param options - Optional overrides for namespace stack behavior, explicit namespace assignment,
+   *   or custom seed generation input.
+   *
+   * @returns An object containing the resolved namespace, selector hierarchy, seed, and whether
+   *   the namespace was pushed to the internal stack during resolution.
+   *
+   * @protected
    */
   protected ensureIdentity(
     content: any,
@@ -122,12 +169,15 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
   protected abstract template(typeKey: TType, el: HTMLElement, payload?: any): void;
 
   /**
-   * The public sovereign compiler gateway orchestrating the complete DOM node creation lifecycle stream.
-   * Processes input data through a rigid 5-Phase pipeline, returning a live, fully-hydrated HTMLElement.
+   * @description
+   * The public entry point for materializing a component tree from input data.
+   * Subclasses implement this method to transform the incoming payload into a DOM fragment
+   * or a structured collection of elements while preserving the shared builder lifecycle.
    *
-   * @param content - The raw payload structural object delivered by the central sheet transformer.
-   * @param config - Given builder config.
-   * @returns A fully materialized, state-bound graphical DOM tree container element.
+   * @param content - The raw data payload or structural object delivered by the caller.
+   * @param config - The resolved builder configuration used to shape the rendered output.
+   *
+   * @returns A fully hydrated DOM element or a record of DOM elements keyed by their logical role.
    *
    * @public
    */
@@ -145,13 +195,20 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
   }
 
   /**
-   * Consolidates default specifications with third-party configurations into a unified data structure,
-   * performing an accurate deep-merge execution specifically isolated for selector dictionaries and HTML attributes.
+   * @description
+   * Merges the component's default configuration with runtime overrides into a single
+   * immutable configuration object. Selector maps are merged deeply so structural rules
+   * and HTML attributes from the user config can augment the defaults without replacing
+   * them wholesale.
    *
-   * @param defaultOptions - The structural default parameters including core properties and blueprint selectors.
-   * @param userConfig - Incoming contextual overrides sent dynamically by themes or framework controllers.
+   * @param defaultOptions - The default structural configuration for the builder, including
+   *   core properties and selector definitions.
+   * @param userConfig - Incoming runtime overrides provided by the caller, theme layer,
+   *   or framework controller.
+   *
    * @returns A strictly typed, fully populated configuration object ready for runtime ingestion.
-   * @template C - Menangkap tipe Interface Config anak secara penuh (e.g. iMenuConfig)
+   *
+   * @template C - The concrete child configuration type that extends the builder's base config.
    * @protected
    */
   protected resolveConfig<C extends TConfig>(
@@ -337,6 +394,20 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
   }
 
 
+  /**
+   * @description
+   * Executes the full builder lifecycle from configuration resolution to DOM initialization.
+   * The method resolves the effective configuration, derives a stable identity, clears prior
+   * node state, renders the component tree, and calls the subclass initializer so interactive
+   * bindings are attached only after the DOM has been materialized.
+   *
+   * @param content - The source data payload used to construct the component tree.
+   * @param config - Optional runtime overrides merged into the builder configuration.
+   *
+   * @returns The root DOM element produced by the builder's prepare/initialize pipeline.
+   *
+   * @public
+   */
   public create(content: iBasicNode, config?: Partial<TConfig>): HTMLElement {
     const effectiveConfig = config || (content && typeof content === "object" ? (content as any).config : undefined);
     if (effectiveConfig) this.config = this.resolveConfig(this.config, effectiveConfig);
@@ -372,24 +443,24 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
   }
 
   /**
-   * The localized internal layout factory.
-   * Contains hardcoded default structuralblueprints to populate HTML content elements if no external override handler is resolved.
-   * @rules
-   * `Rule 1`: Selectors Are for "Containers Only"
-   * When defining the selectors map, only map elements that act as structural layout boxes or repeating array loops.
-   * Never map basic value text nodes or terminal leaf elements.
-   * - `Bad`: `@card>header>title`, `@card>actions>button`, `@card>body>features>item>icon`
-   * - `Good`: `@card`, `@card>header`, `@card>body`, `@card>body>features` (The loop container), `@card>actions`
+   * @description
+   * Creates and registers a DOM element for the requested selector token using the builder's
+   * render pipeline. This method resolves the selector, applies base attributes, stores the
+   * element in the local node registry, invokes the subclass template hook, and optionally wraps
+   * the element in a structural wrapper chain defined by the selector configuration.
    *
-   * `Rule 2`: The Template Method is a `Scoped Decorator`
-   * - Since the selectors only generate layout boxes, your template method is `responsible`
-   * for `inserting` the inside contents (text, inline sub-tags, forms) into those specific boxes.
-   * - Do not look for `sub-selectors`. Use the container element passed to you,
-   * and build its inner landscape using its clean data payload.
-   * @param typeKey - Token nama selektor kaku Anda.
-   * @param payload - Data Sheets hantaran yang aktif.
-   * @param multiple - True: Elemen loop berulang (Multi-Instance). False: Elemen tunggal (Singleton Guard).
+   * The method is intentionally scoped around layout containers and repeating nodes. The actual
+   * content injection is delegated to the subclass `template()` implementation so that each builder
+   * can populate the container with its own internal structure.
    *
+   * @param typeKey - The selector token that identifies the target node in the current builder.
+   * @param payload - The runtime data payload associated with the node.
+   * @param multiple - When true, the node is treated as a repeatable instance and can coexist
+   *   with other records for the same selector token.
+   *
+   * @returns The created element, or undefined when the selector is not defined for the current builder.
+   *
+   * @protected
    */
   protected render(typeKey: TType, payload?: any, multiple: boolean = false): HTMLElement | undefined {
     // if (this.builderId === "pricing-card") console.log(this.builderId, "this.render", payload);
@@ -453,12 +524,13 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
   }
 
   /**
-   * 👑 PINTU 3: THE BULK MASS ELEMENT REMOVER (AMPUTASI MASSA SATU ATOP!)
-   * Sekarang mendukung parameter tak terbatas via Rest Parameters (...keys)!
-   * Mencabut belasan fisik elemen dari DOM Tree sekaligus menguras saku RAM browser
-   * dalam SEKALI KETUKAN baris kode tanpa boilerplate repetitif!
+   * @description
+   * Removes one or more registered nodes from the active builder instance in a single call.
+   * The method detaches the underlying DOM elements from the page and clears the matching
+   * records from the local node registry so the builder state stays consistent.
    *
-   * @param keys - Daftar token nama selektor kaku yang mau dihancurkan massal.
+   * @param typeKeys - One or more selector tokens whose live DOM nodes should be removed.
+   *
    * @protected
    */
   protected remove(...typeKeys: TType[]): void {
@@ -470,11 +542,17 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
   }
 
   /**
- * Cleans up instance resources, fires destruction notifications, detaches DOM elements,
- * and clears memory references to guarantee proper garbage collection.
- *
- * @public
- */
+   * @description
+   * Cleans up the builder instance by notifying listeners, removing the root DOM element,
+   * clearing the internal node registry, and releasing references held by the instance.
+   * This method is the lifecycle termination point for a builder and should be invoked when
+   * the component is unmounted or discarded.
+   *
+   * @param typeKey - Optional selector token used to target a specific root node for removal.
+   *   When omitted, the builder attempts to remove the default container node.
+   *
+   * @public
+   */
   public destroy(typeKey?: TType): void {
     // 1. Tembakkan emisi laporan kematian struktur ke pusat orkestrator luar
     if (this.config?.emit) {

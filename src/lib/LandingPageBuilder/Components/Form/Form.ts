@@ -12,6 +12,7 @@ export type FormElementType =
   | "@form>group>desc"
   | "@form>actions"
   | "@form>actions>submit"
+  | "@form>actions>submit-group"
   | "@form>footer";
 
 export interface iFormConfig extends iBuilderConfig<FormElementType> {
@@ -30,6 +31,7 @@ export interface iFormConfig extends iBuilderConfig<FormElementType> {
   createEventListener?: boolean;
   minHeight?: string;
   footer?: HTMLElement | string | null;
+  onSubmit?: null | Function
 }
 
 export class FormBuilder extends Builder<FormElementType, iFormConfig> {
@@ -52,6 +54,7 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
       "@form>group>desc": { tagName: "p", className: "group-desc" },
       "@form>actions": { tagName: "div", className: "form-actions" },
       "@form>actions>submit": { tagName: "button", className: "button primary", type: "submit" as "submit" },
+      "@form>actions>submit-group": { tagName: "button", className: "button primary", type: "button" as "button" },
       "@form>footer": { tagName: "div", className: "form-footer" }
     };
 
@@ -74,7 +77,8 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
       themeId: "default",
       selectors: defaultSelectors,
       namespace: null,
-      emit: null
+      emit: null,
+      onSubmit: (data: any) => { },
     };
     this.config = this.resolveConfig(defaultConfig, config);
   }
@@ -176,13 +180,36 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
         // Case 2: Nested Group Object -> RECURSE!
         else if (innerInput && typeof innerInput === "object" && "group" in innerInput) {
           const nestedFieldset = this.renderGroup(innerInput, formId);
+          if (innerInput.id) nestedFieldset.id = innerInput.id;
           if (innerInput.table !== undefined) {
             // console.log(innerInput.table.content)
+            const groupSubmitBtn = this.render("@form>actions>submit-group", { isGroupBtn: false, groupId: innerInput.id }, true) as HTMLButtonElement;
+            const table = new TableBuilder(innerInput.table.content)
+            const tableEl = table.create()
+            if (innerInput.table.id) tableEl.id = innerInput.table.id;
 
-            const tableEl = new TableBuilder(innerInput.table.content).create()
+            groupSubmitBtn.onclick = (e) => {
+              e.preventDefault();
+              const is = (nestedFieldset as HTMLFieldSetElement).elements
+              // console.log(is)
+              const groupValues = [];
+              for (const element of is) {
+                if (!element) break;
+                if (element instanceof HTMLInputElement && (element.type === "checkbox" || element.type === "radio")) {
+                  if ((element as HTMLInputElement).checked) {
+                    groupValues.push(element.value);
+                  }
+                } else {
+                  groupValues.push((element as HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement).value);
+                  // data[element.name] = element.value;
+                }
+              }
+              table.addRow(groupValues as any[])
+            }
             // console.log(tableEl)
-            nestedFieldset.appendChild(tableEl);
+            nestedFieldset.append(groupSubmitBtn, tableEl);
           }
+
           fieldset.appendChild(nestedFieldset);
 
         }
@@ -209,7 +236,6 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
 
     return fieldset;
   }
-
 
   public initialize(): void {
     const formElement = this.load("@form") as HTMLFormElement;
@@ -262,9 +288,26 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
         btn.textContent = this.config.buttonText;
 
         if (payload?.isGroupBtn) {
-          btn.id = `btn-${payload.formId}-grp-${Math.random().toString(36).substring(7)}`;
+          btn.id = payload.formId ? `btn-${payload.formId}` : `btn-group-${Math.random().toString(36).substring(7)}`;
         } else {
           btn.id = `btn-${payload?.formId || "default"}`;
+          btn.style.marginTop = "1rem";
+          btn.style.padding = "1rem";
+          btn.style.float = "right";
+        }
+        break;
+      }
+
+      case "@form>actions>submit-group": {
+        const btn = el as HTMLButtonElement;
+        btn.className = `${this.config.buttonClass} ${btn.className || ""}`.trim();
+        btn.type = "button";
+        btn.textContent = "Submit Item";
+
+        if (payload?.isGroupBtn) {
+          btn.id = payload.groupId ? `btn-${payload.groupId}` : `btn-group-${Math.random().toString(36).substring(7)}`;
+        } else {
+          btn.id = `btn-${payload?.groupId || "default"}`;
           btn.style.marginTop = "1rem";
           btn.style.padding = "1rem";
           btn.style.float = "right";
@@ -339,6 +382,8 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
 
     if (this.submitButtonId) {
       const button = this.load("@form>actions>submit") as HTMLButtonElement;
+
+      console.log(button.id)
 
       if (button) {
         button.addEventListener("click", (e) => {
