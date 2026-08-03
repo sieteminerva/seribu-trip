@@ -803,6 +803,13 @@ export class TableBuilder {
     const body = [];
     this.pageRows = [];
 
+    let displayIndex = 0;
+    for (let i = 0; i < start; i++) {
+      const raw = bodyInput[i];
+      const isSubRow = raw && typeof raw === "object" && raw.subrowOfUid != null;
+      if (!isSubRow) displayIndex += 1;
+    }
+
     for (let i = start; i < end; i++) {
       // Step 1: Get the raw row data and determine if it's a sub-row.
       const raw = bodyInput[i];
@@ -834,9 +841,11 @@ export class TableBuilder {
         }
       }
 
+      const autoNumber = isSubRow ? 0 : ++displayIndex;
+
       // Step 4: Construct and add the BodyRowModel to the body array.
       body.push({
-        autoNumber: this.data.body[i]._uid.replace("row_", ""),
+        autoNumber,
         rowIndex: i,
         uid: uid,
         parentUid: raw.subrowOfUid || null,
@@ -1575,7 +1584,7 @@ export class TableBuilder {
     removeBtn.setAttribute("aria-label", "Remove row");
     removeBtn.addEventListener("click", () => {
       const tr = container.closest("tr") as HTMLTableRowElement;
-      const gIdx = tr.sectionRowIndex;
+      const gIdx = Number(tr.dataset.globalIndex ?? tr.sectionRowIndex);
       if (isSubRow) {
         this.data.body.splice(gIdx, 1);
         this.render();
@@ -1593,7 +1602,7 @@ export class TableBuilder {
       addBtn.setAttribute("aria-label", "Add sub-row");
       addBtn.addEventListener("click", () => {
         const tr = container.closest("tr") as HTMLTableRowElement;
-        const gIdx = tr.sectionRowIndex;
+        const gIdx = Number(tr.dataset.globalIndex ?? tr.sectionRowIndex);
         this.insertSubRow([], gIdx);
       });
       container.appendChild(addBtn);
@@ -1734,8 +1743,7 @@ export class TableBuilder {
     // Cells in this column are typically not directly editable.
     const formulaIndex = (this.config.bodyOptions || []).findIndex((opt) => !!opt?.formula);
     // Step 2: Get the global index of the row from its dataset.
-    // const g = Number(tr.dataset.globalIndex);
-    const g = tr.sectionRowIndex;
+    const g = Number(tr.dataset.globalIndex ?? tr.sectionRowIndex);
     // Step 3: Get the unique identifier of the row from its dataset.
     // const uid = tr.dataset.uid;
 
