@@ -78,7 +78,7 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
       selectors: defaultSelectors,
       namespace: null,
       emit: null,
-      onSubmit: (data: any) => { },
+      onSubmit: (_data: any) => { },
     };
     this.config = this.resolveConfig(defaultConfig, config);
   }
