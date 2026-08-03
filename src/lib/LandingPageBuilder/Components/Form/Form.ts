@@ -383,9 +383,9 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
     if (this.submitButtonId) {
       const button = this.load("@form>actions>submit") as HTMLButtonElement;
 
-      console.log(button.id)
 
       if (button) {
+        if (button.id) console.log(button.id)
         button.addEventListener("click", (e) => {
           e.preventDefault();
           // Memicu form validation HTML5 native secara legal lintas penunjuk elemen!
