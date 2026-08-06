@@ -3,7 +3,7 @@ import './lib/LandingPageBuilder/Components/Form/Form.css';
 import "./lib/LandingPageBuilder/Styles/icon.css";
 import './overrides.css';
 
-import { PackagePageContent, GalleryPageContent, HomePageContent, ProductPageContent, FormPageContent, BlogPageContent } from './content';
+import { PackagePageContent, GalleryPageContent, HomePageContent, ProductPageContent, FormPageContent, BlogPageContent, TablePageContent } from './content';
 import { FooterBuilder } from './lib/LandingPageBuilder/Components/Footer/Footer';
 import { MenuBuilder } from './lib/LandingPageBuilder/Components/Menu/Menu';
 import { LandingPageBuilder } from './lib/LandingPageBuilder/LandingPage';
@@ -23,6 +23,7 @@ import { ModeSwitcherBuilder } from './lib/LandingPageBuilder/Components/ModeSwi
 import { TabBuilder } from './lib/LandingPageBuilder/Components/Tab/Tab';
 import { ProductGridBuilder } from './lib/LandingPageBuilder/Components/Product/ProductGrid';
 import { ArticleBuilder } from './lib/LandingPageBuilder/Components/Article/Article';
+import { TableBuilder } from './lib/LandingPageBuilder/Components/Table/Table';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 
@@ -40,7 +41,7 @@ if (app) {
         { label: 'FAQ', href: '#faq-section' },
         { label: 'Merchandise', href: '#merchandise' },
         { label: 'Blog', href: '#blog' },
-        // { label: 'Admin', href: '#form' },
+        { label: 'Table', href: '#table' },
       ]
     }
 
@@ -81,7 +82,8 @@ if (app) {
       gallery: GalleryPageContent,
       form: FormPageContent.page as any,
       merchandise: (ProductPageContent as any),
-      blog: BlogPageContent as any // <= saya pakai awalan huruf besar sedangkan route di menu huruf kecil
+      blog: BlogPageContent as any, // <= saya pakai awalan huruf besar sedangkan route di menu huruf kecil
+      table: TablePageContent as any
     },
     footer
   }, {
@@ -128,6 +130,7 @@ if (app) {
         navigate: (slug: string, themeId: string) => builder.router.navigate("blog", themeId || builder.currentThemeId, slug, true)
       }).create(data.content)
     })
+    .register("table", (data: any) => new TableBuilder(data.config).create(data.content))
 
   builder.theme?.register(new DefaultTheme())
     .register(new HorizontalTheme())

@@ -208,12 +208,12 @@ export class DOMTreeMemory {
     if (this.#nodes.has(globalStorageKey) && !multiple) {
       const existingEntries = this.#nodes.get(globalStorageKey)?.records?.length || 0;
 
-      // console.warn(
-      //   `🚨 [Framework Architectural Violation]: Element key "${String(tree?.key)}" has already been rendered in builder "${globalStorageKey}"!\n` +
-      //   `Re-rendering a Singleton node is strictly prohibited.\n` +
-      //   `Please use "this.render('${String(tree?.key)}', payload, true)" if it is a multiple item or \n` +
-      //   `"this.load('${String(tree?.key)}')" instead to retrieve the active live memory pointer.`
-      // );
+      console.warn(
+        `🚨 [Framework Architectural Violation]: Element key "${String(tree?.key)}" has already been rendered in builder "${globalStorageKey}"!\n` +
+        `Re-rendering a Singleton node is strictly prohibited.\n` +
+        `Please use "this.render('${String(tree?.key)}', payload, true)" if it is a multiple item or \n` +
+        `"this.load('${String(tree?.key)}')" instead to retrieve the active live memory pointer.`
+      );
 
       DataLogger(DISPLAY_LOG,
         { functionName: "🧭 [DOMTreeMemory]", action: `Set Skipped` },
@@ -276,7 +276,7 @@ export class DOMTreeMemory {
     DataLogger(DISPLAY_LOG,
       { functionName: "🧭 [DOMTreeMemory]", action: `Set Create` },
       { globalKey: globalStorageKey, entries: 1 + " item", multiple });
-
+    // console.log(this.#nodes.entries())
     return singleProxyObj;
   }
 

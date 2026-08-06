@@ -1,10 +1,17 @@
-import type { iBuilderRegistry, iBuilderConfig, iElementProperty, iActionProperty, iBasicNode, iNodeRecordItem, iNodeRecords, iBuilderSelectorsConfig } from "../interface";
-import { TemplateRegistry } from "../Modules/TemplateRegistry";
-import { buildNamespace, setMetadata } from "../Utils/Metadata";
-import { ElementCreatedEventBus, StateMutationEventBus } from "../Services/EventBus";
-import { selectorToTree } from "../Utils/SelectorToTree";
-
+import type { iBuilderRegistry, iBuilderConfig, iElementProperty, iActionProperty, iBasicNode, iBuilderSelectorsConfig, iNodeRecordRelations } from "../../interface";
+import { TemplateRegistry } from "../../Modules/TemplateRegistry";
+import { buildNamespace, setMetadata } from "../../Utils/Metadata";
+import { ElementCreatedEventBus, StateMutationEventBus } from "../../Services/EventBus";
+import { selectorToTree } from "../../Utils/SelectorToTree";
+export interface iNodeRecordItem<T = any> {
+  key: string;          // Key unik/lokal (misal: "@table>trow" atau "@table>trow#101")
+  element: HTMLElement; // DOM Fisik Composite
+  raw: T;              // Raw Payload
+  proxy: T;            // Objek Proxy Reaktif
+  relations: iNodeRecordRelations
+}
 export const GLOBAL_INSTANCE_COUNTER = new Map<string, number>();
+const IS_PROXY = Symbol("IS_PROXY");
 /**
  * @classdesc
  * Builder is the abstract foundation for declarative landing-page components.
@@ -50,7 +57,7 @@ export const GLOBAL_INSTANCE_COUNTER = new Map<string, number>();
  * @author YMGH
  * @version 1.0.0
  */
-export abstract class Builder<TType extends string = string, TConfig extends iBuilderConfig<TType> = iBuilderConfig<TType>> {
+export abstract class Builder2<TType extends string = string, TConfig extends iBuilderConfig<TType> = iBuilderConfig<TType>> {
   static #namespaceStack: string[] = [];
 
   public static resetCounters(): void {
@@ -104,7 +111,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
 
     // 2. Resolve namespace (explicit > parent stack > builderId:seed)
     const explicitNamespace = options?.explicitNamespace ?? (config as any)?.namespace ? String((config as any).namespace).trim() : "";
-    const parentNamespace = Builder.#namespaceStack[Builder.#namespaceStack.length - 1] || null;
+    const parentNamespace = Builder2.#namespaceStack[Builder2.#namespaceStack.length - 1] || null;
     const baseNamespace = explicitNamespace || (
       parentNamespace
         ? `${parentNamespace}:${String(this.builderId)}:${seed}`
@@ -117,7 +124,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     // 4. Optionally push onto static namespace stack for nested builders
     let pushed = false;
     if (options?.pushNamespace) {
-      Builder.#namespaceStack.push(baseNamespace);
+      Builder2.#namespaceStack.push(baseNamespace);
       // Builder.pushNamespace(baseNamespace);
       pushed = true;
     }
@@ -127,7 +134,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
 
     // 6. Optionally pop namespace (for nested builder cleanup)
     if (options?.popNamespace && pushed) {
-      Builder.#namespaceStack.pop();
+      Builder2.#namespaceStack.pop();
     }
 
     return { namespace: baseNamespace, hierarchy, seed, pushed };
@@ -158,15 +165,41 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
    * Internal reference holder pointing directly to the raw, unmutated data node extracted from the spreadsheet database.
    */
   protected activeLiveThemeId: string = "default";
+  #staticHierarchy: Record<string, any> = {};
+  /**
+   * 👑 LAZY HIERARCHY ENGINE
+   * Mengisolasi pengerjaan rekonsiliasi silsilah agar tidak membebani loop render()
+   */
+  protected hierarchy = {
+    get: (): Record<string, any> => {
+      return this.#staticHierarchy;
+    },
 
-  protected hierarchy: Record<string, any> = {}
+    /**
+     * ⚡ BATCH REBUILD RELATIONS (Clean & Fast)
+     * Menggunakan properti internal JS __templateId, DOM tetap bersih 100%!
+     */
+    update: (explicitRootKey?: TType): Record<string, any> => {
+      const rootKey = explicitRootKey || ("@container" as TType);
+      const rootEl = this.#nodes.get(rootKey)?.element as HTMLElement;
+
+      if (!rootEl) return this.#staticHierarchy;
+
+      // Scan seluruh node yang tersimpan di memori lokal #nodes
+      this.#nodes.forEach((_nodeData, _key) => {
+
+      });
+
+      return this.#staticHierarchy;
+    }
+  };
 
   /**
  * 👑 THE SEPARATED HYDRATION VALVE (POS KEMENTERIAN PENGISIAN RAHIM DATA)
  * Murni hanya mengurusi penyemprotan teks data spesifik atomik,
  * terisolasi penuh, rapi, dan kebal dari bug hantu selamanya!
  */
-  protected abstract template(typeKey: TType, el: HTMLElement, payload?: any): void;
+  protected abstract template(typeKey: TType, el: HTMLElement, payload?: any, props?: iActionProperty): void;
 
   /**
    * @description
@@ -242,6 +275,10 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     }) as Required<C>;
   }
 
+  public setConfig(config: Partial<TConfig>) {
+    this.config = this.resolveConfig(this.config, config)
+  }
+
   public errorHandler() {
     const id = this.builderId;
     console.warn(
@@ -251,149 +288,135 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     );
   }
 
-  #nodes = new Map<TType | string, iNodeRecords>();
+  #cache = new Map<string, HTMLElement>();
 
-  protected nodes() {
-    const registerTheme = (key: TType, element: HTMLElement, payload: any, selector: iBuilderSelectorsConfig[TType]) => {
-      if (typeof TemplateRegistry !== "undefined" && typeof TemplateRegistry.resolve === "function") {
-        try {
-          const registryLookupKey = (key === "@container") ? `@${String(this.builderId)}:container` : key;
-          const activeHandler = TemplateRegistry.resolve("default", registryLookupKey as string, null);
+  #nodes = new Map<string, iNodeRecordItem>();
 
-          if (typeof activeHandler === "function") {
-            activeHandler(registryLookupKey as string, element, payload, selector);
-          }
-        } catch (securityError) {
-          console.warn(`[Builder Security Bypass] TemplateRegistry evaluation skipped for key "${String(key)}":`, securityError);
-        }
+  #updates = new Map<TType, { target: any, element: HTMLElement }>
+
+  // 0. Siapkan cache global di luar class atau sebagai private property class untuk cegah memory leak
+  #proxyCache = new WeakMap<any, any>();
+
+  protected setProxy(
+    key: TType,
+    payload: any,
+    element: HTMLElement,
+    onUpdateCallback?: (target: any, prop: string | symbol, value: any, el: HTMLElement) => void
+  ): any {
+    function _isProxy(obj: any): boolean {
+      return Boolean(obj && typeof obj === "object" && obj[IS_PROXY] === true);
+    }
+
+    function _isPlainObjectOrArray(obj: any): boolean {
+      if (obj === null || typeof obj !== "object") return false;
+      if (obj instanceof String || obj instanceof Number || obj instanceof Boolean) {
+        return false;
       }
-      return;
+      if (Array.isArray(obj)) return true;
+
+      const proto = Object.getPrototypeOf(obj);
+      return proto === Object.prototype || proto === null;
+    }
+
+    if (payload == null || typeof payload !== "object") return payload;
+    if (!_isPlainObjectOrArray(payload)) return payload;
+    if (_isProxy(payload)) return payload;
+    if (payload instanceof Node) return payload;
+
+    // 🟢 CEK CACHE
+    if (this.#proxyCache.has(payload)) {
+      return this.#proxyCache.get(payload);
+    }
+
+    const self = this;
+
+    const updateNodes = (tkey: TType, proxyObj: any) => {
+      this.#nodes.set(tkey, {
+        key: tkey,
+        element: element,
+        raw: payload,
+        proxy: proxyObj,
+        relations: this.hierarchy?.get()?.[tkey]
+      });
     };
 
-    const resolveLocalKey = (k: TType) => k;
+    const singleProxyObj = new Proxy(payload, {
+      get: (target, prop, receiver) => {
+        if (prop === IS_PROXY) return true;
 
-    return {
-      has: (key: TType): boolean => this.#nodes.has(resolveLocalKey(key)),
+        const value = Reflect.get(target, prop, receiver);
 
-      get: (key: TType, index: number | "all" = 0): any => {
-        const node = this.#nodes.get(resolveLocalKey(key));
-        if (!node || !node.records || node.records.length === 0) return null;
-        if (index === "all") return node.records;
-        return node.records[index] || null;
-      },
-
-      /**
-       * 👑 METODE SET LOKAL (100% SINKRON REAKTIF MEMELUK PROXY TRAP SEPAKET!)
-       */
-      set: (key: TType, element: HTMLElement, payload: any, multiple: boolean) => {
-        const lKey = resolveLocalKey(key);
-
-        if (this.#nodes.has(lKey) && !multiple) {
-          console.warn(
-            `🚨 [Framework Architectural Violation]: Elemen lKey "${String(lKey)}" has already been rendered in builder "${this.builderId}"!\n` +
-            `Re-rendering a Singleton node is strictly prohibited.\n` +
-            `Please use "this.render('${String(lKey)}', payload, true)" if it is a multiple item or \n` +
-            `"this.load('${String(lKey)}')" instead to retrieve the active live memory pointer.`
-          );
-          return this.#nodes.get(lKey)?.records[0].proxy;
-        }
-
-        const rawObj = payload && typeof payload === "object" ? { ...payload } : { value: payload };
-
-        // =========================================================================
-        // 🧙‍♂️ THE LOCAL PROXY TRAP INTEGRATION (TAMENG REAKTIVITAS MANDIRI ANDA!)
-        // =========================================================================
-        const singleProxyObj = new Proxy(rawObj, {
-          set: (target: any, prop: string, value: any) => {
-            target[prop] = value;
-
-            // 💥 PICU METABOLISME REAKTIF: Hamburkan sinyal mutasi bubbling ke udara!
-            StateMutationEventBus.broadcast(String(key), target, element);
-            return true;
+        // 🟢 PERBAIKAN 1: Jangan daftarkan nested child ke #nodes induk!
+        // Cukup bungkus value dengan Proxy (Gunakan Cache jika ada)
+        if (value !== null && _isPlainObjectOrArray(value) && !(value instanceof Node)) {
+          // Jika sudah di-cache, langsung ambil dari cache
+          if (self.#proxyCache.has(value)) {
+            return self.#proxyCache.get(value);
           }
-        });
-
-        const relations = this.hierarchy[key] || { scope: this.builderId, key: key as string, parent: null, children: [] };
-
-        // Simpan ke dalam rekor, pisahkan kasta raw penunjuk dengan tameng proxy reaktifnya!
-        const newItem: iNodeRecordItem = {
-          element,
-          relations,
-          raw: rawObj,
-          proxy: singleProxyObj // 🟢 Amankan objek reaktif Proxy!
-        };
-
-        if (this.#nodes.has(lKey)) {
-
-          this.#nodes.get(lKey)!.records.push(newItem);
-          return singleProxyObj;
+          // Jika belum, panggil setProxy TANPA merusak pendaftaran node induk
+          return self.setProxy(key, value, element);
         }
-
-        // Pemicuan hidrasi kosmetik gaya visual desainer luar
-        registerTheme(key, element, singleProxyObj, this.config.selectors?.[key]!);
-
-        this.#nodes.set(lKey, { records: [newItem] });
-
-        ElementCreatedEventBus.broadcastCreated({
-          key: key as string,
-          instanceId: this.instanceNamespace || String(this.builderId),
-          builderId: this.builderId,
-          relations,
-          raw: rawObj,
-          proxy: singleProxyObj,
-          element
-        });
-
-        // Kembalikan objek proxy agar data binding satu pintu terkunci intim!
-        return singleProxyObj;
+        return value;
       },
 
-      delete: (key: TType, index: number | "all" = "all"): void => {
-        const lKey = resolveLocalKey(key);
-        const rec = this.#nodes.get(lKey);
-        if (index === "all") {
-          rec?.records.forEach(item => item.element?.remove());
-          this.#nodes.delete(lKey);
-        } else if (typeof index === "number") {
-          rec?.records[index]?.element?.remove();
-          rec?.records.splice(index, 1);
+      set: (target: any, prop: string | symbol, value: any, receiver: any) => {
+        const isArray = Array.isArray(target);
+        const oldValue = target[prop];
+        const isValueEqual = oldValue === value;
+
+        const success = Reflect.set(target, prop, value, receiver);
+
+        if (success) {
+          // 🟢 PERBAIKAN 2: Tangani mutasi Array (seperti splice/length) dengan tepat
+          const isArrayLengthChange = isArray && prop === "length";
+          const isArrayMutated = isArray && !isNaN(Number(prop));
+
+          // Trigger update jika nilai berubah ATAU jika terjadi mutasi Array
+          if (!isValueEqual || isArrayLengthChange || isArrayMutated) {
+            updateNodes(key, singleProxyObj);
+            if (typeof onUpdateCallback === "function") {
+              onUpdateCallback(target, prop, value, element);
+            } else {
+              // Fallback default
+              self._runUpdate(key, singleProxyObj, element);
+            }
+          }
         }
+        return success;
       },
 
-      clear: () => {
-        this.#nodes.forEach(rec => rec.records.forEach(item => item.element?.remove()));
-        this.#nodes.clear();
-        // console.log(`🧹 [Local Memory Guard]: Wiped 100% standalone RAM buffer for "${this.builderId}"`);
-      },
+      deleteProperty: (target: any, prop: string | symbol) => {
+        const hasProp = prop in target;
+        const success = Reflect.deleteProperty(target, prop);
 
-      restore: (typeKey: TType, incomingPayload: any): HTMLElement | null => {
-        const lKey = resolveLocalKey(typeKey);
-        const rec = this.#nodes.get(lKey);
-        if (!rec || rec.records.length === 0) return null;
-        const cachedItem = rec.records[rec.records.length - 1];
-        if (cachedItem.raw !== incomingPayload && JSON.stringify(cachedItem.raw) !== JSON.stringify(incomingPayload)) {
-          this.nodes().delete(typeKey, "all");
-          return null;
+        if (success && hasProp) {
+          updateNodes(key, singleProxyObj);
+          self._runUpdate(key, singleProxyObj, element);
         }
-        return cachedItem.element;
-      },
-
-      payload: (key: TType, index: number | "all" = 0): any => {
-        const mainRecord = this.#nodes.get(resolveLocalKey(key));
-        if (!mainRecord || !mainRecord.records || mainRecord.records.length === 0) return null;
-        if (index === "all") return mainRecord.records.map(n => n.proxy);
-        return mainRecord.records[index as number].proxy || null;
-      },
-
-      load: (key: TType, index: number | "all" = 0): any => {
-        const mainRecord = this.#nodes.get(resolveLocalKey(key));
-        if (!mainRecord || !mainRecord.records || mainRecord.records.length === 0) return null;
-        if (index === "all") return mainRecord.records.map(n => n.element);
-        return mainRecord.records[index as number]?.element || null;
+        return success;
       }
-    };
+    });
+
+    // Simpan ke Cache & Daftarkan ke #nodes
+    this.#proxyCache.set(payload, singleProxyObj);
+    updateNodes(key, singleProxyObj);
+
+    return singleProxyObj;
   }
 
+
+  private _runUpdate(key: TType, target: any, element: HTMLElement) {
+    if (this.#updates.size === 0) {
+      queueMicrotask(() => {
+        this.#updates.forEach((context, patchKey) => {
+          // this.use(patchKey, context.target, context.element);
+          StateMutationEventBus.broadcast(String(patchKey), context.target, context.element);
+        });
+        this.#updates.clear();
+      });
+      this.#updates.set(key, { target, element });
+    }
+  }
 
   /**
    * @description
@@ -410,14 +433,13 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
    * @public
    */
   public create(content: iBasicNode, config?: Partial<TConfig>): HTMLElement {
+    console.log(content, config)
     const effectiveConfig = config || (content && typeof content === "object" ? (content as any).config : undefined);
     if (effectiveConfig) this.config = this.resolveConfig(this.config, effectiveConfig);
 
     // Unified identity orchestration: seed, namespace, hierarchy, stack management
     const identity = this.ensureIdentity(content, this.config, { pushNamespace: true, popNamespace: true });
-    this.hierarchy = identity.hierarchy;
-
-    // console.log("hierarchy", identity)
+    this.#staticHierarchy = identity.hierarchy;
 
     try {
 
@@ -427,7 +449,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
 
       // 💡 AUTOMATION LIFECYCLE: Bersihkan sisa bita RAM & kunci Tema sebelum anak bersiap!
       this.activeLiveThemeId = this.config?.themeId || document.body.dataset.theme?.replace(/^theme-/, "") || "default";
-      this.nodes().clear();
+      this.#nodes.clear();
       // Jalankan persiapan rajutan silsilah milik komponen anak
       const DOMTree = this.prepare(content, this.config) as HTMLElement;
       // if (this.builderId === "tab") console.log(`${this.builderId} Elements Map`, this.#nodes.entries())
@@ -435,10 +457,13 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
       // Detonasi event bindings interaktif klik browser
       this.initialize(DOMTree, content);
 
+      this.hierarchy.update();
+      console.log("hierarchy", this.#staticHierarchy)
       // Panggil free function utils pasif kita, 0% mengotori kesucian return HTMLElement!
       return DOMTree;
     } finally {
       // Namespace stack managed by ensureIdentity({ popNamespace: true })
+      console.log("[template cache]", this.#cache.entries())
     }
 
   }
@@ -463,45 +488,56 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
    *
    * @protected
    */
-  protected render(typeKey: TType, payload?: any, multiple: boolean = false): HTMLElement | undefined {
-    // if (this.builderId === "pricing-card") console.log(this.builderId, "this.render", payload);
-    const selector = this.config.selectors?.[typeKey];
+  render(typeKey: TType, payload?: any): HTMLElement | undefined {
+    const registerTheme = (key: TType, element: HTMLElement, payload: any, selector: iBuilderSelectorsConfig[TType]) => {
+      if (typeof TemplateRegistry !== "undefined" && typeof TemplateRegistry.resolve === "function") {
+        try {
+          const registryLookupKey = (key === "@container") ? `@${String(this.builderId)}:container` : key;
+          const activeHandler = TemplateRegistry.resolve("default", registryLookupKey as string, null);
 
-
-    // ====================================================
-    // 🧙‍♂️ THE RE-HYDRATION OVERWRITE INTERCEPTOR (NOT SURE IT IS WORKING!)
-    // ====================================================
-    if (selector?.isRoot && !multiple) {
-
-      const restoredDOM = this.nodes().restore!(typeKey, payload);
-      if (restoredDOM) {
-        console.log(`🎉 [Framework Restore Hit]: Successfully re-attached full memory matrix tree for "${this.builderId}"`);
-        return restoredDOM; // Bypass total rebuild visual visual!
+          if (typeof activeHandler === "function") {
+            activeHandler(registryLookupKey as string, element, payload, selector);
+          }
+        } catch (securityError) {
+          console.warn(`[Builder Security Bypass] TemplateRegistry evaluation skipped for key "${String(key)}":`, securityError);
+        }
       }
-    }
+      return;
+    };
 
+    const selector = this.config.selectors?.[typeKey];
     if (!selector) return undefined;
 
-    const el = document.createElement(selector.tagName || "div");
-    this._applyNodeAttributes(el, selector);
+    let el: HTMLElement;
 
-    // Setor instansi dan daftarkan langsung ke rahim pusat lewat katup .set() proxy nodes!
-    const activePayload = this.nodes().set(typeKey, el, payload, multiple);
+    // 1. Ambil dari template jika sudah pernah di-store, atau buat baru
+    if (this.#cache.has(typeKey)) {
+      const template = this.#cache.get(typeKey)!;
+      const fragment = (template as HTMLTemplateElement).content.cloneNode(true) as DocumentFragment;
+      el = fragment.firstElementChild as HTMLElement;
+    } else {
+      const tagName = selector.tagName || "div";
+      el = document.createElement(tagName);
+      this._applyNodeAttributes(el, selector);
 
-    this.template(typeKey, el, activePayload);
-
-    if (selector.wrapper) {
-      const wrapperChain = this._wrapElement(selector.wrapper, el);
-      if (wrapperChain) {
-        // Kembalikan bungkusan utuh agar anak tahu siapa pintu luar (outer) & pintu dalam (inner)
-        (el as any).__outer = wrapperChain.__outer;
-        (el as any).__inner = el;
+      if (selector.wrapper) {
+        const wrapperChain = this._wrapElement(selector.wrapper, el);
+        if (wrapperChain) {
+          (el as any).__outer = wrapperChain.__outer;
+          (el as any).__inner = el;
+        }
       }
     }
 
-    // attach metadata for HTMLElement.getMetadata()
-    // console.log(this.hierarchy[typeKey])
-    setMetadata(el, [this.nodes().get(typeKey) || {}], typeKey as string);
+    // 2. Bikin Proxy & Otomatis Terdaftar di #nodes
+    const activePayload = this.setProxy(typeKey, payload, el);
+
+    // 3. Hidrasi data awal via template()
+    this.template(typeKey, el, activePayload, selector);
+
+    // 4. Metadata & Emit Event
+    setMetadata(el, [this.#nodes.get(typeKey) || {}], typeKey as string);
+    registerTheme(typeKey, el, activePayload, this.config.selectors?.[typeKey]!);
 
     if (this.config?.emit !== undefined) {
       this.config.emit?.("elementAdded", {
@@ -515,13 +551,46 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     return el;
   }
 
-  protected load(key: TType, index: number | "all" = 0): HTMLElement | HTMLElement[] | null {
-    // if (this.builderId === "pricing-card") console.log(this.builderId, "this.load", nodes);
-    return this.nodes().load(key, index);
+  /**
+   * 📦 STORE: Bertugas menyimpan cetakan murni <template> ke #cache
+   * HANYA dipanggil manual oleh developer untuk Komponen Makro yang berharga!
+   */
+  store(typeKey: TType, element: HTMLElement) {
+    if (!this.#cache.has(typeKey)) {
+      const templateEl = document.createElement("template");
+      // Clone skeleton murni tanpa data terikat
+      templateEl.content.appendChild(element.cloneNode(true));
+      // StateMutationEventBus.broadcast(String(typeKey), {}, element);
+      this.#cache.set(typeKey, templateEl);
+    }
   }
 
-  protected payload(key: TType, index: number | "all" = 0): any {
-    return this.nodes().payload(key, index) || null;
+  /**
+   * ♻️ USE (Dulu 'reuse'): Mengambil Blueprint <template> dari #cache 
+   * dan langsung merender instance baru secara instan
+   */
+  use(typeKey: TType, payload?: any, targetElement?: HTMLElement, selector?: iActionProperty): HTMLElement | undefined {
+    // Mode A: Patching Elemen Eksisting
+    if (targetElement) {
+      this.template(typeKey, targetElement, payload, selector);
+      return targetElement;
+    }
+
+    // Mode B: Buat/Clone Elemen Baru dari Cetakan
+    return this.render(typeKey, payload);
+  }
+
+
+  protected load(key: TType): HTMLElement | null {
+    // if (this.builderId === "pricing-card") console.log(this.builderId, "this.load", nodes);
+    const node = this.#nodes.get(key)
+    console.log({ node })
+
+    return node?.element!;
+  }
+
+  protected payload(key: TType): any {
+    return this.#nodes.get(key) || null;
   }
 
   /**
@@ -538,7 +607,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     typeKeys.forEach((key) => {
       const liveElement = this.load(key) as HTMLElement;
       if (liveElement) liveElement.remove();
-      this.nodes().delete(key, "all");
+      this.#nodes.delete(key);
     });
   }
 
@@ -567,7 +636,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     // 🔮 THE ANCESTRAL POINTER EXTRACTOR (EVAKUASI DARI MAP POOL)
     // Jemput elemen root hidup dari dalam saku standard identifier @container!
     // ====================================================
-    const rootElement = this.nodes().load(typeKey || "@container" as TType) as HTMLElement
+    const rootElement = this.#nodes.get(typeKey || "@container" as TType)?.element
 
     if (rootElement) {
       // Cabut dari silsilah induk bodi HTML jika memiliki parentNode aktif di browser
@@ -581,7 +650,7 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
       console.log(`[Lifecycle Security] DOM Element Node for "${String(this.builderId)}" successfully unmounted.`);
     }
 
-    this.nodes().clear();
+    this.#nodes.clear();
     this.config = null as any;
     this.instanceNamespace = null;
 
@@ -607,37 +676,6 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
     if (!detached) {
       const el = childElement.element || childElement;
       if (el && el.parentElement) el.remove();
-    }
-  }
-
-  public attach(type: TType, element: HTMLElement, parent?: HTMLElement): void {
-    // Get the parent element based on the type
-    const node = this.nodes().get(type)
-    const parentElement = parent || node.element as HTMLElement;
-
-    if (parentElement) {
-      // Append the element to the parent
-      parentElement.appendChild(element);
-
-      // Store the element in the nodes registry
-      this.nodes().set(type, element, node.payload, true);
-    } else {
-      console.warn(`Parent element not found for type: ${type}`);
-    }
-  }
-
-  public detach(type: TType): void {
-    // Get the element from the nodes registry
-    const element = this.nodes().get(type).element as HTMLElement;
-
-    if (element && element.parentNode) {
-      // Remove the element from the DOM
-      element.parentNode.removeChild(element);
-
-      // Remove the element from the nodes registry
-      this.nodes().delete(type);
-    } else {
-      console.warn(`Element not found for type: ${type}`);
     }
   }
 
@@ -760,4 +798,4 @@ export abstract class Builder<TType extends string = string, TConfig extends iBu
 // Ini adalah taktik runtime locking paling legal dan aman di JavaScript.
 // Hacker/script luar GARANSI 100% tidak akan bisa mengganti jeroan .create atau .render!
 // ====================================================
-Object.freeze(Builder.prototype);
+Object.freeze(Builder2.prototype);

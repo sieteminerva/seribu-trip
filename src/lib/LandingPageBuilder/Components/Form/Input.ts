@@ -118,22 +118,22 @@ export class InputBuilder extends Builder<InputElementType> {
   public prepare(inputObj: Partial<iBasicInputNode>, _config?: Required<iBuilderConfig<InputElementType>> | undefined): HTMLElement | Record<string, any | HTMLElement> {
     this.#input = this.resolvePayload(inputObj);
     const elementId = this._sanitizeId(this.#input.id || this.#input.title || `input-${Math.random().toString(36).slice(2, 10)}`);
-    const wrapper = this.render("@field", this.#input, true);
+    const wrapper = this.render("@field", this.#input);
 
     if (this.#input.title && this.#input.config?.useLabel) {
-      const label = this.render("@field>label", { id: elementId, text: this.#input.title }, true)!;
+      const label = this.render("@field>label", { id: elementId, text: this.#input.title })!;
       wrapper?.appendChild(label);
     }
 
     switch (this.#input.type) {
       case "textarea": {
-        const textarea = this.render("@field>textarea", { id: elementId, config: this.#input }, true);
+        const textarea = this.render("@field>textarea", { id: elementId, config: this.#input });
         wrapper?.appendChild(textarea!);
         break;
       }
 
       case "select": {
-        const select = this.render("@field>select", { id: elementId, config: this.#input }, true);
+        const select = this.render("@field>select", { id: elementId, config: this.#input });
 
         // Buat Baris Placeholder awal
         const placeholderOpt = document.createElement("option");
@@ -163,14 +163,14 @@ export class InputBuilder extends Builder<InputElementType> {
       case "checkbox":
       case "radio": {
         const typeKey = this.#input.type === "checkbox" ? "@field>checkbox" : "@field>radio";
-        const input = this.render(typeKey as any, { id: elementId, config: this.#input }, true);
+        const input = this.render(typeKey as any, { id: elementId, config: this.#input });
         wrapper?.appendChild(input!);
         break;
       }
 
       case "file": {
         // console.log(this.#input)
-        const fileInput = this.render("@field>file", { id: elementId, config: this.#input }, true) as HTMLInputElement;
+        const fileInput = this.render("@field>file", { id: elementId, config: this.#input }) as HTMLInputElement;
         fileInput.type = "file";
         wrapper?.appendChild(fileInput!);
         break;
@@ -178,7 +178,7 @@ export class InputBuilder extends Builder<InputElementType> {
 
       // Default klan input text, number, email standard kaku
       default: {
-        const input = this.render("@field>input", { id: elementId, config: this.#input }, true);
+        const input = this.render("@field>input", { id: elementId, config: this.#input });
         wrapper?.appendChild(input!);
         break;
       }
@@ -186,7 +186,7 @@ export class InputBuilder extends Builder<InputElementType> {
 
     // Suntikkan teks petunjuk info kecil di lantai terbawah boks input wrapper
     if (this.#input.info) {
-      const info = this.render("@field>info", this.#input, true);
+      const info = this.render("@field>info", this.#input);
       wrapper?.appendChild(info!);
     }
 

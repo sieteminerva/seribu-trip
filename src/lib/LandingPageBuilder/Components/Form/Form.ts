@@ -184,8 +184,8 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
           if (innerInput.table !== undefined) {
             // console.log(innerInput.table.content)
             const groupSubmitBtn = this.render("@form>actions>submit-group", { isGroupBtn: false, groupId: innerInput.id }, true) as HTMLButtonElement;
-            const table = new TableBuilder(innerInput.table.content)
-            const tableEl = table.create()
+            const table = new TableBuilder()
+            const tableEl = table.create(innerInput.table.content)
             if (innerInput.table.id) tableEl.id = innerInput.table.id;
 
             groupSubmitBtn.onclick = (e) => {

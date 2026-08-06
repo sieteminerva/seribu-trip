@@ -33,9 +33,11 @@ table.table > tfoot > tr > td {
 .table thead th,
 table.table > thead > tr > th {
   background: var(--surface-bg);
-  color: var(--text-main);
+  color: var(--text-heading);
   font-weight: 700;
-  border-bottom: 1px solid rgba(34, 36, 38, 0.15);
+  border-bottom: 1px solid var(--border-soft);
+  border-left: 1px solid var(--border-soft);
+  filter: brightness(0.95); /* 15% darker */
 }
 
 table.table > tbody > tr .cell:not(.actions) {
@@ -74,7 +76,7 @@ table.table > tbody > tr.sub-row > td:first-child {
 /* Editing */
 table.table tr.editing > th[contenteditable="true"] > .cell,
 table.table tr.editing > td[contenteditable="true"] > .cell {
-  border: 1px solid rgba(34, 36, 38, 0.15);
+  border: 1px solid var(--border-soft);
   color: var(--text-muted);
 }
 
@@ -87,12 +89,21 @@ table tr.editing > td[contenteditable="true"]:focus-visible {
 
 table.table tr.editing > th[contenteditable="true"]:focus > .cell,
 table.table tr.editing > td[contenteditable="true"]:focus > .cell {
-  border-color: #85b7d9;
+  border-color: var(--accent-strong);
 }
 
 table.table tr.editing > th[contenteditable="true"] > .cell:hover:not(:focus),
 table.table tr.editing > td[contenteditable="true"] > .cell:hover:not(:focus) {
-  border-color: rgba(34, 36, 38, 0.35);
+  border-color: var(--accent-strong);
+}
+
+table.table tr.subrow {
+  background-color: var(--placeholde-color);
+}
+table.table tr.subrow .actions.cell {
+  &.actions-set {
+    justify-content: end;
+  }
 }
 
 /* Actions */
@@ -104,6 +115,7 @@ table.table td.actions.cell {
   vertical-align: middle;
   flex-direction: row;
   flex-wrap: nowrap;
+  align-content: center;
   max-width: 120px;
 }
 
@@ -112,13 +124,13 @@ table.table > tbody > tr > td.actions.cell.center.aligned {
   align-items: center;
   text-align: center;
   border-left: 1px solid var(--border-soft);
-  /* width: 100%; */
 }
 
 .table .actions-set,
 table.table .actions-set {
   display: flex;
   justify-content: center;
+  align-self: center;
   width: 100%;
   gap: 0.25rem;
 }
@@ -215,6 +227,11 @@ table.table .actions-set button {
   border-color: var(--allowed-color);
 }
 
+.table tbody tr td {
+  border-left: 1px solid var(--border-soft);
+}
+
+/* TFoot */
 .table tfoot .add-row-btn {
   display: flex;
   border: 1px solid var(--allowed-color);
@@ -233,15 +250,8 @@ table.table .actions-set button {
 }
 
 .table tfoot .add-row-btn:hover {
-  /* border-color: var(--allowed-color); */
   background-color: var(--allowed-color);
   color: var(--default-inverted-text-color);
-}
-
-/* TFoot */
-table.table > tfoot > tr > th:has(> button) {
-  border-left: none;
-  text-align: center;
 }
 
 table.table > tfoot > tr > th {
@@ -250,12 +260,14 @@ table.table > tfoot > tr > th {
 }
 
 table.table > tfoot > tr > th.sum {
-  background: var(--gsheets-accent-color);
+  background: var(--surface-bg);
   font-weight: bolder;
-  border-right: 1px solid rgba(34, 36, 38, 0.1);
+  border-right: 1px solid var(--border-soft);
+  border-left: 1px solid var(--border-soft);
   min-width: 100px;
   width: fit-content;
   max-width: 150px;
+  filter: brightness(0.95);
 }
 
 table.table > tfoot > tr > th.sum > .cell {
@@ -266,7 +278,7 @@ table.table > tfoot > tr > th.sum > .cell {
   height: 100%;
   font-size: 1em;
   text-align: right;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--text-main);
 }
 
 table.table > tfoot > tr > th.sum > .cell:not(:last-child) {
@@ -282,7 +294,7 @@ table.table > tfoot > tr > th.sum > .cell > .title {
   position: relative;
   float: left;
   font-size: 68%;
-  color: var(--primary-color);
+  color: var(--accent);
   text-align: left;
   margin-right: 0.25em;
 }
@@ -297,11 +309,14 @@ table.table > tfoot > tr > th:empty {
 }
 
 table.table > tfoot > tr > th:last-child:has(button) {
-  display: flex;
+  display: table-cell;
   justify-content: center;
-  width: 100%;
+  text-align: center;
+  text-align: -webkit-center;
+  vertical-align: middle;
   align-self: center;
   border-bottom: none;
+  border-left: none;
 }
 
 .table .pagination.menu {
@@ -361,4 +376,20 @@ table.table > tfoot > tr > th:last-child:has(button) {
 .very.compact.table > tfoot > tr > .cell.no-border {
   min-height: 2.5em;
   padding: 0.3em 0.5em;
+}
+
+/* Modifier */
+table.table,
+.table,
+table {
+  & td.center.aligned,
+  td .cell.center.aligned,
+  th.center.aligned {
+    text-align: center;
+  }
+  & td.right.aligned,
+  td .cell.right.aligned,
+  th.right.aligned {
+    text-align: right;
+  }
 }

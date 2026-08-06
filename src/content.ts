@@ -1023,3 +1023,68 @@ export const BlogPageContent = [{
     ]
   }
 }]
+
+
+export const TablePageContent = [
+  {
+    builder: "table",
+    content: {
+      config: {
+        size: "small",
+        type: "celled",
+        editable: true,
+        autoNumbering: true,
+        pageSize: 10,
+        sortable: true,
+        selectable: true,
+        // disableSubRow: true,
+        headerOptions: {
+          textAlign: "center",
+        },
+        bodyOptions: [
+          {},
+          { textAlign: "center", format: "number" },
+          { format: "currency", currency: "IDR", locale: "id-ID", textAlign: "right" },
+          {
+            format: "currency",
+            currency: "IDR",
+            locale: "id-ID",
+            textAlign: "right",
+            formula: "=price * quantity", // will search header with text defined
+          },
+        ],
+        footerOptions: {
+          color: "gray",
+          textAlign: "center",
+          renderTotal: ["quantity", "total"],
+        },
+      },
+      // header: ["specifications", "quantity", "price", "total"],
+      header: [
+        { text: "specifications" },
+        { text: "quantity", group: "details" },
+        { text: "price", group: "details", options: { textAlign: "right" } },
+        { text: "total", group: "details", options: { textAlign: "right" } },
+      ],
+      body: [
+        ["art paper 125gsm", { text: 300, options: { textAlign: "left" } }, 1300, null],
+        ["art carton 210gsm", 500, 2100, null],
+        ["art paper 125gsm", 300, 1300, null],
+        ["art carton 210gsm", 500, 2100, null],
+        ["art paper 125gsm", 300, 1300, null],
+        ["art carton 210gsm", 500, 2100, null],
+        ["art paper 125gsm", 300, 1300, null],
+        ["art paper 125gsm", 300, 1300, null],
+        ["art carton 210gsm", 500, 2100, null],
+        [{ text: "art carton 210gsm", options: { color: "red" } }, 500, 2100, null],
+        ["art paper 125gsm", 300, 1300, null],
+        ["art carton 210gsm", 500, 2100, null],
+        ["art paper 125gsm", 300, { text: 1300, options: { textAlign: "left" } }, null],
+        ["art carton 210gsm", 500, 2100, null],
+        ["art paper 125gsm", 300, 1300, null],
+        ["art carton 210gsm", 500, 2100, null],
+      ],
+      // footer: footerTemplate,
+    }
+  }
+]

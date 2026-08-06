@@ -63,6 +63,9 @@ export interface TableCellData {
   text?: string | number | HTMLElement | null;
   options?: TableCellOptions;
   group?: string;
+  subrowOfUid?: string;
+  _uid?: string;
+  subrowOf?: string;
 }
 
 /**
@@ -78,6 +81,9 @@ export interface TableCellModel {
   value: any;
   options: TableCellOptions;
   header?: string;
+  text?: string;
+  isGroup?: boolean;
+  groupItems?: TableCellModel[];
 }
 
 /**
@@ -131,7 +137,7 @@ export interface TableConfig {
   size?: "small" | "large" | "compact" | "very compact" | null;
   type?: "basic" | "collapsing" | "striped" | "inverted" | "fixed" | "padded" | "celled" | null;
   color?: string | null;
-  textAlign?: "center" | "left" | "right";
+  textAlign?: "center" | "left" | "right" | null;
   sortable?: boolean;
   selectable?: boolean;
   scrolling?: boolean;
@@ -143,7 +149,7 @@ export interface TableConfig {
   bodyOptions?: TableCellOptions[];
   footerOptions?: TableFooterOptions;
   footer?: string | HTMLElement | TableCellData[] | null;
-  class?: string;
+  className?: string;
   verticalAlign?: "top" | "center" | "bottom";
 }
 
@@ -190,7 +196,7 @@ interface NormalizedCell {
 export function __applyTableClasses(table: HTMLTableElement, config: TableConfig): void {
   const classes: string[] = ["table"];
 
-  if (config.class) classes.push(config.class);
+  if (config.className) classes.push(config.className);
   if (config.size) classes.push(`${config.size}`);
   if (config.type) classes.push(`${config.type}`);
   if (config.color) classes.push(`${config.color}`);
@@ -331,7 +337,7 @@ export function __applyRowFormula(
     const value = expr.replace(/[a-zA-Z_][a-zA-Z0-9_]*/g, (headerTitle) => {
       const i = cells.findIndex((c) => c.header === headerTitle);
       const cellValue = cells[i] ? cells[i].value : null;
-      return (typeof cellValue === "number" ? cellValue : 0).toString();
+      return (typeof cellValue === "number" ? cellValue : Number(cellValue) || 0).toString();
     });
 
     if (!ARITHMETIC_REGEX.test(value)) {
@@ -424,6 +430,8 @@ export function __formatValue(rawValue: any, options: TableCellOptions = {}): st
   if (rawValue == null) return "";
 
   let display: string | HTMLElement = rawValue;
+
+  // console.log({ display })
 
   switch (options.format) {
     case "number":

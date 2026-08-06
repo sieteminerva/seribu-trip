@@ -81,8 +81,8 @@ export class MenuBuilder extends Builder<MenuElementType, iMenuConfig> {
     }
     const actions = this.render("@menu>actions", payload["@menu>actions"]);
     const hamburger = this.render("@menu>hamburger", payload["@menu>hamburger"]);
-
-    nav?.append(brand!, hamburger!, navigations!, actions!);
+    actions?.append(hamburger!)
+    nav?.append(brand!, navigations!, actions!);
 
     return this.load("@menu") as HTMLElement;
   }
@@ -139,6 +139,7 @@ export class MenuBuilder extends Builder<MenuElementType, iMenuConfig> {
     // Kunci gerbang interaksi jika kedua elemen fisik hidup sukses terambil dari saku RAM
     if (hamburgerBtn && itemsList) {
       hamburgerBtn.addEventListener("click", () => {
+        console.log("clicked")
         this.isMenuOpened = !this.isMenuOpened;
         let isDefaultPrevented = false;
 
@@ -152,8 +153,8 @@ export class MenuBuilder extends Builder<MenuElementType, iMenuConfig> {
         if (isDefaultPrevented) return;
 
         // Manipulasi kelas visual secara lurus, linear, dan direct!
-        itemsList.classList.toggle("active", this.isMenuOpened);
-        hamburgerBtn.classList.toggle("open", this.isMenuOpened);
+        itemsList.classList.toggle("open", this.isMenuOpened);
+        hamburgerBtn.classList.toggle("active", this.isMenuOpened);
       });
 
       console.log("[Menu Lifecycle] Interactive hamburger event bindings attached securely.");

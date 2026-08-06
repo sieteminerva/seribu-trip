@@ -97,7 +97,8 @@ export interface iBuilderRegistry {
   input: iBasicInputNode;
   "product-card": iBasicNode;
   "product-card-grid": any;
-  "input-controls": Array<iBasicInputNode>
+  "input-controls": Array<iBasicInputNode>;
+  table: any[];
   // Untuk komponen baru nanti, cukup daftarkan jenis array atomnya di sini:
   // stats: iStatsProperty[];
 }
@@ -126,6 +127,7 @@ declare global {
     __inner: HTMLElement;
     __payload: any;
     __index: number;
+    __templateId: string;
     getMetadata: ((context: iMetadataContext) => any) | undefined | null;
     mount: (compositeOutput: iCompositeBuilderOutput | HTMLElement | null | any) => void;
   }
@@ -138,14 +140,16 @@ export interface iNodeRecords {
 export interface iNodeRecordItem {
   element: HTMLElement,
   raw: any;
-  relations?: {
-    scope?: string;
-    key?: string;
-    template?: string;
-    parent?: string | null; // "builderId:typeKey" milik bapak angkatnya
-    children?: string[]     // Array [...builderId:typeKey] milik anak cucunya
-  };
+  relations?: iNodeRecordRelations;
   proxy: any;
+}
+
+export interface iNodeRecordRelations {
+  scope?: string;
+  key?: string;
+  template?: string;
+  parent?: string | null; // "builderId:typeKey" milik bapak angkatnya
+  children?: string[]     // Array [...builderId:typeKey] milik anak cucunya
 }
 
 export interface iCompositeBuilderOutput {
