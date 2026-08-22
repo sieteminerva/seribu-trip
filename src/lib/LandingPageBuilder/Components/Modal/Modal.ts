@@ -1,6 +1,6 @@
 import type { iBuilderConfig, iBuilderRegistry } from "../../interface";
 import { Builder } from "../Base";
-import "./Modal.css";
+// import "./Modal.css";
 
 export type ModalElementType =
   | "@container"
@@ -56,6 +56,7 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
    */
   public prepare(contentPayload: any): { open: () => void; close: () => void; unmount: () => void; element: HTMLElement } {
     // 💡 POTENSI ANTI-KEMBUNG: Ambil dari live DOM jika mode reuse aktif
+    console.log(contentPayload)
     const existingDOMElement = document.getElementById(this.config.id);
     if (existingDOMElement && !this.config.destroyOnClose) {
       console.log(`[Universal Modal] Re-using active memory pointer for #${this.config.id}`);

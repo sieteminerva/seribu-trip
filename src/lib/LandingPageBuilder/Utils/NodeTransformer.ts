@@ -65,6 +65,8 @@ export class NodeTransformer {
 
     // 1. Salin properti operasional utama jika ada
     if (nodeObj.builder) innerBlock.builder = nodeObj.builder;
+    if (nodeObj.config) innerBlock.config = nodeObj.config;
+    if (nodeObj.selectors) innerBlock.selectors = nodeObj.selectors;
     if (nodeObj.onCreated) innerBlock.onCreated = nodeObj.onCreated;
     if (nodeObj.onDestroy) innerBlock.onDestroy = nodeObj.onDestroy;
     if (nodeObj.isRoot !== undefined) innerBlock.isRoot = nodeObj.isRoot;

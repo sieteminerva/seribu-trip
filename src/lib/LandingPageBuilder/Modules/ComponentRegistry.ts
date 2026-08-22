@@ -8,21 +8,40 @@ import { DOMTreeMemory } from "./DOMTreeMemory";
 export interface iSimpleWayManifest {
   path: string;
   stylesheet?: string;
+  script?: string;
   config?: any;
   schema?: any;
 }
 
-export type LoadFn = (options: { script: string; stylesheet?: string }) => Promise<any>;
+export type LoadFn = (options: { script?: string; stylesheet?: string }) => Promise<any>;
 
 // Polimorfisme Tanda Tangan Registrasi yang Sah di Framework Anda
 export type RegisterFn<K extends keyof iBuilderRegistry> =
-  | ComponentBuilderFn<iBuilderRegistry[K]> // OldWayFn / Standard murni
-  | ((data: iBuilderRegistry[K], load: LoadFn) => Promise<HTMLElement | null>) // ConfigurableWayFn
-  | ((data: iBuilderRegistry[K], config?: any) => iSimpleWayManifest); // SimpleWayFn Manifest
+  | ComponentBuilderFn<iBuilderRegistry[K]> // OldWayFn / Standard murni (Style 1)
+  | ((data: iBuilderRegistry[K], load: LoadFn) => Promise<HTMLElement | null>) // ConfigurableWayFn (Style 2)
+  | ((data: iBuilderRegistry[K], config?: any) => iSimpleWayManifest); // SimpleWayFn Manifest (Style 3)
 
 // 💡 PETA REGISTER VITE: Hanya aktif dan dibaca saat masa development lokal!
-const viteComponentModules = import.meta.glob("/src/components/**/*.ts");
-const viteStyleModules = import.meta.glob("/src/components/**/*.css");
+const viteModules = import.meta.glob("/src/**/*.{ts,tsx,js,jsx,css}");
+
+function normalizeVitePath(pathStr: string): string {
+  if (!pathStr) return "";
+  let clean = pathStr.trim().replace(/\\/g, "/");
+  if (clean.startsWith("./")) clean = clean.slice(2);
+  if (clean.startsWith("/")) clean = clean.slice(1);
+  if (!clean.startsWith("src/")) clean = `src/${clean}`;
+  return `/${clean}`;
+}
+
+function resolveRelativePath(baseScriptPath: string, stylePath: string): string {
+  if (!stylePath) return "";
+  if (!stylePath.startsWith("./") && !stylePath.startsWith("../")) {
+    return stylePath;
+  }
+  if (!baseScriptPath) return stylePath;
+  const scriptDir = baseScriptPath.substring(0, baseScriptPath.lastIndexOf("/") + 1);
+  return (scriptDir + stylePath.replace(/^\.\//, "")).replace(/\/+/g, "/");
+}
 
 export class ComponentRegistry {
   private builders = new Map<keyof iBuilderRegistry, RegisterFn<any>>();
@@ -32,9 +51,15 @@ export class ComponentRegistry {
 
   private _dynamicConfigs = new Map<keyof iBuilderRegistry, Record<string, any>>();
 
+
+
   public register<K extends keyof iBuilderRegistry>(name: K, builderFn: RegisterFn<K>): this {
     this.builders.set(name, builderFn);
     return this;
+  }
+
+  public getRegisteredNames(): string[] {
+    return Array.from(this.builders.keys()) as string[];
   }
 
   public get(name: string) {
@@ -47,60 +72,121 @@ export class ComponentRegistry {
     return this.builders.has(name as keyof iBuilderRegistry);
   }
 
+  private async loadModule(script?: string, stylesheet?: string, componentName?: string): Promise<any> {
+    let jsModule: any = null;
+    let cssModule: any = null;
+
+    if (import.meta.env?.DEV) {
+      if (script) {
+        const normScript = normalizeVitePath(script);
+        const loader = viteModules[normScript] || viteModules[script];
+        if (typeof loader === "function") {
+          jsModule = await loader();
+        } else if (loader) {
+          jsModule = loader;
+        }
+      }
+    } else {
+      const scriptPromise = script ? import(/* @vite-ignore */ `${script}`) : Promise.resolve(null);
+      [jsModule] = await Promise.all([scriptPromise]);
+    }
+
+    const builderClass = jsModule?.default
+      || (jsModule && Object.values(jsModule).find(v => typeof v === 'function' || (v && typeof (v as any).create === 'function')))
+      || jsModule;
+
+    // Resolve stylesheet: explicit > builderClass.stylesheet > builderClass.prototype?.stylesheet > instance.stylesheet
+    let effectiveStyle: string | CSSStyleSheet | undefined = stylesheet;
+
+    if (!effectiveStyle && builderClass) {
+      let classStyle = builderClass.stylesheet || builderClass.prototype?.stylesheet;
+
+      if (!classStyle && typeof builderClass === "function") {
+        try {
+          const dummy = new (builderClass as any)({});
+          classStyle = dummy?.stylesheet;
+        } catch {
+          try {
+            const dummy = new (builderClass as any)();
+            classStyle = dummy?.stylesheet;
+          } catch { }
+        }
+      }
+
+      if (typeof classStyle === "string" || classStyle instanceof CSSStyleSheet) {
+        effectiveStyle = classStyle;
+      }
+    }
+
+    if (effectiveStyle) {
+      if (effectiveStyle instanceof CSSStyleSheet) {
+        this.injectStyle(effectiveStyle);
+      } else if (typeof effectiveStyle === "string") {
+        const resolvedCssPath = script ? resolveRelativePath(script, effectiveStyle) : effectiveStyle;
+        if (import.meta.env?.DEV) {
+          const normCss = normalizeVitePath(resolvedCssPath);
+          const loader = viteModules[normCss] || viteModules[resolvedCssPath] || viteModules[effectiveStyle];
+          if (typeof loader === "function") {
+            cssModule = await loader();
+          } else if (loader) {
+            cssModule = loader;
+          }
+        } else {
+          cssModule = await import(/* @vite-ignore */ `${resolvedCssPath}`, { with: { type: "css" } }).catch(() => null);
+        }
+        if (cssModule) {
+          const sheet = cssModule.default instanceof CSSStyleSheet ? cssModule.default : cssModule;
+          if (sheet instanceof CSSStyleSheet) {
+            this.injectStyle(sheet);
+          }
+        }
+      }
+    } else if (componentName) {
+      console.warn(`[ComponentRegistry] Warning: No stylesheet provided or defined for component "${String(componentName)}".`);
+    }
+
+    return builderClass;
+  }
+
   /**
    * 🧙‍♂️ THE PRE-LOAD HYDRATOR
    */
   public async preloadComponents(componentNames: string[], pagesData: any[]): Promise<void> {
-    const promises = componentNames.map(async (name) => {
-      const fn = this.builders.get(name as any);
+    const promises = componentNames.map(async (nameKey) => {
+      const name = nameKey as keyof iBuilderRegistry;
+      const fn = this.builders.get(name);
       if (!fn) return;
 
-      // Skip synchronous component builders (which do not take the load callback)
-      // if (fn.length < 2) return; // <= hack fix coding agent untuk mengatasi bug pangkat 2
+      const matchedData = NodeTransformer.getBuilderNode(pagesData as iBasicNode[], name as string);
 
-      const matchedData = NodeTransformer.getBuilderNode(pagesData as iBasicNode[], name);
+      const loadFn: LoadFn = async ({ script, stylesheet }) => {
+        const loadedClass = await this.loadModule(script, stylesheet, name as string);
+        if (loadedClass) {
+          this._resolvedCache.set(name as string, loadedClass);
+        }
+        return loadedClass;
+      };
 
-      const result = fn(matchedData, async ({ script, stylesheet }) => {
-        let jsModule: any = null;
-        let cssModule: any = null;
+      try {
+        const result = await fn(matchedData || {}, loadFn);
 
-        if (import.meta.env?.DEV) {
-          if (script) {
-            const normalizedPath = script.startsWith("/src") ? script : `/src/${script.replace(/^\.\//, "")}`;
-            const loader = viteComponentModules[normalizedPath];
-            if (loader) jsModule = await loader();
+        // Handle Style 3 Manifest object returned by fn
+        if (result && typeof result === "object" && !(result instanceof HTMLElement) && !(result instanceof Promise)) {
+          const manifest = result as iSimpleWayManifest;
+          const scriptPath = manifest.path || manifest.script;
+          if (scriptPath || manifest.stylesheet) {
+            const loadedClass = await loadFn({ script: scriptPath, stylesheet: manifest.stylesheet });
+            if (loadedClass) {
+              this._resolvedCache.set(name as string, loadedClass);
+            }
           }
-          if (stylesheet) {
-            const normalizedCss = stylesheet.startsWith("/src") ? stylesheet : `/src/${stylesheet.replace(/^\.\//, "")}`;
-            const loader = viteStyleModules[normalizedCss];
-            if (loader) cssModule = await loader();
-          }
-        } else {
-          const scriptPromise = script ? import(/* @vite-ignore */ `${script}`) : Promise.resolve(null);
-          const cssPromise = stylesheet ? import(/* @vite-ignore */ `${stylesheet}`, { with: { type: "css" } }) : Promise.resolve(null);
-          [jsModule, cssModule] = await Promise.all([scriptPromise, cssPromise]);
         }
 
-
-        if (cssModule && cssModule.default instanceof CSSStyleSheet) {
-          this.injectStyle(cssModule.default);
-        }
-
-        if (!script) return {};
-        return jsModule?.default || Object.values(jsModule || {}).find(v => typeof v === 'function');
-      });
-      // console.log({ fn, matchedData, result })
-
-      // 💡 PERBAIKAN: Tangani hasil return dari eksekusi fungsi di fase preload
-      if (result instanceof Promise) {
-        // JALUR ASINKRONUS (Style 3 / Komponen Baru berbasis Kelas)
-        const resolved = await result;
-        if (typeof resolved === "function") {
-          this._resolvedCache.set(name, resolved);
-        }
+      } catch (_err) {
+        // Silently swallow errors from synchronous builders invoked with empty dummy data during preloading
       }
-    });
 
+    });
 
     await Promise.all(promises);
   }
@@ -108,101 +194,129 @@ export class ComponentRegistry {
   /**
    * ⚡ AMAN & SINKRONUS MURNI (.run Method)
    */
-  public build_<K extends keyof iBuilderRegistry>(name: K, data: any): any {
-
-    const fn = this.builders.get(name);
-    if (!fn) return null;
-    // 1. Cek jalur komponen asinkronus (Style 3 Manifest kelas baru)
-    const PreloadedBuilderClass = this._resolvedCache.get(name);
-
-    if (typeof PreloadedBuilderClass === "function") {
-      const config = data.config || {};
-      const schema = data.schema || [];
-
-      if (typeof PreloadedBuilderClass.create === "function") {
-        return PreloadedBuilderClass.create(schema, config);
-      }
-
-      return new PreloadedBuilderClass(config).create(schema);
-    }
-
-    // Fallback jika komponen dipanggil instan tanpa lewat fase preload sama sekali
-    const result = fn(data, () => Promise.resolve({}));
-    if (result instanceof Promise) return result;
-    if (result instanceof HTMLElement) return result;
-    if (result && typeof result === "object") return result;
-
-    return null;
-  }
 
 
-  public build<K extends keyof iBuilderRegistry>(name: K, data: any): any {
-    // console.log("CR", { name, config: data })
+
+  public build<K extends keyof iBuilderRegistry>(name: K, data: any): HTMLElement | null {
     const fn = this.builders.get(name);
     if (!fn) return null;
 
     // 1. Fetch dynamic theme configuration registered at runtime via setConfig()
     const activeThemeConfig = this._dynamicConfigs.get(name) || {};
-    const contentPayload = data?.content !== undefined ? data.content : data;
-    // const configPayload = data?.config !== undefined ? data.config : {};
 
-    // 2. Handle preloaded class components (Style 3)
-    const PreloadedBuilderClass = this._resolvedCache.get(name);
-    if (typeof PreloadedBuilderClass === "function") {
-      if (typeof PreloadedBuilderClass.create === "function") {
-        return PreloadedBuilderClass.create(contentPayload, activeThemeConfig);
-      }
-
-      const instance = new PreloadedBuilderClass(activeThemeConfig);
-      if (instance && typeof instance === "object") {
-        const existingConfig = (instance as any).config || {};
-        (instance as any).config = {
-          ...existingConfig,
-          ...activeThemeConfig,
-          selectors: { ...(existingConfig.selectors || {}), ...(activeThemeConfig.selectors || {}) }
-        };
-
-        Object.entries(activeThemeConfig).forEach(([cKey, cValue]) => {
-          if (cKey !== "selectors") (instance as any)[cKey] = cValue;
-        });
-        if (typeof instance.create === "function") {
-          return instance.create(contentPayload, activeThemeConfig);
-        }
-      }
+    // Extract content payload: skip extraction for arrays (direct content data)
+    let contentPayload = data;
+    if (data && typeof data === "object" && !Array.isArray(data) && data.content !== undefined) {
+      contentPayload = data.content;
     }
 
-    // 3. Prepare merged configuration for synchronous builder functions
+    // 2. Prepare merged configuration for synchronous builder functions
+    const userConfig = (data && typeof data === "object" && !Array.isArray(data)) ? (data.config || {}) : {};
     const finalMergedConfig = {
-      ...(data?.config || {}),
+      ...userConfig,
       ...activeThemeConfig,
       selectors: {
-        ...(data?.config?.selectors || {}),
+        ...(userConfig?.selectors || {}),
         ...(activeThemeConfig?.selectors || {})
       }
     };
 
     // Stamp merged config onto input data before invoking builder factory
-    if (data && typeof data === "object" && data.config) {
+    if (data && typeof data === "object" && !Array.isArray(data) && data.config) {
       data.config = finalMergedConfig;
     }
 
-    // 4. Invoke builder factory function
-    const result = fn(data, finalMergedConfig);
-
-    if (result instanceof HTMLElement) {
-      // console.log("[Component Registry]", { name, data })
-      return result;
+    // 3. Check if this component has a preloaded class in cache (Style 2/3)
+    //    If so, skip the registration function entirely and build directly
+    const cachedClass = this._resolvedCache.get(name as string);
+    if (cachedClass && typeof cachedClass === "function") {
+      // Style 3 manifest builders: use cached class directly
+      try {
+        const instance = new cachedClass(finalMergedConfig);
+        if (instance && typeof instance.create === "function") {
+          return instance.create(contentPayload, finalMergedConfig);
+        }
+      } catch { /* fall through to registration function */ }
     }
 
-    if (result && typeof result === "object" && typeof (result as any).create === "function") {
-      const legacyInstance = result as any;
-      if (!legacyInstance.config) legacyInstance.config = finalMergedConfig;
-      return legacyInstance.create(data, finalMergedConfig);
+    // 4. Invoke builder factory function (Style 1 synchronous builders)
+    const dummyLoadFn: LoadFn = ({ script, stylesheet }) => {
+      if (script && stylesheet) console.log("[Script & Stylesheet Loaded!]")
+      const cached = this._resolvedCache.get(name as string);
+      return Promise.resolve(cached || {});
+    };
+
+    const result = fn(data, dummyLoadFn);
+
+    // Style 1 (Synchronous returning HTMLElement or custom control objects like Modal)
+    if (result && typeof result === "object" && !(result instanceof Promise)) {
+      if (result instanceof HTMLElement) {
+        return result;
+      }
+
+      if (typeof (result as any).create === "function") {
+        const instance = result as any;
+        if (!instance.config) instance.config = finalMergedConfig;
+        if (!instance.stylesheet) {
+          console.warn(`[ComponentRegistry] Warning: No stylesheet provided or defined for component "${String(name)}".`);
+        }
+        return instance.create(contentPayload, finalMergedConfig);
+      }
+
+      // If object is NOT a Style 3 Manifest (has no .path or .script), return it directly (e.g. Modal control interface)
+      if (!(result as any).path && !(result as any).script) {
+        return result as any;
+      }
     }
 
+    // Style 3 (Simple Declarative Manifest Object)
+    let manifestSchema = contentPayload;
+    let manifestConfig = finalMergedConfig;
 
-    if (result instanceof Promise) return result;
-    if (result && typeof result === "object") return result;
+    if (result && typeof result === "object" && !(result instanceof HTMLElement) && !(result instanceof Promise)) {
+      if ((result as any).schema !== undefined) manifestSchema = (result as any).schema;
+      if ((result as any).config) {
+        manifestConfig = {
+          ...finalMergedConfig,
+          ...((result as any).config || {}),
+          selectors: {
+            ...(finalMergedConfig?.selectors || {}),
+            ...((result as any).config?.selectors || {})
+          }
+        };
+      }
+    }
+
+    // Style 2 & Style 3: Hydrate using PreloadedBuilderClass from _resolvedCache
+    const PreloadedBuilderClass = this._resolvedCache.get(name as string);
+    if (PreloadedBuilderClass) {
+      // Static .create() method
+      if (typeof PreloadedBuilderClass.create === "function") {
+        return PreloadedBuilderClass.create(manifestSchema, manifestConfig);
+      }
+      // Class constructor or Factory function
+      if (typeof PreloadedBuilderClass === "function") {
+        try {
+          const instance = new PreloadedBuilderClass(manifestConfig);
+          if (instance && typeof instance.create === "function") {
+            return instance.create(manifestSchema, manifestConfig);
+          }
+          if (instance instanceof HTMLElement) {
+            return instance;
+          }
+        } catch {
+          const rawResult = PreloadedBuilderClass(manifestSchema, manifestConfig);
+          if (rawResult instanceof HTMLElement) return rawResult;
+          if (rawResult && typeof rawResult.create === "function") {
+            return rawResult.create(manifestSchema, manifestConfig);
+          }
+        }
+      }
+      // Instance with .create() method
+      if (typeof (PreloadedBuilderClass as any).create === "function") {
+        return (PreloadedBuilderClass as any).create(manifestSchema, manifestConfig);
+      }
+    }
 
     return null;
   };
@@ -272,6 +386,28 @@ export class BuilderRegistry2 {
   public has(name: string): boolean {
     return this.builders.has(name);
   }
+
+  //   const PreloadedBuilderClass = this._resolvedCache.get(name);
+
+  //   if (typeof PreloadedBuilderClass === "function") {
+  //     const config = data.config || {};
+  //     const schema = data.schema || [];
+
+  //     if (typeof PreloadedBuilderClass.create === "function") {
+  //       return PreloadedBuilderClass.create(schema, config);
+  //     }
+
+  //     return new PreloadedBuilderClass(config).create(schema);
+  //   }
+
+  //   // Fallback jika komponen dipanggil instan tanpa lewat fase preload sama sekali
+  //   const result = fn(data, () => Promise.resolve({}));
+  //   if (result instanceof Promise) return result;
+  //   if (result instanceof HTMLElement) return result;
+  //   if (result && typeof result === "object") return result;
+
+  //   return null;
+  // }
 }
 
 

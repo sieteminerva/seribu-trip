@@ -22,6 +22,7 @@ export interface iTabConfig extends iBuilderConfig<TabElementType> {
   container?: string | HTMLElement | null;
   menuPosition: "top" | "left" | "bottom" | "right";
   lazyload: boolean;
+  name: string;
   minHeight: string;
 }
 
@@ -77,6 +78,7 @@ export class TabBuilder extends Builder<TabElementType, iTabConfig> {
       container: null,
       menuPosition: "top",
       lazyload: true,
+      name: "tab-" + Math.random().toString(36).substring(7),
       minHeight: "400px",
       selectors: defaultTabSelectors,
       namespace: null,
@@ -419,7 +421,7 @@ export class TabBuilder extends Builder<TabElementType, iTabConfig> {
         this.config.emit?.("elementChanged" as any, {
           builder: this.builderId,
           type: "tab:changed",
-          data: index,
+          data: { index, name: this.config.name },
           element: panels[index]
         });
       }

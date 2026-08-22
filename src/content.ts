@@ -253,13 +253,15 @@ export const HomePageContent: iBasicNode[] = [
             btn.className = "button primary";
             btn.textContent = "Pesan Sekarang";
 
-            const form = build("form", OrderFormSchema.content);
+            const form = build("form", { content: OrderFormSchema.content });
             const modal = build("modal", form);
-
+            // sss
             btn.addEventListener("click", () => {
+
               if (modal) {
                 (modal as any).open()
               }
+
               // console.log("content.ts>HomePageContent>CTA.onCreated", modal)
             });
             el.mount(btn);

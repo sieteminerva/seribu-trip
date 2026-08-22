@@ -1,5 +1,4 @@
 
-import { FormBuilder } from "../lib/LandingPageBuilder/Components/Form/Form";
 import type { iBasicNode } from "../lib/LandingPageBuilder/interface";
 import type { LandingPageBuilder, iPageController } from "../lib/LandingPageBuilder/LandingPage";
 
@@ -82,7 +81,7 @@ export class WizardPage implements iPageController {
         {
           type: "select",
           id: "web-type",
-          title: "Jenis maha karya yang ingin kamu tunjukkan ke dunia adalah website",
+          title: "Kategory website yang ingin kamu buat dan tunjukkan kepada dunia adalah website",
           placeholder: "berjenis apa?",
           config: {
             options: [
@@ -110,7 +109,7 @@ export class WizardPage implements iPageController {
         {
           type: "textarea",
           id: "web-reason",
-          title: "Di mana di dalam halaman utamanya, kamu ingin berkisah secara singkat bahwa website ini hadir untuk",
+          title: "Apa alasan singkat dibalik kenapa kamu ingin membuat website ini, dan beritahu alasan kenapa orang lain harus mendatangi dan jangan sampai melewatkan website mu ini",
           placeholder: "Ceritakan alasan atau mimpi besar di balik karyamu...",
           config: {
             popover: WizardPage.createPopover({
@@ -122,8 +121,8 @@ export class WizardPage implements iPageController {
         {
           type: "text",
           id: "web-author",
-          title: "Situs web ini dirancang secara personal, dan dirajut oleh tangan dingin",
-          placeholder: "nama indahnya kamu...",
+          title: "Situs web ini dirancang secara personal, dan dirajut oleh",
+          placeholder: "dirimu...",
           config: {
             popover: WizardPage.createPopover({
               info: "Kamu bebas menuliskan nama lengkapmu, nama panggilan, atau nama studio usahamu.",
@@ -133,6 +132,12 @@ export class WizardPage implements iPageController {
         },
       ]
     }
+
+    const downloadTemplateLink = document.createElement("a") as HTMLAnchorElement;
+    downloadTemplateLink.href = "docs/address.csv";
+    downloadTemplateLink.download = "address.csv";
+    downloadTemplateLink.textContent = "download template"
+    downloadTemplateLink.className = "button small"
 
     const DetailSet = {
       id: "detail-set",
@@ -154,6 +159,7 @@ export class WizardPage implements iPageController {
             })
           }
         },
+        downloadTemplateLink
       ]
     }
 
@@ -163,7 +169,7 @@ export class WizardPage implements iPageController {
         {
           type: "email",
           id: "email",
-          title: "Jika ada pengunjung atau calon pembeli yang ingin menyapa, surat elektronik mereka akan mendarat di kotak masuk",
+          title: "Jika ada pengunjung atau calon pembeli yang ingin menyapa melalu surat elektronik mereka akan ditermia di",
           placeholder: "alamat email aktifmu",
           config: {
             popover: WizardPage.createPopover({
@@ -175,7 +181,7 @@ export class WizardPage implements iPageController {
         {
           type: "text",
           id: "company",
-          title: "Seluruh hak cipta dan kepemilikan operasional website ini bernaung di bawah payung nama",
+          title: "Seluruh hak cipta dan kepemilikan operasional website ini bernaung di bawah",
           placeholder: "nama badan usaha / studionya",
           config: {
             popover: WizardPage.createPopover({
@@ -199,7 +205,7 @@ export class WizardPage implements iPageController {
         {
           type: "textarea",
           id: "jalan",
-          title: "Pusat workshop atau rumah tempat kamu melahirkan seluruh karya hebat ini beralamat di",
+          title: "Pusat workshop atau rumah tempat kerja mu ini beralamat di",
           placeholder: "Tuliskan nama jalan, nomor rumah, atau ruko usahamu...",
           config: {
             popover: WizardPage.createPopover({
@@ -249,13 +255,18 @@ export class WizardPage implements iPageController {
       AddressSet
     ]
 
-    const form = new FormBuilder(formConfig).create(formContent);
-    form.addEventListener("formSubmit", (e: any) => {
+    const form = this.builder.component?.build("form", {
+      content: formContent,
+      config: formConfig
+    });
+
+    form?.addEventListener("formSubmit", (e: any) => {
       const detail = e.detail;
 
       console.log("AAA", e.detail)
       detail.complete(true, true)
     })
+
     return [
       {
         content: [

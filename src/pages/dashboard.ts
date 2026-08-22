@@ -104,7 +104,7 @@ export class DashboardPage implements iPageController {
         const app = document.querySelector("#app")
         if (!sidebar) {
           try {
-            sidebar = this.createSidebar(menuNode)
+            sidebar = this.createSidebar(menuNode)!
             document.body.prepend(sidebar!);
             app?.classList.add("squeeze")
           } catch (error) {

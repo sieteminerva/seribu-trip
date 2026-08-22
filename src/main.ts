@@ -1,5 +1,5 @@
 import './style.css';
-import './lib/LandingPageBuilder/Components/Form/Form.css';
+// import './lib/LandingPageBuilder/Components/Form/Form.css';
 import "./lib/LandingPageBuilder/Styles/icon.css";
 import './overrides.css';
 
@@ -17,13 +17,13 @@ import { AccordionBuilder } from './lib/LandingPageBuilder/Components/Accordion/
 import { PricingCardBuilder } from './lib/LandingPageBuilder/Components/PricingCard/PricingCard';
 import { MasonryBuilder } from './lib/LandingPageBuilder/Components/Masonry/Masonry';
 import { SectionBuilder } from './lib/LandingPageBuilder/Components/Section/Section';
-import { FormBuilder } from './lib/LandingPageBuilder/Components/Form/Form';
+// import { FormBuilder } from './lib/LandingPageBuilder/Components/Form/Form';
 import { DefaultTheme } from './lib/LandingPageBuilder/Themes/DefaultTheme';
 import { HorizontalTheme } from './lib/LandingPageBuilder/Themes/HorizontalTheme';
 import type { iBasicNode } from './lib/LandingPageBuilder/interface';
 import { CyberpunkTheme } from './lib/LandingPageBuilder/Themes/CyberpunkTheme';
 import { FabMenuBuilder } from './lib/LandingPageBuilder/Components/FabMenu/FabMenu';
-import { ModalBuilder } from './lib/LandingPageBuilder/Components/Modal/Modal';
+// import { ModalBuilder } from './lib/LandingPageBuilder/Components/Modal/Modal';
 import { ModeSwitcherBuilder } from './lib/LandingPageBuilder/Components/ModeSwitcher/ModeSwitcher';
 import { TabBuilder } from './lib/LandingPageBuilder/Components/Tab/Tab';
 import { ProductGridBuilder } from './lib/LandingPageBuilder/Components/Product/ProductGrid';
@@ -34,6 +34,7 @@ import { WizardPage } from './pages/wizard';
 import { InputBuilder } from './lib/LandingPageBuilder/Components/Form/Input';
 // import { BuilderTransformer } from './lib/LandingPageBuilder/Utils/BuilderTransformer';
 import { RatingBuilder } from './lib/LandingPageBuilder/Components/Rating/Rating';
+import { ProposalPage } from './pages/proposal';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 
@@ -46,7 +47,7 @@ if (app) {
       id: "menu-section",
       navigations: [
         { label: 'SeribuTrip', href: '#home' },
-        { label: 'Paket Perjalanan', href: '#package' },
+        { label: 'Paket', href: '#package' },
         { label: 'Gallery', href: '#gallery' },
         { label: 'FAQ', href: '#faq-section' },
         { label: 'Merchandise', href: '#merchandise' },
@@ -99,7 +100,8 @@ if (app) {
       merchandise: ProductPageContent/* BuilderTransformer?.toBuilderNode(JMerchandiseContent) */ as any,
       blog: BlogPageContent as any, // <= saya pakai awalan huruf besar sedangkan route di menu huruf kecil
       table: TablePageContent as any,
-      wizard: []
+      wizard: [],
+      proposal: [],
     },
     footer
   }, {
@@ -110,22 +112,30 @@ if (app) {
     theme: "default"
   });
 
-
-
   builder.component?.register("accordion", (data: any) => new AccordionBuilder().create(data))
-    .register("form", (data: any) => {
-      console.log("main.ts [form]", { data });
-      return new FormBuilder().create(data)
-    })
     // .register("form", (data: any) => {
-    //   console.log({ data })
-    //   return {
-    //     path: "lib/LandingPageBuilder/Components/Form/Form.ts",
-    //     // stylesheet: "lib/LandingPageBuilder/Components/Form/Form.css",
-    //     config: data.config,
-    //     schema: data.content,
-    //   };
+    //   console.log("main.ts [form]", { data });
+    //   return new FormBuilder().create(data)
     // })
+    // .register("modal", (el: any) => new ModalBuilder().create(el as HTMLElement) as any)
+    .register("form", (data: any) => {
+      console.log({ data });
+      return {
+        path: "lib/LandingPageBuilder/Components/Form/Form.ts",
+        // stylesheet: "lib/LandingPageBuilder/Components/Form/Form.css",
+        config: data?.config,
+        schema: data?.schema !== undefined ? data.schema : (data?.content !== undefined ? data.content : data),
+      };
+    })
+    .register("modal", (data: any) => {
+      console.log({ data });
+      return {
+        path: "lib/LandingPageBuilder/Components/Modal/Modal.ts",
+        config: data?.config,
+        schema: data?.schema !== undefined ? data.schema : (data?.content !== undefined ? data.content : data),
+      };
+    })
+
     .register("input", (data: any) => {
       // console.log("main.ts [form]", { data });
       return new InputBuilder().create(data.content)
@@ -147,7 +157,7 @@ if (app) {
     }).create(data.content))
     .register("footer", (data: any) => new FooterBuilder().create(data))
     .register("fab-menu", (data: any) => new FabMenuBuilder().create(data.content))
-    .register("modal", (el: any) => new ModalBuilder().create(el as HTMLElement) as any)
+
     .register("mode-switcher", (data: any) => new ModeSwitcherBuilder().create(data))
     .register("tab", (data: any) => new TabBuilder({
       emit: (event, payload) => builder.events.emit(event, payload as any)
@@ -173,7 +183,8 @@ if (app) {
 
   builder
     .registerPage("dashboard", new DashboardPage(builder))
-    .registerPage("wizard", new WizardPage(builder));
+    .registerPage("wizard", new WizardPage(builder))
+    .registerPage("proposal", new ProposalPage(builder));
 
   builder.render();
 
@@ -187,7 +198,7 @@ if (app) {
   builder.events.on("elementAdded", (data) => {
     if (data && data.builder === "menu" && data.type === "@menu>actions") {
       // console.log("main.ts", { data })
-      data.element.prepend(builder.component?.build("mode-switcher", {}))
+      data.element.prepend(builder.component?.build("mode-switcher", {})!)
     }
   });
 
@@ -211,4 +222,9 @@ if (app) {
 
 }
 
-
+if (import.meta.hot) {
+  import.meta.hot.accept(() => {
+    // Force a full page reload to avoid duplicate DOM elements
+    window.location.reload();
+  });
+}

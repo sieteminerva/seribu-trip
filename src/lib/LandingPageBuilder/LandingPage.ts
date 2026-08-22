@@ -362,6 +362,13 @@ export class LandingPageBuilder {
       // 0. Clean up previous page/route node registries & instance identity counters
       this.component?.clear();
 
+      // Preload components before running pageControllers onPrepare so builders are available in controllers
+      if (this.component) {
+        const registered = this.component.getRegisteredNames();
+        const allPagesData = Object.values(this.pages).flat();
+        await this.component.preloadComponents(registered, allPagesData);
+      }
+
       // Check if current route has a registered controller
       let activePagesData = this.pages[this.currentRoute] || [];
 
@@ -393,6 +400,8 @@ export class LandingPageBuilder {
         footer: NodeTransformer.safeCloneNode(this.footer as any)
       };
 
+      const metaReport = NodeTransformer.scanMetaNodes(snapshot.pages);
+
       const context = {
         /** Fungsi live penimpa konfigurasi internal builder */
         setConfig: (builderName: keyof iBuilderRegistry, newConfig: Record<string, any>) => {
@@ -411,19 +420,6 @@ export class LandingPageBuilder {
       let rawBlocks = snapshot.pages;
       let rawMenu = this.restore(snapshot.menu as any);
       let rawFooter = this.restore(snapshot.footer as any);
-
-      // 2. RUNTIME PRE-LOAD PIPELINE TERMINAL (Berdasarkan data master asli)
-      const metaReport = NodeTransformer.scanMetaNodes(rawBlocks);
-      // console.log({ metaReport, snapshot })
-      const requiredBuilders = Object.keys(metaReport.hasComponent).filter(
-        (key) => (metaReport.hasComponent as any)[key].active === true
-      );
-
-      if (this.shell && requiredBuilders.length > 0) {
-        this.shell.className = "page loading";
-        await this.component?.preloadComponents(requiredBuilders, NodeTransformer.safeCloneNode(rawBlocks));
-        this.shell.className = "page";
-      }
 
       const payload = {
         pages: rawBlocks,

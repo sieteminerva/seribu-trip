@@ -275,14 +275,17 @@ body {
 }
 
 .button.small {
-  font-weight: 500;
-  font-size: 0.9rem;
+  margin-top: 1rem;
+  font-weight: 400;
+  font-size: 0.8rem;
   border-radius: 1.5em;
   line-height: 1.6;
   vertical-align: middle;
-  padding: 0.4rem 0.8rem;
-  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  align-items: center;
+  padding: 0.5em 1em;
+  background: linear-gradient(135deg, var(--primary-border-color), var(--accent));
   color: #fff;
+  border-radius: 0.8em;
   box-shadow: 0 14px 28px rgba(91, 63, 134, 0.2);
 }
 
