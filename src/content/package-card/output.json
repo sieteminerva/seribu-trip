@@ -1,0 +1,158 @@
+[
+  {
+    "name": "package",
+    "options": {
+      "fieldTypes": {
+        "selector": {
+          ".eyebrow": "text",
+          ".title": "text",
+          "p.description": "textarea"
+        }
+      }
+    },
+    "content": [
+      {
+        "className": "column full txt-center",
+        "content": [
+          {
+            "tagName": "p",
+            "className": "eyebrow",
+            "content": "Paket Liburan"
+          },
+          {
+            "tagName": "h2",
+            "className": "title",
+            "content": "Pilih Paket Sesuai Kebutuhan Keluarga Anda"
+          },
+          {
+            "tagName": "p",
+            "className": "description",
+            "content": "Temukan opsi perjalanan yang paling pas untuk keluarga Anda dengan berbagai pilihan fasilitas dan aktivitas seru."
+          }
+        ]
+      },
+      {
+        "id": "pricing-plans",
+        "builder": "pricing-card",
+        "isRoot": true,
+        "options": {
+          "mode": "table"
+        },
+        "content": [
+          {
+            "header": "Standard",
+            "body": [
+              {
+                "name": "Kapal Kayu Tradisional",
+                "className": ""
+              },
+              {
+                "name": "Standard Shared Homestay",
+                "className": ""
+              },
+              {
+                "name": "Snorkeling Session",
+                "className": ""
+              },
+              {
+                "name": "Island Adventure Tour",
+                "className": ""
+              },
+              {
+                "name": "Banana Boat & Jet Ski",
+                "className": "disabled"
+              },
+              {
+                "name": "Dokumentasi Drone",
+                "className": "disabled"
+              },
+              {
+                "name": "Mulai dari Rp 450.000 / pax",
+                "className": "price-tag"
+              }
+            ],
+            "action": {
+              "label": "Pilih",
+              "onClick": "() => window.location.hash = '#home'"
+            }
+          },
+          {
+            "header": "Medium",
+            "className": "is-featured",
+            "body": [
+              {
+                "name": "Speedboat Kilat (Ancol)",
+                "className": ""
+              },
+              {
+                "name": "Standard Shared Homestay",
+                "className": ""
+              },
+              {
+                "name": "Snorkeling & Island Tour",
+                "className": ""
+              },
+              {
+                "name": "Banana Boat Ride",
+                "className": ""
+              },
+              {
+                "name": "Underwater Photo",
+                "className": ""
+              },
+              {
+                "name": "Jet Ski & Drone",
+                "className": "disabled"
+              },
+              {
+                "name": "Mulai dari Rp 850.000 / pax",
+                "className": "price-tag"
+              }
+            ],
+            "action": {
+              "label": "Pilih",
+              "onClick": "() => window.location.hash = '#home'"
+            }
+          },
+          {
+            "header": "Premium",
+            "body": [
+              {
+                "name": "Speedboat Kilat (Ancol)",
+                "className": "item"
+              },
+              {
+                "name": "Exclusive Private House",
+                "className": "item"
+              },
+              {
+                "name": "All Basic Add-ons",
+                "className": "item"
+              },
+              {
+                "name": "Jet Ski Session",
+                "className": "item"
+              },
+              {
+                "name": "Paddle Surfing",
+                "className": "item"
+              },
+              {
+                "name": "Drone Aerial Photo",
+                "className": "item"
+              },
+              {
+                "name": "Mulai dari Rp 1.500.000 / pax",
+                "className": "price-tag"
+              }
+            ],
+            "action": {
+              "label": "Pilih",
+              "onClick": "() => window.location.hash = '#home'"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,5 +1,4 @@
 import type { iBasicNode } from "./lib/LandingPageBuilder/interface";
-import { FormSchemaTransformer } from "./lib/LandingPageBuilder/Utils/FormSchemaTransformer";
 
 export const HomePageContent: iBasicNode[] = [
   {
@@ -15,8 +14,8 @@ export const HomePageContent: iBasicNode[] = [
           "p.description": "textarea"
         },
         property: {
-          "image": "file",
           "title": "text",
+          "image": "file",
           "description": "textarea"
         }
       },
@@ -306,9 +305,18 @@ export const HomePageContent: iBasicNode[] = [
           mode: "table" // normal which is unwrapped, the other mode is "table", use single set based input set, and current data will be rendered in table
         },
         content: [
-          { title: "Apakah ada batas minimal peserta untuk booking?", description: "Tidak. Kami siap membantu rombongan kecil maupun besar, dan kami akan menyesuaikan paket sesuai kebutuhan Kakak." },
-          { title: "Apakah bisa reschedule jika cuaca buruk?", description: "Ya. Jika operasional dibatalkan karena faktor cuaca atau otoritas pelabuhan, kami akan membantu penjadwalan ulang dengan transparan." },
-          { title: "Apakah pembayaran bisa melalui QRIS?", description: "Ya. Kami mendukung pembayaran QRIS dan akan langsung mengonfirmasi status transaksi setelah pembayaran berhasil." },
+          {
+            title: "Apakah ada batas minimal peserta untuk booking?",
+            description: "Tidak. Kami siap membantu rombongan kecil maupun besar, dan kami akan menyesuaikan paket sesuai kebutuhan Kakak."
+          },
+          {
+            title: "Apakah bisa reschedule jika cuaca buruk?",
+            description: "Ya. Jika operasional dibatalkan karena faktor cuaca atau otoritas pelabuhan, kami akan membantu penjadwalan ulang dengan transparan."
+          },
+          {
+            title: "Apakah pembayaran bisa melalui QRIS?",
+            description: "Ya. Kami mendukung pembayaran QRIS dan akan langsung mengonfirmasi status transaksi setelah pembayaran berhasil."
+          },
         ],
       }
     ]
@@ -475,18 +483,18 @@ const OrderFormSchema = {
       ],
     },
     `<section id="pricing-summary-box" class="section row card" style="background: var(--page-bg)!important;">
-    <div class="column half">    
-      <h2>Ringkasan Biaya Perjalanan</h2>
-      <ul class="unstyled-list">
-        <li>Total Peserta: <span id="summary-pax">4</span> Orang</li>
-        <li>Biaya Per Pax Estimasi: <span id="summary-per-pax">Rp 0</span></li>
-      </ul>
-      <h3>Total Pembayaran: <span id="summary-total-price">Rp 0</span></h3>
-    </div>
-    <div class="column half">    
-      <button class="button primary" type="submit" id="button-submit-order">Pesan Paket Trip & Bayar Via QRIS</button>
-    </div>
-  </section>`,
+      <div class="column half">    
+        <h2>Ringkasan Biaya Perjalanan</h2>
+        <ul class="unstyled-list">
+          <li>Total Peserta: <span id="summary-pax">4</span> Orang</li>
+          <li>Biaya Per Pax Estimasi: <span id="summary-per-pax">Rp 0</span></li>
+        </ul>
+        <h3>Total Pembayaran: <span id="summary-total-price">Rp 0</span></h3>
+      </div>
+      <div class="column half">    
+        <button class="button primary" type="submit" id="button-submit-order">Pesan Paket Trip & Bayar Via QRIS</button>
+      </div>
+    </section>`,
   ]
 }
 
@@ -494,6 +502,15 @@ const OrderFormSchema = {
 export const PackagePageContent = [
   {
     name: "package",
+    options: {
+      fieldTypes: {
+        selector: {
+          ".eyebrow": "text",
+          ".title": "text",
+          "p.description": "textarea",
+        },
+      },
+    },
     content: [
       {
         className: "column full txt-center",
@@ -507,18 +524,22 @@ export const PackagePageContent = [
         id: "pricing-plans",
         builder: "pricing-card",
         isRoot: true,
+        options: {
+          mode: "table" // normal which is unwrapped, the other mode is "table", use single set based input set, and current data will be rendered in table
+        },
         content: [
           {
             header: "Standard",
             body: [
-              { name: "Kapal Kayu Tradisional", className: "" },
-              { name: "Standard Shared Homestay", className: "" },
-              { name: "Snorkeling Session", className: "" },
-              { name: "Island Adventure Tour", className: "" },
-              { name: "Banana Boat & Jet Ski", className: "disabled" },
-              { name: "Dokumentasi Drone", className: "disabled" },
-              { name: "Mulai dari Rp 450.000 / pax", className: "price-tag" },
+              { title: "Kapal Kayu Tradisional", className: "" },
+              { title: "Standard Shared Homestay", className: "" },
+              { title: "Snorkeling Session", className: "" },
+              { title: "Island Adventure Tour", className: "" },
+              { title: "Banana Boat & Jet Ski", className: "disabled" },
+              { title: "Dokumentasi Drone", className: "disabled" },
+              { title: "Mulai dari Rp 450.000 / pax", className: "price-tag" },
             ],
+            price: 450000,
             action: {
               label: "Pilih",
               onClick: () => window.location.hash = "#home",
@@ -528,14 +549,15 @@ export const PackagePageContent = [
             header: "Medium",
             className: "is-featured",
             body: [
-              { name: "Speedboat Kilat (Ancol)", className: "" },
-              { name: "Standard Shared Homestay", className: "" },
-              { name: "Snorkeling & Island Tour", className: "" },
-              { name: "Banana Boat Ride", className: "" },
-              { name: "Underwater Photo", className: "" },
-              { name: "Jet Ski & Drone", className: "disabled" },
-              { name: "Mulai dari Rp 850.000 / pax", className: "price-tag" },
+              { title: "Speedboat Kilat (Ancol)", className: "" },
+              { title: "Standard Shared Homestay", className: "" },
+              { title: "Snorkeling & Island Tour", className: "" },
+              { title: "Banana Boat Ride", className: "" },
+              { title: "Underwater Photo", className: "" },
+              { title: "Jet Ski & Drone", className: "disabled" },
+              { title: "Mulai dari Rp 850.000 / pax", className: "price-tag" },
             ],
+            price: 850000,
             action: {
               label: "Pilih",
               onClick: () => window.location.hash = "#home",
@@ -544,14 +566,15 @@ export const PackagePageContent = [
           {
             header: "Premium",
             body: [
-              { name: "Speedboat Kilat (Ancol)", className: "" },
-              { name: "Exclusive Private House", className: "" },
-              { name: "All Basic Add-ons", className: "" },
-              { name: "Jet Ski Session", className: "" },
-              { name: "Paddle Surfing", className: "" },
-              { name: "Drone Aerial Photo", className: "" },
-              { name: "Mulai dari Rp 1.500.000 / pax", className: "price-tag" },
+              { title: "Speedboat Kilat (Ancol)", className: "" },
+              { title: "Exclusive Private House", className: "" },
+              { title: "All Basic Add-ons", className: "" },
+              { title: "Jet Ski Session", className: "" },
+              { title: "Paddle Surfing", className: "" },
+              { title: "Drone Aerial Photo", className: "" },
+              { title: "Mulai dari Rp 1.500.000 / pax", className: "price-tag" },
             ],
+            price: 1500000,
             action: {
               label: "Pilih",
               onClick: () => window.location.hash = "#home",
@@ -566,6 +589,21 @@ export const PackagePageContent = [
 export const GalleryPageContent = [
   {
     name: "Gallery",
+    options: {
+      fieldTypes: {
+        selector: {
+          "p.eyebrow": "text",
+          "h2.title": "text",
+          "p.description": "textarea"
+        },
+        property: {
+          "title": "text",
+          "image": "file",
+          "description": "textarea",
+          "category": "select"
+        }
+      },
+    },
     content: [
       {
         className: "column full txt-center",
@@ -579,42 +617,63 @@ export const GalleryPageContent = [
         builder: "masonry",
         id: "gallery-grid",
         isRoot: true,
+        options: {
+          mode: "table" // normal which is unwrapped, the other mode is "table", use single set based input set, and current data will be rendered in table
+        },
         content: [
           {
             image: "https://placehold.co/600x800/8764b5/ffffff?text=Pantai",
-            category: "A"
+            category: "A",
+            title: "",
+            decription: ""
           },
           {
             image: "https://placehold.co/800x600/1e3a5f/ffffff?text=Snorkeling",
-            category: "A"
+            category: "A",
+            title: "",
+            decription: ""
           },
           {
             image: "https://placehold.co/600x400/8764b5/ffffff?text=Sunset",
-            category: "A"
+            category: "A",
+            title: "",
+            decription: ""
           },
           {
             image: "https://placehold.co/400x600/1e3a5f/ffffff?text=Keluarga",
-            category: "B"
+            category: "B",
+            title: "",
+            decription: ""
           },
           {
             image: "https://placehold.co/800x800/8764b5/ffffff?text=Pemandangan",
-            category: "B"
+            category: "B",
+            title: "",
+            decription: ""
           },
           {
             image: "https://placehold.co/600x600/1e3a5f/ffffff?text=Kapal",
-            category: "B"
+            category: "B",
+            title: "",
+            decription: ""
           },
           {
             image: "https://placehold.co/400x600/1e3a5f/ffffff?text=Penginapan",
-            category: "C"
+            category: "C",
+            title: "",
+            decription: ""
           },
           {
             image: "https://placehold.co/800x800/8764b5/ffffff?text=Permainan",
-            category: "C"
+            category: "C",
+            title: "",
+            decription: ""
           },
           {
             image: "https://placehold.co/600x600/1e3a5f/ffffff?text=Suasana Malam",
-            category: "C"
+            category: "C",
+            title: "",
+            decription: ""
           },
         ]
       }
@@ -622,51 +681,22 @@ export const GalleryPageContent = [
   }
 ];
 
-
-function getFormPageContent(content: any[]) {
-
-  const injectionRules = [
-    { selector: "p.eyebrow", inputType: "text" },
-    { selector: "h2.title", inputType: "text" },
-    { selector: "p.description", inputType: "textarea" },
-    { selector: ".rating", inputType: "text" },
-    { selector: "img", inputType: "file" },
-    // 💡 JEMBATAN BARU: Tambahkan aturan agar scanner mendeteksi komponen kompleks otomatis!
-    { property: "image", inputType: "file" },
-    { property: "title", inputType: "text" },
-    { property: "description", inputType: "textarea" },
-    { property: "src", inputType: "file" }
-  ];
-
-  const reverseNode = FormSchemaTransformer.toFormNode(content, injectionRules);
-  console.log({ reverseNode })
-
-  const tabMenu: string[] = [];
-  const tabBody: any[] = [];
-  for (const node of reverseNode) {
-    const m = node.legend.replace("Panel: ", "").replace("_", " ")
-    tabMenu.push(m);
-    tabBody.push({ builder: "form", content: [node] });
-  }
-
-  return {
-    nodes: reverseNode,
-    page: [{
-      id: "dashboard-tab",
-      builder: "tab",
-      content: {
-        menu: tabMenu,
-        body: tabBody
-      }
-    }]
-  }
-}
-
-export const FormPageContent = getFormPageContent(HomePageContent);
-
 export const ProductPageContent = [
   {
     builder: "product-card-grid",
+    options: {
+      fieldTypes: {
+        property: {
+          "uid": "text",
+          "name": "text",
+          "category": "select",
+          "artwork.src": "file", // <= ini membawa semua object artwork padahal yang mau diambil property src. _flattenObject nya sptnya bermasalah
+          "description": "textarea",
+          "price": "number"
+        }
+      },
+      mode: "table"
+    },
     content: [
       {
         "uid": "dsr7524x",
@@ -675,42 +705,42 @@ export const ProductPageContent = [
         "title": "Standard O-neck",
         "description": "",
         "price": "getPrice",
-        "fabrics": [
+        "colors": [
           {
-            "color": "white",
-            "HEX": "#ffffff"
+            "name": "white",
+            "value": "#ffffff"
           },
           {
-            "color": "black",
-            "HEX": "#212121"
+            "name": "black",
+            "value": "#212121"
           },
           {
-            "color": "light grey",
-            "HEX": "#cacaca"
+            "name": "light grey",
+            "value": "#cacaca"
           },
           {
-            "color": "red",
-            "HEX": "#f83939"
+            "name": "red",
+            "value": "#f83939"
           },
           {
-            "color": "violet",
-            "HEX": "#9966cc"
+            "name": "violet",
+            "value": "#9966cc"
           },
           {
-            "color": "dark brown",
-            "HEX": "#37220e"
+            "name": "dark brown",
+            "value": "#37220e"
           },
           {
-            "color": "navy",
-            "HEX": "#151935"
+            "name": "navy",
+            "value": "#151935"
           },
           {
-            "color": "green",
-            "HEX": "#1bb752"
+            "name": "green",
+            "value": "#1bb752"
           }
         ],
+        "imageUrl": "apparel/man_tshirt_standard_o-neck.png",
         "artwork": {
-          "src": "apparel/man_tshirt_standard_o-neck.png",
           "mask": {
             "fullbody": "",
             "sleeve_right": "",
@@ -728,38 +758,38 @@ export const ProductPageContent = [
         "title": "Man Long Sleeve",
         "description": "",
         "price": "getPrice",
-        "fabrics": [
+        "colors": [
           {
-            "color": "black",
-            "HEX": "#212121"
+            "name": "black",
+            "value": "#212121"
           },
           {
-            "color": "white",
-            "HEX": "#fffbfb"
+            "name": "white",
+            "value": "#fffbfb"
           },
           {
-            "color": "dark grey",
-            "HEX": "#423b3b"
+            "name": "dark grey",
+            "value": "#423b3b"
           },
           {
-            "color": "misty grey",
-            "HEX": "#cacaca"
+            "name": "misty grey",
+            "value": "#cacaca"
           },
           {
-            "color": "violet",
-            "HEX": "#9966cc"
+            "name": "violet",
+            "value": "#9966cc"
           },
           {
-            "color": "cream",
-            "HEX": "#fbfde2"
+            "name": "cream",
+            "value": "#fbfde2"
           },
           {
-            "color": "orange",
-            "HEX": "#ff932e"
+            "name": "orange",
+            "value": "#ff932e"
           },
         ],
+        "imageUrl": "apparel/man_shirt_long_slevee.png",
         "artwork": {
-          "src": "apparel/man_shirt_long_slevee.png",
           "mask": {
             "fullbody": "",
             "sleeve_right": "",
@@ -777,42 +807,42 @@ export const ProductPageContent = [
         "title": "Event's Balloon",
         "description": "",
         "price": "getPrice",
-        "fabrics": [
+        "colors": [
           {
-            "color": "black",
-            "HEX": "#212121"
+            "name": "black",
+            "value": "#212121"
           },
           {
-            "color": "white",
-            "HEX": "#fffbfb"
+            "name": "white",
+            "value": "#fffbfb"
           },
           {
-            "color": "red",
-            "HEX": "#ff0000"
+            "name": "red",
+            "value": "#ff0000"
           },
           {
-            "color": "pink",
-            "HEX": "#ff89ed"
+            "name": "pink",
+            "value": "#ff89ed"
           },
           {
-            "color": "violet",
-            "HEX": "#9966cc"
+            "name": "violet",
+            "value": "#9966cc"
           },
           {
-            "color": "transparent",
-            "HEX": "#fbfde2"
+            "name": "transparent",
+            "value": "#fbfde2"
           },
           {
-            "color": "blue",
-            "HEX": "#0245fc"
+            "name": "blue",
+            "value": "#0245fc"
           },
           {
-            "color": "green",
-            "HEX": "#1bb752"
+            "name": "green",
+            "value": "#1bb752"
           }
         ],
+        "imageUrl": "apparel/Promotion_Balloon.png",
         "artwork": {
-          "src": "apparel/Promotion_Balloon.png",
           "mask": {
             "fullbody": "",
             "sleeve_right": "",
@@ -830,22 +860,22 @@ export const ProductPageContent = [
         "title": "Standard Mug",
         "description": "",
         "price": "getPrice",
-        "fabrics": [
+        "colors": [
           {
-            "color": "black",
-            "HEX": "#212121"
+            "name": "black",
+            "value": "#212121"
           },
           {
-            "color": "white",
-            "HEX": "#fffbfb"
+            "name": "white",
+            "value": "#fffbfb"
           },
           {
-            "color": "cream",
-            "HEX": "#fbfde2"
+            "name": "cream",
+            "value": "#fbfde2"
           }
         ],
+        "imageUrl": "apparel/Promotion_Mug.png",
         "artwork": {
-          "src": "apparel/Promotion_Mug.png",
           "mask": {
             "fullbody": "",
             "sleeve_right": "",
@@ -863,30 +893,30 @@ export const ProductPageContent = [
         "title": "Pin",
         "description": "",
         "price": "getPrice",
-        "fabrics": [
+        "colors": [
           {
-            "color": "black",
-            "HEX": "#212121"
+            "name": "black",
+            "value": "#212121"
           },
           {
-            "color": "white",
-            "HEX": "#fffbfb"
+            "name": "white",
+            "value": "#fffbfb"
           },
           {
-            "color": "cream",
-            "HEX": "#fbfde2"
+            "name": "cream",
+            "value": "#fbfde2"
           },
           {
-            "color": "yellow",
-            "HEX": "#F7EA14"
+            "name": "yellow",
+            "value": "#F7EA14"
           },
           {
-            "color": "red",
-            "HEX": "#EC2A2A"
+            "name": "red",
+            "value": "#EC2A2A"
           }
         ],
+        "imageUrl": "apparel/Promotion_Pin.png",
         "artwork": {
-          "src": "apparel/Promotion_Pin.png",
           "mask": {
             "fullbody": "",
             "sleeve_right": "",
@@ -904,34 +934,34 @@ export const ProductPageContent = [
         "title": "Cushion",
         "description": "",
         "price": "getPrice",
-        "fabrics": [
+        "colors": [
           {
-            "color": "black",
-            "HEX": "#020000"
+            "name": "black",
+            "value": "#020000"
           },
           {
-            "color": "white",
-            "HEX": "#ffffffe3"
+            "name": "white",
+            "value": "#ffffffe3"
           },
           {
-            "color": "yellow",
-            "HEX": "#fffc30"
+            "name": "yellow",
+            "value": "#fffc30"
           },
           {
-            "color": "red",
-            "HEX": "#EC2A2A"
+            "name": "red",
+            "value": "#EC2A2A"
           },
           {
-            "color": "brown",
-            "HEX": "#382b2b"
+            "name": "brown",
+            "value": "#382b2b"
           },
           {
-            "color": "grey",
-            "HEX": "#5B5B5B"
+            "name": "grey",
+            "value": "#5B5B5B"
           }
         ],
+        "imageUrl": "apparel/Promotion_Cushion.png",
         "artwork": {
-          "src": "apparel/Promotion_Cushion.png",
           "mask": {
             "fullbody": "",
             "sleeve_right": "",
@@ -946,9 +976,24 @@ export const ProductPageContent = [
   }
 ];
 
-
 export const BlogPageContent = [{
   builder: "article",
+  options: {
+    fieldTypes: {
+      property: {
+        // "uid": "text",
+        "title": "text",
+        "date": "date",
+        "slug": "text",
+        "summary": "textarea",
+        "thumbnail": "file",
+        "largeCover": "file",
+        "author": "text",
+        "body": "textarea"
+      }
+    },
+    mode: "table"
+  },
   content: {
     "status": "success",
     "meta": {

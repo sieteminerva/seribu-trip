@@ -48,12 +48,13 @@ interface iComponentEvents<T extends string = string> {
 
 export interface iPageEvents<T extends string = string> extends iComponentEvents<T> {
   beforeRender: {
+    route: string;
     pages: any[]; // Sesuaikan dengan iBasicNode[] asli Anda di lokal
     menu: any | null;
     footer: any | null;
     pageMetaReport?: any;
   };
-  pageChanged: { route: string; activeNodes: HTMLElement[] };
+  pageChanged: { route: string; activeNodes?: HTMLElement[] };
 }
 
 // ==========================================
@@ -65,7 +66,7 @@ export type iBuilderSelectorsConfig<TType extends string = string> = Record<TTyp
 export interface iBuilderConfig<TType extends string = string> {
   themeId?: string;
   namespace?: string | null;
-  selectors?: iBuilderSelectorsConfig<TType>;
+  selectors?: Partial<iBuilderSelectorsConfig<TType>>;
   emit?: (<K extends keyof iComponentEvents<TType>>(
     event: K,
     data: iComponentEvents<TType>[K]
@@ -99,6 +100,7 @@ export interface iBuilderRegistry {
   "product-card-grid": any;
   "input-controls": Array<iBasicInputNode>;
   table: any[];
+  dropdown: iBasicInputNode;
   // Untuk komponen baru nanti, cukup daftarkan jenis array atomnya di sini:
   // stats: iStatsProperty[];
 }
@@ -122,6 +124,9 @@ export interface iMetadataContext {
 }
 
 declare global {
+  interface HTMLSelectElement {
+    __nativeChangeHandler: (e: Event) => any;
+  }
   interface HTMLElement {
     __outer: HTMLElement;
     __inner: HTMLElement;
@@ -137,11 +142,12 @@ export interface iNodeRecords {
   records: iNodeRecordItem[]
 }
 
-export interface iNodeRecordItem {
+export interface iNodeRecordItem<T = any> {
+  key: string;
   element: HTMLElement,
-  raw: any;
+  payload: T;
   relations?: iNodeRecordRelations;
-  proxy: any;
+  // proxy: any;
 }
 
 export interface iNodeRecordRelations {

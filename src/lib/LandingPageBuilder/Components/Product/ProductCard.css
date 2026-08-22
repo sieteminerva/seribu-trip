@@ -1,3 +1,6 @@
+.row.full-width:has(.product) {
+  justify-content: center;
+}
 .product {
   display: flex;
   flex-direction: column;

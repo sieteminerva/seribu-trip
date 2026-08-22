@@ -1,4 +1,4 @@
-import type { iBasicNode, iBuilderConfig, iBuilderRegistry } from "../../interface";
+import type { iActionProperty, iBasicNode, iBuilderConfig, iBuilderRegistry } from "../../interface";
 import { Builder } from "../Base";
 import "./FabMenu.css";
 
@@ -60,18 +60,12 @@ export class FabMenuBuilder extends Builder<FabMenuElementType, iFabMenuConfig> 
     this._clearIdleTimer();
     this.isMenuOpen = false;
 
-    const fab = this.render("@fab", content);
-    const panel = this.render("@fab>panel", content);
-    const title = this.render("@fab>panel>title", content);
-    if (title && panel) panel.appendChild(title);
+    const fab = this.render("@fab");
+    const panel = this.render("@fab>panel", content.actions);
+    const title = this.render("@fab>panel>title", content.title);
+    if (title && panel) panel?.prepend(title);
 
-    const actions = Array.isArray(content.actions) ? content.actions : [];
-    for (const item of actions) {
-      const btn = this.render("@fab>panel>item", item, true);
-      if (btn && panel) panel.appendChild(btn);
-    }
-
-    const trigger = this.render("@fab>panel>trigger", content);
+    const trigger = this.render("@fab>panel>trigger", this.config);
 
     if (this.config.position.startsWith("bottom")) {
       if (panel) fab?.appendChild(panel);
@@ -81,7 +75,7 @@ export class FabMenuBuilder extends Builder<FabMenuElementType, iFabMenuConfig> 
       if (panel) fab?.appendChild(panel);
     }
 
-    return this.load("@fab") as HTMLElement;
+    return fab as HTMLElement;
   }
 
 
@@ -89,30 +83,36 @@ export class FabMenuBuilder extends Builder<FabMenuElementType, iFabMenuConfig> 
   /**
    * 👑 THE SEPARATED HYDRATION VALVE
    */
-  protected template(typeKey: FabMenuElementType, el: HTMLElement, payload?: any): void {
-    if (!payload) return;
+  protected template(typeKey: FabMenuElementType, el: HTMLElement, payload: any, props: iActionProperty): void {
 
     switch (typeKey) {
       case "@fab":
-        el.className = `fab ${this.config.position} ${payload.className || ""}`.trim();
+        el.className = `fab ${this.config.position} ${props.className || ""}`.trim();
+        break;
+
+      case "@fab>panel":
+        for (const p of payload) {
+          const item = this.render("@fab>panel>item", p)!;
+          el.appendChild(item);
+        }
         break;
 
       case "@fab>panel>title":
-        el.textContent = (payload.title || "MENU").toUpperCase();
+        el.textContent = (payload || "MENU").toUpperCase();
         break;
 
       case "@fab>panel>item": {
-        const btn = el as HTMLButtonElement;
-        btn.type = payload.type || "button";
-        btn.textContent = payload.label || "Option";
-        if (payload.id) btn.id = payload.id;
+        // console.log({ payload, props });
+        (el as HTMLButtonElement).type = payload.type || "button";
+        el.textContent = payload.label || "Option";
+        if (payload.id) el.id = payload.id;
 
-        if (payload.isActive) btn.classList.add("active");
+        if (payload.isActive) el.classList.add("active");
 
-        if (payload.className) btn.className = `${btn.className} ${payload.className}`.trim();
+        if (payload.className) el.className = `${el.className} ${payload.className}`.trim();
 
         // Listener
-        btn.onclick = (e: MouseEvent) => {
+        el.onclick = (e: MouseEvent) => {
           if (payload.onClick) payload.onClick(e);
 
           if (this.config.closeOnSelected) {
@@ -125,10 +125,8 @@ export class FabMenuBuilder extends Builder<FabMenuElementType, iFabMenuConfig> 
       }
 
       case "@fab>panel>trigger": {
-        const btn = el as HTMLButtonElement;
-        btn.className = "trigger";
-        btn.title = "Click for switching options";
-        btn.textContent = this.config.displayIcon;
+        el.title = "Click for switching options";
+        el.textContent = payload.displayIcon;
         break;
       }
     }
@@ -145,7 +143,7 @@ export class FabMenuBuilder extends Builder<FabMenuElementType, iFabMenuConfig> 
           this.open();
         }
       };
-      console.log("[FAB Lifecycle] Trigger button listener attached securely.");
+      // console.log("[FAB Lifecycle] Trigger button listener attached securely.");
     }
   }
 

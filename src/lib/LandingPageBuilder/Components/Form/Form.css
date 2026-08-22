@@ -14,7 +14,7 @@ textarea:focus-visible {
 /* ==========================================================================
    2. Input Wrapper & Display Layouts
    ========================================================================== */
-.input-wrapper {
+.native.form .input-wrapper {
   display: block;
   box-sizing: border-box;
   width: 100%;
@@ -22,12 +22,12 @@ textarea:focus-visible {
   text-align: left;
 }
 
-.input-wrapper[data-display="block"] {
+.native.form .input-wrapper[data-display="block"] {
   /* Inherits display: block and width: 100% from base */
   margin-bottom: 1em;
 }
 
-.input-wrapper[data-display="inline"] {
+.native.form .input-wrapper[data-display="inline"] {
   display: inline-grid;
   width: auto;
   margin-right: 1em;
@@ -36,23 +36,23 @@ textarea:focus-visible {
 }
 
 /* --- Block Groups --- */
-.input-wrapper.group[data-display="block"] {
+.native.form .input-wrapper.group[data-display="block"] {
   display: grid;
   grid-template-columns: 1fr;
   row-gap: 0.25em;
   height: max-content;
 }
 
-.input-wrapper.group[data-display="block"] > label {
+.native.form .input-wrapper.group[data-display="block"] > label {
   margin-bottom: 0;
 }
 
-.input-wrapper.group[data-display="block"] > input:not(:last-of-type) {
+.native.form .input-wrapper.group[data-display="block"] > input:not(:last-of-type) {
   margin-bottom: 0.75em;
 }
 
 /* --- Inline Groups --- */
-.input-wrapper.group[data-display="inline"] {
+.native.form .input-wrapper.group[data-display="inline"] {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.25em 1em;
@@ -60,31 +60,31 @@ textarea:focus-visible {
   margin-right: 0;
 }
 
-.input-wrapper.group[data-display="inline"] > label:nth-of-type(1),
-.input-wrapper.group[data-display="inline"] > input:nth-of-type(1),
-.input-wrapper.group[data-display="inline"] > span.spinner:nth-of-type(1) {
+.native.form .input-wrapper.group[data-display="inline"] > label:nth-of-type(1),
+.native.form .input-wrapper.group[data-display="inline"] > input:nth-of-type(1),
+.native.form .input-wrapper.group[data-display="inline"] > span.spinner:nth-of-type(1) {
   grid-column: 1;
 }
 
-.input-wrapper.group[data-display="inline"] > label:nth-of-type(2),
-.input-wrapper.group[data-display="inline"] > input:nth-of-type(2),
-.input-wrapper.group[data-display="inline"] > span.spinner:nth-of-type(2) {
+.native.form .input-wrapper.group[data-display="inline"] > label:nth-of-type(2),
+.native.form .input-wrapper.group[data-display="inline"] > input:nth-of-type(2),
+.native.form .input-wrapper.group[data-display="inline"] > span.spinner:nth-of-type(2) {
   grid-column: 2;
 }
 
-.input-wrapper.group[data-display="inline"] > label {
+.native.form .input-wrapper.group[data-display="inline"] > label {
   grid-row: 1;
 }
 
-.input-wrapper.group[data-display="inline"] > input,
-.input-wrapper.group[data-display="inline"] > span.spinner {
+.native.form .input-wrapper.group[data-display="inline"] > input,
+.native.form .input-wrapper.group[data-display="inline"] > span.spinner {
   grid-row: 2;
 }
 
 /* ==========================================================================
    3. Labels & Base Form Controls
    ========================================================================== */
-.input-wrapper label {
+.native.form .input-wrapper label {
   display: block;
   margin-bottom: 0.25em;
   color: var(--primary-text-color);
@@ -92,72 +92,80 @@ textarea:focus-visible {
   font-weight: 600;
 }
 
-.input-wrapper select,
-.input-wrapper ::picker(select) {
+.native.form .input-wrapper select,
+.native.form .input-wrapper ::picker(select) {
   appearance: base-select;
   cursor: pointer;
 }
 
 /* Shared Core Input Inputs styles */
-.input-wrapper input:not([type="checkbox"]),
-.input-wrapper select,
-.input-wrapper textarea {
+.native.form .input-wrapper input:not([type="checkbox"]),
+.native.form .input-wrapper select,
+.native.form .input-wrapper textarea {
   font-family: inherit;
   box-sizing: border-box;
   display: block;
   width: 100%;
-  min-height: var(--input-min-height);
-  line-height: calc(var(--input-min-height) - (0.57em * 2), 1.6);
+  /* min-height: var(--input-min-height); */
+  height: 1.7lh;
+  /* line-height: calc(var(--input-min-height) - (0.57em * 2), 1.6); */
+  line-height: 1.3rem;
   padding: 0.4em 1em;
   font-size: 1rem;
   border: 1px solid var(--border-color);
-  border-radius: var(--input-border-radius) !important;
+  border-radius: var(--input-border-radius);
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
   transition: 200ms;
   background-color: var(--primary-background-color);
   color: var(--primary-text-color);
+  /* scrollbar-gutter: stable; */
+  scrollbar-width: thin;
 }
 
-.input-wrapper input:not([type="checkbox"]),
-.input-wrapper select {
+.native.form .input-wrapper textarea {
+  height: 4lh;
+  field-sizing: content;
+}
+
+.native.form .input-wrapper input:not([type="checkbox"]),
+.native.form .input-wrapper select {
   max-height: var(--input-min-height);
 }
 
-.input-wrapper textarea {
+.native.form .input-wrapper textarea {
   min-height: calc(var(--input-min-height) * 2.5);
   resize: vertical;
   white-space: normal;
 }
 
 /* --- Form Fields Base Interactive States --- */
-.input-wrapper input:not([type="checkbox"]):hover,
-.input-wrapper input:not([type="checkbox"]):focus,
-.input-wrapper input:not([type="checkbox"]):active,
-.input-wrapper input:not([type="checkbox"]):focus-visible,
-.input-wrapper textarea:hover,
-.input-wrapper textarea:focus,
-.input-wrapper textarea:active,
-.input-wrapper textarea:focus-visible,
-.input-wrapper select:hover,
-.input-wrapper select:active,
-.input-wrapper select:focus-visible,
-.input-wrapper select:open,
-.input-wrapper ::picker(select):popover-open,
-.input-wrapper:has(select:active) ::picker(select):popover-open,
-.input-wrapper:has(select:focus) ::picker(select):popover-open {
+.native.form .input-wrapper input:not([type="checkbox"]):hover,
+.native.form .input-wrapper input:not([type="checkbox"]):focus,
+.native.form .input-wrapper input:not([type="checkbox"]):active,
+.native.form .input-wrapper input:not([type="checkbox"]):focus-visible,
+.native.form .input-wrapper textarea:hover,
+.native.form .input-wrapper textarea:focus,
+.native.form .input-wrapper textarea:active,
+.native.form .input-wrapper textarea:focus-visible,
+.native.form .input-wrapper select:hover,
+.native.form .input-wrapper select:active,
+.native.form .input-wrapper select:focus-visible,
+.native.form .input-wrapper select:open,
+.native.form .input-wrapper ::picker(select):popover-open,
+.native.form .input-wrapper:has(select:active) ::picker(select):popover-open,
+.native.form .input-wrapper:has(select:focus) ::picker(select):popover-open {
   border: 1px solid var(--primary-border-color);
   background-color: var(--gsheets-accent-color);
 }
 
 /* Open Select Special Rounding Layer Override */
-.input-wrapper select:open,
-.input-wrapper:has(select:open) select,
-.input-wrapper:has(select:open) select:hover,
-.input-wrapper:has(select:open) select:active {
+.native.form .input-wrapper select:open,
+.native.form .input-wrapper:has(select:open) select,
+.native.form .input-wrapper:has(select:open) select:hover,
+.native.form .input-wrapper:has(select:open) select:active {
   transition: 200ms;
-  border-radius: var(--input-border-radius) var(--input-border-radius) 0 0 !important;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -188,117 +196,126 @@ textarea:focus-visible {
 /* ==========================================================================
    5. Select Options & Elements Content Parts
    ========================================================================== */
-.input-wrapper select option {
+.native.form .input-wrapper select option {
   color: var(--primary-hover-color);
   transition: all 100ms;
 }
 
-.input-wrapper select option,
-.input-wrapper select::part(selectedcontent) {
+.native.form .input-wrapper select option,
+.native.form .input-wrapper select::part(selectedcontent) {
   display: block;
   position: relative;
   box-sizing: border-box;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.5em;
+  line-height: 1.2rem;
   padding: 0.5em 0.5em;
 }
 
-.input-wrapper select option::checkmark {
+.native.form .input-wrapper select option::checkmark {
   margin-right: 0.25em;
 }
 
-.input-wrapper select option:hover,
-.input-wrapper select option:focus {
+.native.form .input-wrapper select option:hover,
+.native.form .input-wrapper select option:focus {
   color: var(--default-text-color);
   background-color: var(--light-border-color);
 }
 
-.input-wrapper select::part(selectedcontent),
-.input-wrapper select option:checked {
+.native.form .input-wrapper select::part(selectedcontent),
+.native.form .input-wrapper select option:checked {
   background-color: var(--primary-light-color);
   color: var(--primary-text-color);
 }
 
 /* --- Placeholder Colors vs Active Content Colors --- */
-.input-wrapper input:not([type="checkbox"])::placeholder,
-.input-wrapper textarea::placeholder,
-.input-wrapper select,
-.input-wrapper select:has(> option.placeholder:checked) {
+.native.form .input-wrapper input:not([type="checkbox"])::placeholder,
+.native.form .input-wrapper textarea::placeholder,
+.native.form .input-wrapper select,
+.native.form .input-wrapper select:has(> option.placeholder:checked) {
   color: var(--placeholder-color);
 }
 
-.input-wrapper input:not([type="checkbox"]),
-.input-wrapper select:has(> option[selected]) {
+.native.form .input-wrapper input:not([type="checkbox"]),
+.native.form .input-wrapper select:has(> option[selected]) {
   color: var(--primary-text-color);
 }
 
 /* ==========================================================================
    6. Custom Picker Popovers [::picker(select)]
    ========================================================================== */
-.input-wrapper ::picker(select) {
+.native.form .input-wrapper ::picker(select) {
+  /* scrollbar-gutter: stable; */
+  scrollbar-width: thin;
   box-sizing: border-box;
   max-height: var(--input-picker-height);
-  max-width: calc(95% - var(--scrollbar-width));
   top: anchor(bottom);
   border: 1px solid var(--border-color);
-  white-space: nowrap;
-  overflow-x: hidden;
-  text-overflow: ellipsis;
   opacity: 0;
   transform-origin: top;
-  transform: translateY(-4px) scaleY(0%) scaleX(99.7%);
+  transform: translateY(-4px) scaleY(0%);
   transition: all 150ms ease;
   transition-behavior: allow-discrete;
   transition-delay: var(--dropdown-transition-delay);
   border-radius: var(--input-border-radius);
   background-color: var(--gsheets-accent-color);
+  white-space: nowrap;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
   color: transparent;
+  max-height: 5.15lh;
 }
 
-.input-wrapper ::picker(select):popover-open {
+.native.form .input-wrapper ::picker(select):popover-open {
   opacity: 1;
   transition-delay: var(--dropdown-transition-delay);
-  transform: translateY(0) scaleY(1) scaleX(1);
+  transform: translateY(0) scaleY(1);
   scrollbar-color: var(--primary-color) rgba(255, 229, 238, 0.562);
-  scrollbar-width: thin;
-  border-radius: 0 0 var(--input-border-radius) var(--input-border-radius) !important;
+  /* scrollbar-gutter: stable; */
+  border-radius: 0 0 var(--input-border-radius) var(--input-border-radius);
   box-shadow: 0 2px 3px 0 var(--border-color);
+  width: anchor-size(width);
+}
+
+.native.form .input-wrapper select:open {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 /* Unified Flattened Borders on Active Popovers */
-.input-wrapper:has(select:active) ::picker(select):popover-open,
-.input-wrapper:has(select:focus) ::picker(select):popover-open,
-.input-wrapper ::picker(select),
-.input-wrapper ::picker(select):popover-open {
+.native.form .input-wrapper:has(select:active) ::picker(select):popover-open,
+.native.form .input-wrapper:has(select:focus) ::picker(select):popover-open,
+.native.form .input-wrapper ::picker(select),
+.native.form .input-wrapper ::picker(select):popover-open {
   border-top: none;
 }
 
 @starting-style {
-  .input-wrapper ::picker(select):popover-open {
+  .native.form .input-wrapper ::picker(select):popover-open {
     display: block;
     opacity: 0;
-    transform: translateY(-4px) scaleY(0%) scaleX(99.7%);
+    transform: translateY(-4px) scaleY(0%);
   }
 }
 
 /* ==========================================================================
    7. Spinner Icons & Dynamic Indicators
    ========================================================================== */
-.input-wrapper select::picker-icon,
-.input-wrapper span.spinner {
+
+.native.form .input-wrapper select::picker-icon,
+.native.form .input-wrapper span.spinner {
   box-sizing: border-box;
   justify-self: right;
   z-index: 99;
+  align-content: center;
 }
 
-.input-wrapper select.loading::picker-icon,
-.input-wrapper span.spinner {
+.native.form .input-wrapper select.loading::picker-icon,
+.native.form .input-wrapper.loading > select::picker-icon,
+.native.form .input-wrapper span.spinner {
+  align-content: center;
   content: var(--spinner-content);
 }
 
-.input-wrapper select:not(.loading)::picker-icon {
+.native.form .input-wrapper select:not(.loading)::picker-icon {
   content: var(--dropdown-arrow-content);
   color: var(--primary-border-color);
   transform: scale(85%) translateY(-21px);
@@ -306,32 +323,43 @@ textarea:focus-visible {
   transform-origin: center -35%;
 }
 
-.input-wrapper select:not(.loading):open::picker-icon {
+.native.form .input-wrapper select:not(.loading):open::picker-icon {
   rotate: 90deg;
 }
 
-.input-wrapper select.loading::picker-icon {
-  transform: translateY(-19.5px);
+.native.form .input-wrapper select.loading::picker-icon,
+.native.form .input-wrapper.loading > select::picker-icon {
+  transform: translateY(-1.28rem) translateX(-2px);
+  align-content: center;
 }
 
-.input-wrapper span.spinner {
+.native.form .input-wrapper:has(input:not([type="checkbox"]))::before {
+  content: var(--spinner-content); /* <= svg inline */
+  position: absolute;
   display: block;
-  position: relative;
-  transform: translateX(-19.5px) translateY(-29.5px);
+  visibility: hidden;
+  justify-self: right;
+  text-align: right;
+  z-index: 99;
+  transform: translateX(-19px) translateY(1.27lh);
 }
 
-.input-wrapper input:not([type="checkbox"]) ~ span.spinner {
+.native.form .input-wrapper.loading:has(input:not([type="checkbox"]))::before {
+  visibility: visible;
+}
+
+.native.form .input-wrapper input:not([type="checkbox"]) ~ span.spinner {
   visibility: hidden;
 }
 
-.input-wrapper input:not([type="checkbox"]).loading ~ span.spinner {
+.native.form .input-wrapper input:not([type="checkbox"]).loading ~ span.spinner {
   visibility: visible;
 }
 
 /* ==========================================================================
    8. Toggle Switch Components
    ========================================================================== */
-.input-wrapper.toggle-switch {
+.native.form .input-wrapper.toggle-switch {
   display: inline-grid;
   align-items: center;
   justify-content: start;
@@ -340,19 +368,19 @@ textarea:focus-visible {
   height: auto;
 }
 
-.input-wrapper.toggle-switch:has(> label[data-position="top"]) {
+.native.form .input-wrapper.toggle-switch:has(> label[data-position="top"]) {
   grid-template-areas: "label" "control";
 }
-.input-wrapper.toggle-switch:has(> label[data-position="left"]) {
+.native.form .input-wrapper.toggle-switch:has(> label[data-position="left"]) {
   grid-template-areas: "label control";
 }
-.input-wrapper.toggle-switch:has(> label[data-position="right"]) {
+.native.form .input-wrapper.toggle-switch:has(> label[data-position="right"]) {
   grid-template-areas: "control label";
 }
-.input-wrapper.toggle-switch:has(> label[data-position="bottom"]) {
+.native.form .input-wrapper.toggle-switch:has(> label[data-position="bottom"]) {
   grid-template-areas: "control" "label";
 }
-.input-wrapper.toggle-switch > label {
+.native.form .input-wrapper.toggle-switch > label {
   grid-area: label;
   margin-bottom: 0;
   color: var(--primary-text-color);
@@ -361,20 +389,20 @@ textarea:focus-visible {
   cursor: pointer;
   user-select: none;
 }
-.input-wrapper.toggle-switch > .control {
+.native.form .input-wrapper.toggle-switch > .control {
   position: relative;
   grid-area: control;
   display: inline-block;
 }
 
-.input-wrapper.toggle-switch > .control > input[type="checkbox"],
-.input-wrapper.toggle-switch > .control > input[type="checkbox"],
-.input-wrapper.toggle-switch > .control {
+.native.form .input-wrapper.toggle-switch > .control > input[type="checkbox"],
+.native.form .input-wrapper.toggle-switch > .control > input[type="checkbox"],
+.native.form .input-wrapper.toggle-switch > .control {
   width: 44px;
   height: 26px;
 }
 
-.input-wrapper.toggle-switch > .control > input[type="checkbox"] {
+.native.form .input-wrapper.toggle-switch > .control > input[type="checkbox"] {
   position: absolute;
   inset: 0;
   z-index: 1;
@@ -382,20 +410,20 @@ textarea:focus-visible {
   opacity: 0;
   cursor: pointer;
 }
-.input-wrapper.toggle-switch > .control > .slider {
+.native.form .input-wrapper.toggle-switch > .control > .slider {
   position: absolute;
   inset: 0;
   display: block;
   background-color: rgb(208, 208, 214);
   transition: 0.4s;
 }
-.input-wrapper.toggle-switch > .control > .slider[data-shape="round"] {
+.native.form .input-wrapper.toggle-switch > .control > .slider[data-shape="round"] {
   border-radius: 25px;
 }
-.input-wrapper.toggle-switch > .control > .slider[data-shape="square"] {
+.native.form .input-wrapper.toggle-switch > .control > .slider[data-shape="square"] {
   border-radius: 4px;
 }
-.input-wrapper.toggle-switch > .control > .slider:before {
+.native.form .input-wrapper.toggle-switch > .control > .slider:before {
   position: absolute;
   content: "";
   height: 18px;
@@ -405,55 +433,442 @@ textarea:focus-visible {
   background-color: white;
   transition: 0.4s;
 }
-.input-wrapper.toggle-switch > .control > .slider[data-shape="round"]:before {
+.native.form .input-wrapper.toggle-switch > .control > .slider[data-shape="round"]:before {
   border-radius: 50%;
 }
-.input-wrapper.toggle-switch > .control > .slider[data-shape="square"]:before {
+.native.form .input-wrapper.toggle-switch > .control > .slider[data-shape="square"]:before {
   border-radius: 2px;
 }
-.input-wrapper.toggle-switch > .control > input[type="checkbox"]:checked ~ .slider {
+.native.form .input-wrapper.toggle-switch > .control > input[type="checkbox"]:checked ~ .slider {
   background-color: var(--primary-color);
 }
-.input-wrapper.toggle-switch > .control > input[type="checkbox"]:focus-visible ~ .slider {
+.native.form .input-wrapper.toggle-switch > .control > input[type="checkbox"]:focus-visible ~ .slider {
   box-shadow: 0 0 1px #2196f3;
 }
-.input-wrapper.toggle-switch > .control > input[type="checkbox"]:checked ~ .slider:before {
+.native.form .input-wrapper.toggle-switch > .control > input[type="checkbox"]:checked ~ .slider:before {
   transform: translateX(18px);
 } /* ==========================================================================9. Validation Error States========================================================================== */
-.input-wrapper input.error,
-.input-wrapper select.error,
-.input-wrapper:has(select.error:open) ::picker(select):popover-open {
+.native.form .input-wrapper input.error,
+.native.form .input-wrapper select.error,
+.native.form .input-wrapper:has(select.error:open) ::picker(select):popover-open {
   background-color: #fff6f6;
   border: 1px solid #fd5b5b;
 }
-.input-wrapper:has(select.error:open) ::picker(select):popover-open {
+.native.form .input-wrapper:has(select.error:open) ::picker(select):popover-open {
   border-top: none;
 }
-.input-wrapper input.error,
-.input-wrapper select.error,
-.input-wrapper:has(select.error:open) ::picker(select):popover-open,
-.input-wrapper input.error::placeholder,
-.input-wrapper select.error:has(> option:first-child:checked) {
+.native.form .input-wrapper input.error,
+.native.form .input-wrapper select.error,
+.native.form .input-wrapper:has(select.error:open) ::picker(select):popover-open,
+.native.form .input-wrapper input.error::placeholder,
+.native.form .native.form .input-wrapper select.error:has(> option:first-child:checked) {
   color: #ff93ae;
 }
-.input-wrapper:has(> input.error) label,
-.input-wrapper:has(> select.error) label {
+.native.form .input-wrapper:has(> input.error) label,
+.native.form .input-wrapper:has(> select.error) label {
   color: #ff114d;
 }
 
-.form fieldset {
+.native.form fieldset {
   border: 1px solid rgba(183, 164, 216, 0.45);
   border-radius: 16px;
   padding: 1rem;
   margin-bottom: 1rem;
 }
 
-.form fieldset .input-wrapper {
+.native.form fieldset .input-wrapper {
   width: 100%;
 }
 
-.form legend {
+.native.form legend {
   padding: 0 0.35rem;
   color: var(--secondary-text-color);
   font-weight: 700;
+}
+
+/* ============ 
+   INLINE STYLE
+   ============ */
+
+.inline.form,
+.form fieldset.inline-style {
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 20px;
+  line-height: 1.8;
+  color: #2c3e50;
+  width: 100%;
+  max-width: 800px;
+  /* margin: 40px auto; */
+  justify-self: center;
+  padding: 20px;
+  display: block;
+}
+
+/* 2. Tata Letak Wrapper dan Label */
+.inline.form .input-wrapper,
+.form fieldset.inline-style .input-wrapper {
+  display: inline;
+  margin-bottom: 0;
+  margin-right: 8px;
+  width: auto;
+}
+
+.inline.form .input-wrapper label,
+.form fieldset.inline-style .input-wrapper label {
+  display: inline;
+  font-weight: normal;
+  color: #34495e;
+  margin-right: 6px;
+}
+
+/* 3. Penggabungan Kode Redundant untuk Elemen Interaktif (Input, Select, Textarea) */
+.inline.form .input-wrapper input:not([type="radio"], [type="file"], [type="checkbox"]),
+.inline.form .input-wrapper select,
+.inline.form .input-wrapper textarea,
+.form fieldset.inline-style .input-wrapper input:not([type="radio"], [type="file"], [type="checkbox"]),
+.form fieldset.inline-style .input-wrapper textarea,
+.form fieldset.inline-style .input-wrapper select {
+  field-sizing: content;
+  border-radius: unset;
+  appearance: unset;
+  width: auto;
+  display: inline-block;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 400;
+  background: transparent;
+  outline: none;
+  border: none;
+  border-bottom: 1px dashed darkgoldenrod;
+  padding: 2px 0.5em 2px 2px;
+  margin: 0 4px;
+  transition: all 0.3s ease;
+  vertical-align: baseline;
+  min-width: min-content;
+  cursor: pointer;
+  color: darkgoldenrod;
+  /* height: 1lh; */
+}
+
+.inline.form .input-wrapper input:not([type="radio"], [type="file"], [type="checkbox"]):hover,
+.inline.form .input-wrapper select:hover,
+.inline.form .input-wrapper textarea:hover,
+.form fieldset.inline-style .input-wrapper input:not([type="radio"], [type="file"], [type="checkbox"]):hover,
+.form fieldset.inline-style .input-wrapper select:hover,
+.form fieldset.inline-style .input-wrapper textarea:hover {
+  color: #2c3e50;
+  border: none;
+  border-bottom: 1px solid transparent;
+  outline: none;
+}
+
+.inline.form .input-wrapper select:active,
+.inline.form .input-wrapper select:focus-visible,
+.form fieldset.inline-style .input-wrapper select:active,
+.form fieldset.inline-style .input-wrapper select:focus-visible {
+  border: none;
+  border-bottom: 1px solid transparent;
+  outline: none;
+}
+
+/* 4. Penggabungan Efek Fokus Bersama */
+.inline.form .input-wrapper input:not([type="radio"], [type="file"], [type="checkbox"]):focus,
+.inline.form .input-wrapper select:focus,
+.inline.form .input-wrapper textarea:focus,
+.form fieldset.inline-style .input-wrapper input:not([type="radio"], [type="file"], [type="checkbox"]):focus,
+.form fieldset.inline-style .input-wrapper select:focus,
+.form fieldset.inline-style .input-wrapper textarea:focus {
+  color: #2c3e50;
+  border: none;
+  /* background-color: rgba(46, 204, 113, 0.05); */
+  width: fit-content;
+}
+
+/* 5. Aturan Khusus Masing-Masing Elemen */
+.inline.form .input-wrapper textarea,
+.form fieldset.inline-style .input-wrapper textarea {
+  height: unset;
+  resize: vertical;
+  vertical-align: middle;
+}
+
+.inline.form .input-wrapper select,
+.form fieldset.inline-style .input-wrapper select {
+  cursor: pointer;
+  appearance: base-select;
+  min-width: max-content;
+  height: 1lh;
+}
+
+.inline.form .input-wrapper select:open,
+.inline.form .input-wrapper:has(select:open) select,
+.inline.form .input-wrapper:has(select:open) select:hover,
+.inline.form .input-wrapper:has(select:open) select:active .form fieldset.inline-style .input-wrapper select:open,
+.form fieldset.inline-style .input-wrapper:has(select:open) select,
+.form fieldset.inline-style .input-wrapper:has(select:open) select:hover,
+.form fieldset.inline-style .input-wrapper:has(select:open) select:active {
+  border-bottom-left-radius: unset;
+  border-bottom-right-radius: unset;
+}
+
+/* 6. Fitur Customizable Dropdown (Picker) */
+.inline.form .input-wrapper ::picker(select),
+.form fieldset.inline-style .input-wrapper ::picker(select) {
+  appearance: base-select;
+  box-sizing: border-box;
+  max-width: fit-content;
+  /* width: anchor-size(width); */
+  min-width: min-content;
+  top: anchor(bottom);
+
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform-origin: top;
+  transform: translateY(-4px) translateX(-25%) scaleY(0%) scaleX(99.7%);
+  transition: all 150ms ease;
+  transition-behavior: allow-discrete;
+  transition-delay: var(--dropdown-transition-delay);
+  background-color: rgba(216, 216, 216, 0.911);
+  color: inherit;
+  max-height: 5.7lh;
+}
+
+.inline.form .input-wrapper select option,
+.form fieldset.inline-style .input-wrapper select option {
+  transition: all 100ms;
+  color: #2c3e50;
+}
+
+.inline.form .input-wrapper select option:hover,
+.inline.form .input-wrapper select option:focus,
+.form fieldset.inline-style .input-wrapper select option:hover,
+.form fieldset.inline-style .input-wrapper select option:focus {
+  color: var(--default-text-color);
+  background-color: rgba(167, 152, 115, 0.719);
+}
+
+.inline.form .input-wrapper select option:checked,
+.inline.form .input-wrapper select::part(selectedcontent),
+.form fieldset.inline-style .input-wrapper select option:checked,
+.form fieldset.inline-style .input-wrapper select::part(selectedcontent) {
+  background-color: rgba(184, 135, 11, 0.13);
+  color: rgba(122, 109, 72, 0.719);
+}
+
+.inline.form .input-wrapper ::picker(select):popover-open,
+.form fieldset.inline-style .input-wrapper ::picker(select):popover-open {
+  opacity: 1;
+  border-radius: unset;
+  transition-delay: var(--dropdown-transition-delay);
+  transform: translateY(-50%) translateX(-25%) scaleY(1) scaleX(1);
+  scrollbar-width: thin;
+  box-shadow: 0 2px 3px 0 var(--border-color);
+}
+
+.inline.form .input-wrapper select::picker-icon,
+.form fieldset.inline-style .input-wrapper select::picker-icon {
+  display: none;
+}
+
+@starting-style {
+  .inline.form .input-wrapper ::picker(select):popover-open,
+  .form fieldset.inline-style .input-wrapper ::picker(select):popover-open {
+    display: block;
+    opacity: 0;
+    transform: translateY(-4px) translateX(-25%) scaleY(0%) scaleX(99.7%);
+  }
+}
+
+/* 7. Gaya Tombol Submit */
+.inline.form button,
+.form fieldset.inline-style button:not(.edit-btn, .add-btn, .remove-btn, .add-row-btn) {
+  display: inline-flex;
+  margin-top: 1em;
+  justify-self: center;
+  align-items: center;
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--primary-text-color);
+  background-color: transparent;
+  border: 1px solid var(--light-border-color);
+  border-radius: var(--input-border-radius);
+  padding: 4px 1em;
+  /* min-width: 120px; */
+  margin-left: 10px;
+  cursor: pointer;
+  text-align: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease;
+}
+
+.inline.form .buttons.set button i,
+.form fieldset.inline-style .buttons.set button i {
+  margin-top: 3px;
+  margin-left: 5px;
+  margin-right: 5px;
+  display: inline-block;
+}
+
+.inline.form button.btn-submit,
+.form fieldset.inline-style button.btn-submit {
+  background-color: var(--primary-hover-color);
+  color: var(--default-text-color);
+}
+
+.inline.form button.btn-submit:hover,
+.form fieldset.inline-style button.btn-submit:hover {
+  background-color: var(--primary-hover-color);
+  color: var(--default-text-color);
+}
+
+.inline.form button:hover,
+.form fieldset.inline-style button:hover {
+  background-color: var(--primary-hover-color);
+  color: var(--default-text-color);
+}
+
+.inline.form button:active,
+.form fieldset.inline-style button:active {
+  transform: scale(0.98);
+}
+
+.inline.form .input-wrapper input:not([type="radio"], [type="file"], [type="checkbox"]),
+.inline.form textarea,
+.form fieldset.inline-style .input-wrapper input:not([type="radio"], [type="file"], [type="checkbox"]),
+.form fieldset.inline-style .input-wrapper textarea {
+  appearance: unset;
+}
+
+.inline.form .input-wrapper .input-popover,
+.form fieldset.inline-style .input-wrapper .input-popover {
+  position-area: bottom span-right;
+  margin: unset;
+  inset: unset;
+
+  appearance: base-select;
+  box-sizing: border-box;
+  top: anchor(bottom);
+  border: 1px solid var(--border-color);
+  border-top: none;
+  opacity: 0;
+  transform-origin: top;
+  transform: translateY(0) translateX(0) scaleY(0%) scaleX(99.7%);
+  transition: all 150ms ease;
+  transition-behavior: allow-discrete;
+  transition-delay: var(--dropdown-transition-delay);
+  background-color: rgba(216, 216, 216, 1);
+  color: inherit;
+
+  /* display: block !important;
+  opacity: 1 !important;
+  transform: translateY(-70%) translateX(0) scaleY(1) !important;
+  position: absolute !important;
+  transition: none !important; */
+
+  box-shadow: 0 14px 20px rgba(136, 135, 81, 0.356);
+}
+
+.inline.form .input-wrapper .input-popover,
+.form fieldset.inline-style .input-wrapper .input-popover {
+  display: block;
+  padding: 0.75em 0.5em 0.5em 0.5em;
+  & textarea {
+    field-sizing: content;
+    background-color: rgba(255, 255, 255, 0.185);
+    min-height: 1.7lh;
+    padding: 0.25em;
+    font-size: 1.8rem;
+    font-weight: 100;
+    color: darkgoldenrod;
+    line-height: 2rem;
+    resize: vertical;
+    vertical-align: middle;
+    min-width: 400px;
+    max-width: 500px;
+    height: auto;
+    max-height: 5.4lh;
+  }
+  & textarea::placeholder {
+    font-weight: 100;
+    color: rgba(184, 135, 11, 0.384);
+  }
+  & .info {
+    display: block;
+    margin-top: 0.5em;
+    padding: 0 0.25em;
+    font-size: 70%;
+    font-style: italic;
+    max-width: 320px;
+    line-height: 1.2rem;
+  }
+}
+
+.inline.form .input-wrapper .input-popover:popover-open,
+.form fieldset.inline-style .input-wrapper .input-popover:popover-open {
+  opacity: 1;
+  transition-delay: var(--dropdown-transition-delay);
+  transform: translateY(-80%) translateX(0) scaleY(1) scaleX(1);
+  scrollbar-width: thin;
+  box-shadow: 0 2px 3px 0 var(--border-color);
+}
+
+@starting-style {
+  .inline.form .input-wrapper .input-popover:popover-open,
+  .form fieldset.inline-style .input-wrapper .input-popover:popover-open {
+    display: block;
+    opacity: 0;
+    transform: translateY(0) translateX(0) scaleY(0%) scaleX(99.7%);
+  }
+}
+
+.form .buttons.set {
+  display: flex;
+  justify-self: center;
+}
+
+.multistep.form {
+  & fieldset {
+    transition: "all" 200ms ease-in-out;
+    display: none;
+  }
+  & fieldset.active {
+    display: block;
+  }
+
+  & fieldset[animate="next"] {
+    animation: scaleUpSlideLeft 0.4s ease-out forwards;
+  }
+
+  & fieldset[animate="back"] {
+    animation: scaleUpSlideRight 0.4s ease-out forwards;
+  }
+}
+
+@keyframes scaleUpSlideLeft {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateX(50px); /* Mulai dari agak kanan & mengecil */
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateX(0); /* Normal di tengah */
+  }
+}
+
+/* Keyframes untuk Back */
+@keyframes scaleUpSlideRight {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateX(-50px); /* Mulai dari agak kiri & mengecil */
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateX(0); /* Normal di tengah */
+  }
 }

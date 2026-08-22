@@ -56,7 +56,7 @@ export class ComponentRegistry {
       if (!fn) return;
 
       // Skip synchronous component builders (which do not take the load callback)
-      if (fn.length < 2) return; // <= hack fix coding agent untuk mengatasi bug pangkat 2
+      // if (fn.length < 2) return; // <= hack fix coding agent untuk mengatasi bug pangkat 2
 
       const matchedData = NodeTransformer.getBuilderNode(pagesData as iBasicNode[], name);
 
@@ -81,6 +81,7 @@ export class ComponentRegistry {
           [jsModule, cssModule] = await Promise.all([scriptPromise, cssPromise]);
         }
 
+
         if (cssModule && cssModule.default instanceof CSSStyleSheet) {
           this.injectStyle(cssModule.default);
         }
@@ -88,6 +89,7 @@ export class ComponentRegistry {
         if (!script) return {};
         return jsModule?.default || Object.values(jsModule || {}).find(v => typeof v === 'function');
       });
+      // console.log({ fn, matchedData, result })
 
       // 💡 PERBAIKAN: Tangani hasil return dari eksekusi fungsi di fase preload
       if (result instanceof Promise) {
@@ -99,13 +101,14 @@ export class ComponentRegistry {
       }
     });
 
+
     await Promise.all(promises);
   }
 
   /**
    * ⚡ AMAN & SINKRONUS MURNI (.run Method)
    */
-  public _build<K extends keyof iBuilderRegistry>(name: K, data: any): any {
+  public build_<K extends keyof iBuilderRegistry>(name: K, data: any): any {
 
     const fn = this.builders.get(name);
     if (!fn) return null;
@@ -134,12 +137,14 @@ export class ComponentRegistry {
 
 
   public build<K extends keyof iBuilderRegistry>(name: K, data: any): any {
+    // console.log("CR", { name, config: data })
     const fn = this.builders.get(name);
     if (!fn) return null;
 
     // 1. Fetch dynamic theme configuration registered at runtime via setConfig()
     const activeThemeConfig = this._dynamicConfigs.get(name) || {};
     const contentPayload = data?.content !== undefined ? data.content : data;
+    // const configPayload = data?.config !== undefined ? data.config : {};
 
     // 2. Handle preloaded class components (Style 3)
     const PreloadedBuilderClass = this._resolvedCache.get(name);
@@ -177,7 +182,7 @@ export class ComponentRegistry {
     };
 
     // Stamp merged config onto input data before invoking builder factory
-    if (data && typeof data === "object") {
+    if (data && typeof data === "object" && data.config) {
       data.config = finalMergedConfig;
     }
 
@@ -185,14 +190,16 @@ export class ComponentRegistry {
     const result = fn(data, finalMergedConfig);
 
     if (result instanceof HTMLElement) {
+      // console.log("[Component Registry]", { name, data })
       return result;
     }
 
     if (result && typeof result === "object" && typeof (result as any).create === "function") {
       const legacyInstance = result as any;
       if (!legacyInstance.config) legacyInstance.config = finalMergedConfig;
-      return legacyInstance.create(contentPayload, finalMergedConfig);
+      return legacyInstance.create(data, finalMergedConfig);
     }
+
 
     if (result instanceof Promise) return result;
     if (result && typeof result === "object") return result;

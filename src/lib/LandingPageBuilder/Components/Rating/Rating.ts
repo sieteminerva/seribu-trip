@@ -39,7 +39,7 @@ export class RatingBuilder extends Builder<RatingElementType, iRatingConfig> {
 
     const defaultConfig: Required<iRatingConfig> = {
       themeId: "default",
-      type: "star",
+      type: "count-up",
       max: 5,
       animate: true,
       selectors: defaultSelectors,
@@ -55,7 +55,7 @@ export class RatingBuilder extends Builder<RatingElementType, iRatingConfig> {
    * Membaca properti config.type JIT untuk merakit organ tubuh secara otonom!
    */
   public prepare(data: any): HTMLElement {
-
+    // console.log("]rating[", data)
     const score = typeof data === "number" ? data : (data.value || 0);
 
     // 1. Lahirkan Cangkang Makro Terluar (@container)

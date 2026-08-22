@@ -26,13 +26,14 @@
   --border-color: rgba(34, 36, 38, 0.15);
 
   /* Shared Asset & Interface Parameters */
-  --input-min-height: 37px;
-  --input-border-radius: 0.75em;
+  /* --input-min-height: 37px; */
+  --input-min-height: 1 lh;
+  --input-border-radius: 0.55em;
   --input-picker-height: calc(3 * var(--input-min-height, 37px));
   --dropdown-transition-delay: 30ms;
   --dropdown-arrow-content: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'><path fill-rule='evenodd' clip-rule='evenodd' d='M12.707 14.707a1 1 0 0 1-1.414 0l-5-5a1 1 0 0 1 1.414-1.414L12 12.586l4.293-4.293a1 1 0 1 1 1.414 1.414l-5 5Z' fill='rgba(91, 63, 134, 0.65)'/></svg>");
   --spinner-content: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><circle cx='10' cy='10' r='8' fill='none' stroke='rgba(138,138,178,0.3)' stroke-width='4'/><circle cx='10' cy='10' r='8' fill='none' stroke='rgba(91, 63, 134, 0.65)' stroke-width='3' stroke-linecap='round' stroke-dasharray='45'><animateTransform attributeName='transform' attributeType='XML' type='rotate' from='0 10 10' to='360 10 10' dur='0.6s' repeatCount='indefinite'/><animate attributeName='stroke-dashoffset' values='0;90;180' dur='3s' repeatCount='indefinite'/></circle></svg>");
-  --scrollbar-width: 11px;
+  --scrollbar-width: 10px;
 
   /* Spacing Hierarchy Engine */
   --masonry-columns: 3;
@@ -325,6 +326,10 @@ body {
   align-items: center;
   gap: 1rem;
   color: var(--text-muted);
+
+  & .description {
+    margin-bottom: 0;
+  }
 }
 .column.stat strong {
   font-size: 1.5rem;
@@ -403,4 +408,35 @@ body {
     --padding-layout: 1.25rem;
     --margin-layout: 2rem;
   }
+}
+
+.sidebar {
+  z-index: 999;
+  display: block;
+  background-color: var(--surface-bg);
+  position: fixed;
+  height: 100%;
+  width: 200px;
+  visibility: visible;
+  transform: translateX(0);
+  transition: all 100ms ease-in;
+  box-shadow: var(--shadow-soft);
+}
+
+.sidebar.hidden {
+  visibility: hidden;
+  transform: translateX(-200px);
+}
+
+.sidebar ~ #app {
+  transform: translateX(0);
+  transform-origin: right;
+  transition: translateX 100ms ease-in-out;
+  transition-delay: 100ms;
+}
+
+.sidebar ~ #app.squeeze {
+  margin-left: 200px;
+  /* right: 0; */
+  /* width: calc(100% - 200px); */
 }

@@ -80,3 +80,9 @@
 .card.pricing .actions .button {
   width: 100%;
 }
+
+@media (min-width: 900px) {
+  .column:has(.card.pricing) {
+    padding: 0.4em;
+  }
+}

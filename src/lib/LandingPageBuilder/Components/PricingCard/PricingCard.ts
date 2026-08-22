@@ -6,6 +6,7 @@ export type PricingCardElementType =
   | "@container"
   | "@card"
   | "@card>header"
+  | "@card>price"
   | "@card>divider"
   | "@card>body"
   | "@card>body>features"
@@ -29,6 +30,7 @@ export class PricingCardBuilder extends Builder<PricingCardElementType, iPricing
       "@container": { tagName: "div", className: "row" },
       "@card": { tagName: "div", className: "card pricing", wrapper: ".column" },
       "@card>header": { tagName: "div", className: "header" },
+      "@card>price": { tagName: "li", className: "item price-tag" },
       "@card>divider": { tagName: "hr", className: "divider" },
       "@card>body": { tagName: "div", className: "body" },
       "@card>body>features": { tagName: "ul", className: "features" },
@@ -53,18 +55,20 @@ export class PricingCardBuilder extends Builder<PricingCardElementType, iPricing
     const items = Array.isArray(data.content) ? data.content : [data.content];
 
     items.forEach((item: any) => {
-      const card = this.render("@card", item, true) as { __outer: HTMLElement, __inner: HTMLElement };
-      const header = this.render("@card>header", item, true);
-      const divider = this.render("@card>divider", item, true);
-      const body = this.render("@card>body", item, true);
-      const features = this.render("@card>body>features", item, true);
-
+      const card = this.render("@card", item) as { __outer: HTMLElement, __inner: HTMLElement };
+      const header = this.render("@card>header", item);
+      const divider = this.render("@card>divider", item);
+      const body = this.render("@card>body", item);
+      const features = this.render("@card>body>features", item);
+      const price = this.render("@card>price", item.price)!
       for (const feature of item.body) {
-        const li = this.render("@card>body>features>item", feature, true);
-        features?.appendChild(li!);
+        const li = this.render("@card>body>features>item", feature);
+        features?.append(li!);
       }
 
-      const actions = this.render("@card>actions", item, true);
+      features?.appendChild(price)
+
+      const actions = this.render("@card>actions", item);
 
       body?.appendChild(features!);
 
@@ -106,6 +110,16 @@ export class PricingCardBuilder extends Builder<PricingCardElementType, iPricing
         el.appendChild(eyebrow);
         break;
 
+      case "@card>price":
+        // console.log(typeKey, { payload, el })
+        const currency = new Intl.NumberFormat("id-ID", {
+          style: "currency",
+          currency: "IDR",
+          currencyDisplay: "symbol"
+        })
+        el.textContent = `Mulai dari ${currency.format(payload)} / pax`;
+        break;
+
       case "@card>body>features":
         // console.log(typeKey, { payload, el })
         if (payload.disabled) el.classList.add("disabled");
@@ -113,7 +127,7 @@ export class PricingCardBuilder extends Builder<PricingCardElementType, iPricing
 
       case "@card>body>features>item":
         // console.log(typeKey, { payload, el })
-        el.textContent = payload.name;
+        el.textContent = payload.title;
         if (payload && payload.className) el.classList.add(payload.className);
         break;
 

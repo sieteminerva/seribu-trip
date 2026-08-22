@@ -3,7 +3,12 @@ import './lib/LandingPageBuilder/Components/Form/Form.css';
 import "./lib/LandingPageBuilder/Styles/icon.css";
 import './overrides.css';
 
-import { PackagePageContent, GalleryPageContent, HomePageContent, ProductPageContent, FormPageContent, BlogPageContent, TablePageContent } from './content';
+// import JGalleryContent from "../src/content/gallery/input.json";
+// import JMerchandiseContent from "../src/content/merchandise/input.json";
+// import JPricingCardContent from "../src/content/package-card/input.json";
+// import JHomepageContent from "../src/content/homepage/output.json"
+
+import { HomePageContent, BlogPageContent, TablePageContent, PackagePageContent, GalleryPageContent, ProductPageContent } from './content';
 import { FooterBuilder } from './lib/LandingPageBuilder/Components/Footer/Footer';
 import { MenuBuilder } from './lib/LandingPageBuilder/Components/Menu/Menu';
 import { LandingPageBuilder } from './lib/LandingPageBuilder/LandingPage';
@@ -24,6 +29,11 @@ import { TabBuilder } from './lib/LandingPageBuilder/Components/Tab/Tab';
 import { ProductGridBuilder } from './lib/LandingPageBuilder/Components/Product/ProductGrid';
 import { ArticleBuilder } from './lib/LandingPageBuilder/Components/Article/Article';
 import { TableBuilder } from './lib/LandingPageBuilder/Components/Table/Table';
+import { DashboardPage } from './pages/dashboard';
+import { WizardPage } from './pages/wizard';
+import { InputBuilder } from './lib/LandingPageBuilder/Components/Form/Input';
+// import { BuilderTransformer } from './lib/LandingPageBuilder/Utils/BuilderTransformer';
+import { RatingBuilder } from './lib/LandingPageBuilder/Components/Rating/Rating';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 
@@ -34,7 +44,7 @@ if (app) {
     isRoot: true,
     content: {
       id: "menu-section",
-      actions: [
+      navigations: [
         { label: 'SeribuTrip', href: '#home' },
         { label: 'Paket Perjalanan', href: '#package' },
         { label: 'Gallery', href: '#gallery' },
@@ -73,17 +83,23 @@ if (app) {
     }
   };
 
+  // const transform = BuilderTransformer?.toBuilderNode(JHomepageContent)
+
+  // if (transform) {
+  //   console.log("transform", transform)
+  // }
 
   const builder = new LandingPageBuilder({
     menu,
     pages: {
-      home: HomePageContent,
-      package: PackagePageContent,
-      gallery: GalleryPageContent,
-      form: FormPageContent.page as any,
-      merchandise: (ProductPageContent as any),
+      home: HomePageContent/* BuilderTransformer?.toBuilderNode(HomepageContent) */ as any,
+      package: PackagePageContent/* BuilderTransformer?.toBuilderNode(JPricingCardContent) */,
+      gallery: GalleryPageContent/* BuilderTransformer?.toBuilderNode(JGalleryContent) */,
+      // form: FormPageContent.page as any,
+      merchandise: ProductPageContent/* BuilderTransformer?.toBuilderNode(JMerchandiseContent) */ as any,
       blog: BlogPageContent as any, // <= saya pakai awalan huruf besar sedangkan route di menu huruf kecil
-      table: TablePageContent as any
+      table: TablePageContent as any,
+      wizard: []
     },
     footer
   }, {
@@ -94,10 +110,25 @@ if (app) {
     theme: "default"
   });
 
+
+
   builder.component?.register("accordion", (data: any) => new AccordionBuilder().create(data))
     .register("form", (data: any) => {
-      // console.log("main.ts", { data });
+      console.log("main.ts [form]", { data });
       return new FormBuilder().create(data)
+    })
+    // .register("form", (data: any) => {
+    //   console.log({ data })
+    //   return {
+    //     path: "lib/LandingPageBuilder/Components/Form/Form.ts",
+    //     // stylesheet: "lib/LandingPageBuilder/Components/Form/Form.css",
+    //     config: data.config,
+    //     schema: data.content,
+    //   };
+    // })
+    .register("input", (data: any) => {
+      // console.log("main.ts [form]", { data });
+      return new InputBuilder().create(data.content)
     })
     .register("carousel", (data: any) => new CarouselBuilder().create(data))
     .register("pricing-card", (data: any) => new PricingCardBuilder().create(data))
@@ -125,6 +156,10 @@ if (app) {
       // console.log(data)
       return new ProductGridBuilder().create(data)
     })
+    .register("rating", (data: any) => {
+      // console.log("rating", data)
+      return new RatingBuilder().create(data)
+    })
     .register("article", (data: any) => {
       return new ArticleBuilder({
         navigate: (slug: string, themeId: string) => builder.router.navigate("blog", themeId || builder.currentThemeId, slug, true)
@@ -136,35 +171,43 @@ if (app) {
     .register(new HorizontalTheme())
     .register(new CyberpunkTheme());
 
+  builder
+    .registerPage("dashboard", new DashboardPage(builder))
+    .registerPage("wizard", new WizardPage(builder));
+
   builder.render();
 
   builder.theme?.renderSwitcher({ position: "bottom-left", duration: 10000 }); // should be called after `.render` or it will break
 
-  function createAdminItemMenu() {
-    const item = document.createElement("a")
-    item.href = "#form";
-    item.className = "item";
-    item.title = "Admin Dashboard";
-    item.innerHTML = `<i class="user settings icon" style="transform:scale(2);"></i>`;
-    item.style.width = "1.8rem"
-    item.style.height = "1.8rem"
-    return item;
-  }
+
+  builder.events.on("beforeRender", (data) => {
+    console.log(data.route)
+  });
+
   builder.events.on("elementAdded", (data) => {
-    if (data.builder === "menu" && data.type === "@menu>actions") {
-      // console.log(data)
-      data.element.append(builder.component?.build("mode-switcher", {}), createAdminItemMenu())
+    if (data && data.builder === "menu" && data.type === "@menu>actions") {
+      // console.log("main.ts", { data })
+      data.element.prepend(builder.component?.build("mode-switcher", {}))
     }
   });
 
-  builder.events.on("elementChanged", (payload) => {
-    if (payload.builder === "tab" && payload.type === "tab:changed") {
-      const index = payload.data;
-      const form = builder.component?.build("form", FormPageContent.nodes[index])
-      // console.log("tabChanged:", payload, form)
-      payload.element?.replaceChildren(form);
-    }
+  builder.events.on("elementChanged", (_payload) => {
+    // if (payload.builder === "tab" && payload.type === "tab:changed") {
+    //   const index = payload.data;
+    //   console.log(`builder.pages["dashboard"]`, builder.pages, payload.data)
+    //   const form = builder.component?.build("form", builder.pages["dashboard"])
+    //   console.log("tabChanged:", payload, form)
+    //   payload.element?.replaceChildren(form);
+    // }
   });
+
+  builder.events.on("pageChanged", (state: any) => {
+    console.log("[pageChanged]", state)
+    if (state.route === "dashboard") {
+      console.info("dashboard")
+      // builder.router.navigate("form", builder.currentThemeId, state.route)
+    }
+  })
 
 }
 

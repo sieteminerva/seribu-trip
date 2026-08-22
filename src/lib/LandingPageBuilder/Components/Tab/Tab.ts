@@ -99,75 +99,175 @@ export class TabBuilder extends Builder<TabElementType, iTabConfig> {
   }
 
   private get rootElement(): HTMLElement { return this.load("@tab") as HTMLElement; }
-  private get footerElement(): HTMLElement | null { return this.load("@tab>footer") as HTMLElement; }
+  // private get footerElement(): HTMLElement | null { return this.load("@tab>footer") as HTMLElement; }
 
   public prepare(data: any, _config?: Partial<iTabConfig>): HTMLElement {
     if (_config) this.config = this.resolveConfig(this.config, _config);
 
-    const content: iTabContent = data?.content || data || { body: [] };  // {menu: string[], body: HTMLElement[]}
-    // Amankan payload utuh ke rahim @tab di memori pusat agar bisa dijemput getPayload nanti
-    const tabRoot = this.render("@tab", null)!;
+    const content: iTabContent = data?.content || data || { body: [] };
 
     this.items = content.body || [];
     this.currentTabIndex = 0;
 
-    const spinner = this.render("@tab>spinner", null);
-    if (spinner && tabRoot) tabRoot.appendChild(spinner);
-
-    // Lahirkan boks menu kosong (akan diisi oleh setter jika data datang telat)
-    if (content.menu && Array.isArray(content.menu)) {
-      const menuElement = this._createMenu(content.menu);
-      if (menuElement && tabRoot) tabRoot.appendChild(menuElement);
-    }
-    const bodyElement = this.render("@tab>body", null)!;
-
-    this._createTabPanels(bodyElement);
-
-    if (content.footer) {
-      const footerElement = this.render("@tab>footer", content.footer);
-      if (footerElement && tabRoot) tabRoot.appendChild(footerElement);
-    }
-
-    this._assembleDOM(tabRoot, bodyElement, this.load("@tab>menu") as HTMLElement);
-
-    // console.log("tab loader:", this.load("@tab"))
-    return this.load("@tab") as HTMLElement;
-
+    return this.render("@tab", content) as HTMLElement;
   }
 
   protected template(typeKey: TabElementType, el: HTMLElement, payload?: any): void {
     switch (typeKey) {
-      case "@tab":
-        // Kelas tata letak dinamis mengikuti orientasi menu (top/bottom/left/right)
+      case "@tab": {
         el.className = `tab position-${this.config.menuPosition} ${el.className || ""}`.trim();
         el.style.minHeight = this.config.minHeight;
 
         if (this.config.container instanceof HTMLElement) {
           el.id = this.config.container.id || el.id;
         }
-        break;
 
-      case "@tab>menu":
+        const fragment = document.createDocumentFragment();
+
+        const spinner = this.render("@tab>spinner", null);
+        if (spinner) fragment.appendChild(spinner);
+
+        let menuElement: HTMLElement | null = null;
+        if (payload.menu && Array.isArray(payload.menu)) {
+          menuElement = this.render("@tab>menu", payload.menu) as HTMLElement;
+        }
+
+        const bodyElement = this.render("@tab>body", this.#items) as HTMLElement;
+
+        let footerElement: HTMLElement | null = null;
+        if (payload.footer) {
+          footerElement = this.render("@tab>footer", payload.footer) as HTMLElement;
+        }
+
+        if (this.config.menuPosition === "bottom") {
+          fragment.appendChild(bodyElement);
+          if (menuElement) fragment.appendChild(menuElement);
+        } else {
+          if (menuElement) fragment.appendChild(menuElement);
+          fragment.appendChild(bodyElement);
+        }
+
+        if (footerElement) {
+          fragment.appendChild(footerElement);
+        }
+
+        el.appendChild(fragment);
+        break;
+      }
+
+      case "@tab>menu": {
         el.setAttribute("role", "tablist");
         el.setAttribute("aria-label", "Tab Navigation");
+
+        payload.forEach((meta: any, idx: number) => {
+          if (meta instanceof HTMLElement) {
+            el.appendChild(meta);
+            return;
+          }
+
+          const btn = this.render("@tab>menu>item", { meta, idx }) as HTMLElement;
+          const isLink = typeof meta === "object" && meta !== null && !!meta.link;
+
+          if (isLink) {
+            const a = document.createElement("a");
+            a.className = btn.className;
+            if (btn.id) a.id = btn.id;
+            a.href = meta.link;
+
+            while (btn.firstChild) a.appendChild(btn.firstChild);
+
+            Array.from(btn.attributes).forEach(attr => {
+              if (attr.name !== 'class' && attr.name !== 'id') {
+                a.setAttribute(attr.name, attr.value);
+              }
+            });
+            a.onclick = btn.onclick;
+
+            el.appendChild(a);
+          } else {
+            el.appendChild(btn);
+          }
+        });
         break;
+      }
+
+      case "@tab>menu>item": {
+        const { meta, idx } = payload;
+        const rootId = this.rootElement?.id || 'gen';
+
+        el.setAttribute("role", "tab");
+        el.setAttribute("aria-selected", "false");
+        el.setAttribute("tabindex", "-1");
+        el.setAttribute("aria-controls", `tabpanel-${rootId}-${idx}`);
+        if (!meta.id) el.id = `tabbtn-${rootId}-${idx}`;
+
+        const spanLabel = this.render("@tab>menu>item>label", meta)!;
+        const spanTitle = this.render("@tab>menu>item>title", meta)!;
+
+        el.append(spanLabel, spanTitle);
+
+        if (meta.className) el.classList.add(...meta.className.split(" "));
+
+        const isLink = typeof meta === "object" && meta !== null && !!meta.link;
+        el.onclick = (e) => {
+          if (!isLink) e.preventDefault();
+          this.navigateTo(idx);
+        };
+        break;
+      }
 
       case "@tab>menu>item>label":
-        el.textContent = !payload.value ? payload?.label : payload.value || "";
+        el.textContent = typeof payload === "string" ? payload : (!payload.value ? payload?.label : payload.value) || "";
         break;
 
       case "@tab>menu>item>title":
-        el.title = !payload.value ? payload?.label : payload.value || "";
+        el.title = typeof payload === "string" ? payload : (!payload.value ? payload?.label : payload.value) || "";
         break;
 
-      case "@tab>panel":
-        // console.log("panel", { payload }) // <= ini payloadnya sdh bener form element. 
-        // const form = new FormBuilder().create(payload.content)
-        el.setAttribute("role", "tabpanel");
-        if (payload?.id) el.id = payload.id;
-        if (payload?.className) el.className = `${el.className} ${payload.className}`.trim();
-        if (payload instanceof HTMLElement) el.appendChild(payload)
+      case "@tab>body": {
+        payload.forEach((item: any, idx: number) => {
+          const panel = this.render("@tab>panel", { item, idx }) as HTMLElement;
+          el.appendChild(panel);
+        });
         break;
+      }
+
+      case "@tab>panel": {
+        const { item, idx } = payload;
+        const rootId = this.rootElement?.id || 'gen';
+
+        el.setAttribute("role", "tabpanel");
+        el.setAttribute("aria-labelledby", `tabbtn-${rootId}-${idx}`);
+
+        if (item?.id) el.id = item.id;
+        else el.id = `tabpanel-${rootId}-${idx}`;
+
+        if (item?.className) el.className = `${el.className} ${item.className}`.trim();
+
+        el.classList.add("hidden");
+        el.style.display = "none";
+
+        if (!this.config.lazyload) {
+          this._renderPanelContent(el, item, idx);
+        }
+        break;
+      }
+
+      case "@tab>panel>content": {
+        if (payload.eyebrow) {
+          const span = this.render("@tab>panel>content>eyebrow", payload)!;
+          el.appendChild(span);
+        }
+        if (payload.title) {
+          const h3 = this.render("@tab>panel>content>title", payload)!;
+          el.appendChild(h3);
+        }
+        if (payload.description) {
+          const p = this.render("@tab>panel>content>desc", payload)!;
+          el.appendChild(p);
+        }
+        break;
+      }
 
       case "@tab>panel>content>eyebrow":
         el.textContent = payload?.eyebrow || "";
@@ -204,106 +304,6 @@ export class TabBuilder extends Builder<TabElementType, iTabConfig> {
   }
 
   /**
-   * Menyusun posisi tumpukan DOM mengikuti orientasi menuPosition
-   */
-  private _assembleDOM(root: HTMLElement, body: HTMLElement, menu: HTMLElement | null): void {
-    const fragment = document.createDocumentFragment();
-    // console.log("Tab prepare", { root, body, menu })
-    if (this.config.menuPosition === "bottom") {
-      fragment.appendChild(body);
-      if (menu) fragment.appendChild(menu);
-    } else {
-      if (menu) fragment.appendChild(menu);
-      fragment.appendChild(body);
-    }
-
-    // Ambil footer via getter untuk dicek keberadaannya
-    if (this.footerElement) {
-      fragment.appendChild(this.footerElement);
-    }
-
-    root.appendChild(fragment);
-  }
-
-
-  private _createMenu(menuContent: any[]): HTMLElement {
-    // console.log({ menuContent })
-    const menu = this.render("@tab>menu")!;
-
-    menuContent.forEach((meta, idx) => {
-      if (meta instanceof HTMLElement) {
-        menu.appendChild(meta);
-        return;
-      }
-
-      const isLink = !!meta.link;
-
-      // ====================================================
-      // 🧙‍♂️ THE MULTI-INSTANCE DETONATOR (PERBAIKAN SAKRAL ANDA!)
-      // Wajib suapkan parameter ketiga 'true' secara eksplisit!
-      // Memaksa mesin pusat melompati cache singleton dan mencetak 
-      // baris tombol menu segar baru sebanyak panjang array Sheets!
-      // ====================================================
-      const btn = this.render("@tab>menu>item", meta, true) as HTMLElement;
-
-      if (isLink) {
-        const a = document.createElement("a");
-        a.className = btn.className;
-        if (meta.id) a.id = btn.id;
-        a.href = meta.link;
-        btn.replaceWith(a);
-      }
-
-      const rootId = this.rootElement.id || 'gen';
-      btn.setAttribute("role", "tab");
-      btn.setAttribute("aria-selected", "false");
-      btn.setAttribute("tabindex", "-1");
-      btn.setAttribute("aria-controls", `tabpanel-${rootId}-${idx}`);
-      if (!meta.id) btn.id = `tabbtn-${rootId}-${idx}`;
-
-      // 🟢 Pasang parameter 'true' juga untuk label & judul anak yang ikut ter-loop!
-      const spanLabel = this.render("@tab>menu>item>label", meta, true)!;
-      const spanTitle = this.render("@tab>menu>item>title", meta, true)!;
-
-      btn.append(spanLabel, spanTitle);
-
-      if (meta.className) btn.classList.add(...meta.className.split(" "));
-
-      btn.onclick = (e) => {
-        if (!meta.link) e.preventDefault();
-        this.navigateTo(idx);
-      };
-
-      menu?.appendChild(btn);
-    });
-
-    return this.load("@tab>menu") as HTMLElement;
-  }
-
-  private _createTabPanels(body: HTMLElement): void {
-    this.#items.forEach((item, idx) => {
-
-      // 🧙‍♂️ MULTI-INSTANCE DETONATOR: Suapkan parameter ketiga 'true' murni khusus loop!
-      const panel = this.render("@tab>panel", item, true) as HTMLElement;
-      const rootId = this.rootElement.id || 'gen';
-
-      panel.setAttribute("role", "tabpanel");
-      panel.setAttribute("aria-labelledby", `tabbtn-${rootId}-${idx}`);
-      if (!item.id) panel.id = `tabpanel-${rootId}-${idx}`;
-
-      panel.classList.add("hidden");
-      panel.style.display = "none";
-
-      if (!this.config.lazyload) {
-        this._renderPanelContent(panel, item, idx);
-      }
-
-      body.appendChild(panel);
-    });
-  }
-
-
-  /**
    * Mengisi dan merender konten item ke dalam tab panel fisik
    */
   private _renderPanelContent(panel: HTMLElement, item: any, index: number): void {
@@ -311,26 +311,10 @@ export class TabBuilder extends Builder<TabElementType, iTabConfig> {
 
     const content = item?.content ? item.content : item;
 
-    // console.log("_renderPanelContent:", { content, item }) // doconvert jadi object ya? {[index: number]: HTMLElement}
-
     if (content instanceof HTMLElement) {
       panel.append(content);
     } else {
-      // 🟢 Pasang parameter 'true' murni karena konten ini meletup di dalam siklus loop detail!
-      const contentWrapper = this.render("@tab>panel>content", content, true) as HTMLElement;
-
-      if (content.eyebrow) {
-        const span = this.render("@tab>panel>content>eyebrow", content, true)!;
-        contentWrapper.appendChild(span);
-      }
-      if (content.title) {
-        const h3 = this.render("@tab>panel>content>title", content, true)!;
-        contentWrapper.appendChild(h3);
-      }
-      if (content.description) {
-        const p = this.render("@tab>panel>content>desc" as any, content, true)!;
-        contentWrapper.appendChild(p);
-      }
+      const contentWrapper = this.render("@tab>panel>content", content) as HTMLElement;
       panel.appendChild(contentWrapper);
     }
 
@@ -348,7 +332,7 @@ export class TabBuilder extends Builder<TabElementType, iTabConfig> {
     // B. Skenario Jalur String ID (Custom Identity Targetting)
     else {
       // 🧙‍♂️ DIRECT MEMORY ACCESIBILITY: Jepret seluruh barisan tombol secara instan dari saku RAM!
-      const buttons = this.load("@tab>menu>item", "all") as HTMLElement[] || [];
+      const buttons = this.load("@tab>menu")?.querySelectorAll("button")!;
       for (let i = 0; i < buttons.length; i++) {
         if (buttons[i].id === target) {
           targetIndex = i;
@@ -375,8 +359,8 @@ export class TabBuilder extends Builder<TabElementType, iTabConfig> {
 
   private _handleChange(index: number): void {
     // Jemput seluruh pasukan elemen hidup secara adil dan bersih menggunakan tanda "all"
-    const buttons = this.load("@tab>menu>item", "all") as HTMLElement[] || [];
-    const panels = this.load("@tab>panel", "all") as HTMLElement[] || [];
+    const buttons = this.load("@tab>menu")?.querySelectorAll("button")!;
+    const panels = this.load("@tab>body")?.querySelectorAll(".panel")!;
 
     // ====================================================
     // 🫗 FASE 1: LIKUIDASI KONDISI AKTIF PADA TAB SEBELUMNYA
@@ -391,7 +375,7 @@ export class TabBuilder extends Builder<TabElementType, iTabConfig> {
     if (panels[this.currentTabIndex]) {
       const prevPanel = panels[this.currentTabIndex];
       prevPanel.classList.add("hidden");
-      prevPanel.style.display = "none";
+      (prevPanel as HTMLElement).style.display = "none";
     }
 
     // ====================================================
@@ -416,11 +400,11 @@ export class TabBuilder extends Builder<TabElementType, iTabConfig> {
 
       // 🔮 LAZY-LOAD HYDRATION TRIGGER: Gambar isi rahim konten murni HANYA sesaat sebelum dibuka!
       if (this.config.lazyload) {
-        this._renderPanelContent(activePanel, this.#items[index], index);
+        this._renderPanelContent(activePanel as HTMLElement, this.#items[index], index);
       }
 
       activePanel.classList.remove("hidden");
-      activePanel.style.display = "block";
+      (activePanel as HTMLElement).style.display = "block";
     }
 
     // ====================================================
@@ -443,7 +427,7 @@ export class TabBuilder extends Builder<TabElementType, iTabConfig> {
   }
 
   private _handleKeyDown(e: KeyboardEvent): void {
-    const buttons = this.load("@tab>menu>item", "all") as HTMLElement[];
+    const buttons = this.load("@tab>menu")?.querySelectorAll("button")!;
     if (!buttons || !buttons.length) return;
     let nextIndex = this.currentTabIndex;
     const isHorizontal = this.config.menuPosition === "top" || this.config.menuPosition === "bottom";

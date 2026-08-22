@@ -1,5 +1,5 @@
 import type { iActionProperty, iBuilderConfig, iBuilderRegistry } from "../../interface";
-import { Builder2 } from "./Base2";
+import { Builder } from "../Base";
 import {
   __applyTableClasses,
   __normalizeCell,
@@ -44,6 +44,7 @@ export type TableElementType =
   | "@table>trow"
   | "@table>trow>th"
   | "@table>trow>cell"
+  | "@table>trow>total"
   | "@table>tbody>actions"
   | "@table>tbody>actions>edit"
   | "@table>tbody>actions>remove"
@@ -63,16 +64,19 @@ export interface iTableConfig extends iBuilderConfig<TableElementType> {
   sortable?: boolean;
   selectable?: boolean;
   editable?: boolean;
+  renderAsCard?: boolean;
   autoNumbering?: boolean;
   pageSize?: number;
   disableSubRow?: boolean;
   headerOptions?: TableCellOptions;
   bodyOptions?: TableCellOptions[];
   footerOptions?: TableFooterOptions;
+  autoFreezeAt?: number | null;
+  className?: string;
   namespace?: string | null;
 }
 
-export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
+export class TableBuilder extends Builder<TableElementType, iTableConfig> {
   readonly builderId: keyof iBuilderRegistry = "table";
   readonly name: keyof iBuilderRegistry = "table";
   readonly stylesheet: string = "./Table.css";
@@ -101,7 +105,7 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
     super();
 
     const defaultSelectors: Record<TableElementType, iActionProperty> = {
-      "@container": { tagName: "div", className: "table-widget-wrapper" },
+      "@container": { tagName: "div", className: "table-container" },
       "@table": { tagName: "table", className: "table" },
       "@table>thead": { tagName: "thead" },
       "@table>tbody": { tagName: "tbody" },
@@ -118,6 +122,7 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
       "@table>trow": { tagName: "tr" },
       "@table>trow>th": { tagName: "th" },
       "@table>trow>cell": { tagName: "td" },
+      "@table>trow>total": { tagName: "div", className: "cell grand" },
       "@table>icon": { tagName: "i", className: "icon" },
     };
 
@@ -131,12 +136,15 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
       sortable: false,
       selectable: false,
       editable: true,
+      renderAsCard: false,
+      autoFreezeAt: null,
       autoNumbering: true,
       pageSize: 8,
       disableSubRow: false,
       headerOptions: {},
       bodyOptions: [],
       footerOptions: {},
+      className: "",
       selectors: defaultSelectors,
       namespace: null,
       emit: null,
@@ -151,7 +159,7 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
    */
   public prepare(content: any, _config: Required<iTableConfig>): HTMLElement | Record<string, any | HTMLElement> {
 
-
+    const container = this.render("@container");
     // Reset internal state
     this.currentPage = 1;
     this.pageRows = [];
@@ -161,16 +169,17 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
     this._totalColumns = null;
     this.domModel = { header: [], body: [], footer: [] };
 
+    this.data = content;
 
-    const data = {
-      header: Array.isArray(content.header) ? (content.header as any[]).slice() : [],
-      body: Array.isArray(content.body) ? (content.body as any[]).slice() : [],
-      footer: Array.isArray(content.footer) ? (content.footer as any[]).slice() : content.footer || null,
-    }
+    // Jika perlu memastikan properti header/body/footer ada tanpa menghilangkan Proxy:
+    if (!this.data.header) this.data.header = [];
+    if (!this.data.body) this.data.body = [];
+    if (!this.data.footer) this.data.footer = null;
+
+    // console.log(this.data /* Proxy(Object) */)
 
     // Create main table element using render
-    this.table = this.render("@table", data) as HTMLTableElement;
-    this.data = this.payload("@table").proxy;
+    this.table = this.render("@table", this.data) as HTMLTableElement;
 
     if (this.table) {
       __applyTableClasses(this.table, this.config);
@@ -178,9 +187,11 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
 
     this.renderTable()
 
+    container?.appendChild(this.table)!
+
     this.hierarchy.update();
 
-    return this.table;
+    return container!;
   }
 
   private renderTable() {
@@ -191,18 +202,9 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
     this.tbody = this.render("@table>tbody", this.domModel.body)!;
     this.tfoot = this.render("@table>tfoot", this.domModel.footer)!;
 
-    // if (this.thead) this.table.appendChild(this.thead);
-    // if (this.tbody) this.table.appendChild(this.tbody);
-    // if (this.tfoot) this.table.appendChild(this.tfoot);
     this.table.replaceChildren(this.thead, this.tbody, this.tfoot)
 
-    // } else {
-    //   // Step 2: Clear existing table content and render header, body, and footer sections.
-    //   this.tbody = this.render("@table>tbody", this.domModel.body) as HTMLTableSectionElement;
-    //   this.table.replaceChild(this.tbody, this.table?.tBodies[0]);
-    //   this.tfoot = this.render("@table>tfoot", this.domModel.footer) as HTMLTableSectionElement;
-    //   this.table.replaceChild(this.tfoot, this.table.tFoot!);
-    // }
+
 
     // Step 3: Return the fully rendered table element.
     return this.table;
@@ -217,7 +219,9 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
     const table = (el || this.table) as HTMLTableElement;
     if (!table) return;
 
-    el?.addEventListener("click", (e: MouseEvent) => {
+    if (this._totalColumns! > 5 && !this._isRowTotalRendered && this.config.renderAsCard) table.classList.add("stacked");
+
+    table?.addEventListener("click", (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
@@ -290,9 +294,51 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
       }
     });
 
+    const autoFreezeAt = this.config.autoFreezeAt;
+    if (autoFreezeAt) {
+      requestAnimationFrame(() => {
+        let currentLeft = 0;
+
+        // Lakukan loop hingga indeks batas freeze yang ditentukan di konfigurasi
+        for (let ci = 0; ci <= autoFreezeAt!; ci++) {
+          // Cari semua cell (header dan body) yang memiliki indeks kolom ini
+          const targetCells = table.querySelectorAll(`[data-col-index="${ci}"]`) as NodeListOf<HTMLElement>;
+
+          if (targetCells.length === 0) continue;
+
+          // Ambil lebar cell pertama (biasanya TH) untuk acuan kolom berikutnya
+          const cellWidth = targetCells[0].offsetWidth || 100; // fallback 100px jika elemen belum di-render ke layar
+
+          targetCells.forEach(cell => {
+            cell.style.position = 'sticky';
+            cell.style.left = `${currentLeft}px`;
+            cell.style.backgroundColor = '#f8f9fa'; // Solid background agar tidak tembus
+            cell.style.zIndex = cell.tagName === 'TH' ? '3' : '2';
+
+            // Beri batas border tebal khusus di kolom batas terakhir freeze
+            if (ci === autoFreezeAt) {
+              cell.style.borderRight = '3px solid #b0b0b0';
+            }
+          });
+
+          currentLeft += cellWidth;
+        }
+      });
+    }
+
     console.log("[TableBuilder2 Lifecycle] Table component initialized successfully.");
   }
 
+
+  toJson() {
+    const data = this.getData();
+    return data.body.map(row =>
+      data.header.reduce((obj, header, index) => {
+        obj[header] = row[index];
+        return obj;
+      }, {} as Record<string, string>)
+    );
+  }
 
   getData({ includeMeta = false }: { includeMeta?: boolean } = {}): { header: any[]; body: any[]; footer: any[] } {
     const header = this.data.header!.slice();
@@ -322,6 +368,8 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
       ? inputRowData.slice(0, cols).concat(Array(Math.max(0, cols - inputRowData.length)).fill(""))
       : Array(cols).fill("");
     this.data.body!.push(newRow as any);
+
+    // console.log("newly added row", this.data.body)
 
     if (this.config.pageSize) {
       // Step 2: If pagination is enabled, calculate the total number of pages
@@ -413,9 +461,11 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
       }
     });
 
+
     // Step 9: If editing was disabled, re-render the entire table to update
     // any dependent calculations (like footer totals, row totals) and emit a change event.
     if (!editable) {
+      // console.log("newly edited row", this.data.body?.[g])
       this.renderTable();
       // this._emitChange({ type: "edit" });
     }
@@ -479,6 +529,8 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
 
     // Step 3: Insert the new sub-row into the data model.
     this.data.body!.splice(insertIndex, 0, newSubRow);
+
+    // console.log("newly added subrow", this.data.body)
     // Step 4: Re-render the table to display the new sub-row.
     this.renderTable();
     // Step 5: Open the newly inserted sub-row for editing.
@@ -508,15 +560,6 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
 
     switch (typeKey) {
 
-      case "@container":
-        if (this.config.container instanceof HTMLElement) {
-          el.id = this.config.container.id || el.id;
-          el.className = `${this.config.container.className} ${el.className}`.trim();
-        } else if (typeof this.config.container === 'string') {
-          const target = document.querySelector(this.config.container);
-          if (target) el.id = target.id;
-        }
-        break;
 
       case "@table>tbody":
         // Use indexed loop to keep rowIdx as a clean number type
@@ -568,15 +611,19 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
             // console.log(payload.cells)
             // Step 6: Render each cell
             for (let ci = 0; ci < payload.cells.length; ci++) {
-              const cell = payload.cells[ci];
+              let cell = payload.cells[ci];
+              if (this._totalColumns! > 5 && !this.config.renderAsCard) {
+                if (ci === 2) cell.options.class = (cell.options.class ? cell.options.class + " " : "") + "freeze".trim()
+              }
               let td = this.render("@table>trow>cell", { index: ci, ...cell }) as HTMLTableCellElement; // Keep framework tracking wrapper intact
               // Efficient indexing insertion honoring your custom runner markup
               el.insertBefore(td, el.children[ci] || null);
             }
           } else {
-            for (const cell of payload.cells) {
+            for (let ci = 0; ci < payload.cells.length; ci++) {
+              const cell = payload.cells[ci];
               // Step 7: Create a new <th> element for the current cell.
-              const th = this.render("@table>trow>th", cell) as HTMLTableCellElement;
+              const th = this.render("@table>trow>th", { index: ci, ...cell }) as HTMLTableCellElement;
               el.appendChild(th);
             }
           }
@@ -584,7 +631,10 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
         break;
 
       case "@table>trow>th":
+        // console.log({ payload })
         if (payload.options) __applyCellOptions(el as HTMLTableCellElement, payload.options);
+        const ColIndex = payload.index - (this.config.autoNumbering ? 1 : 0);
+        el.dataset.colIndex = String(ColIndex);
         if (payload.value) {
           if (typeof payload.value === "string" || payload.text) {
             el.innerHTML = payload.value || payload.text;
@@ -618,6 +668,8 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
         // Step 10: Attach tracking metadata directly to DOM
         const relativeColIndex = payload.index - (this.config.autoNumbering ? 1 : 0);
         el.dataset.colIndex = String(relativeColIndex);
+
+        el.dataset.header = (payload.header ? payload.header : payload.key === "autoNumber" ? "#" : payload.key).toLowerCase();
         el.dataset.format = (payload.options && payload.options.format) || typeof payload.value === "object" && payload.value instanceof Element ? "Element" : typeof payload.value;
         if (!(payload.value instanceof Element)) el.dataset.originalValue = payload.value != null ? payload.value.toString() : "";
         (el as any).__cellOptions = payload.options || {};
@@ -697,6 +749,7 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
 
       case "@table>tbody>actions>edit":
         const editIcon = this.render("@table>icon", selector.icon) as HTMLElement;
+        (el as HTMLButtonElement).type = "button";
         el.appendChild(editIcon)
         el.setAttribute("aria-label", "Edit row");
         el.setAttribute("data-action", "edit");
@@ -705,6 +758,7 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
 
       case "@table>tbody>actions>remove":
         const removeIcon = this.render("@table>icon", selector.icon) as HTMLElement;
+        (el as HTMLButtonElement).type = "button";
         el.appendChild(removeIcon)
         el.setAttribute("aria-label", "Remove row");
         el.setAttribute("data-action", "remove");
@@ -713,10 +767,25 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
 
       case "@table>tbody>actions>add":
         const addIcon = this.render("@table>icon", selector.icon) as HTMLElement;
+        (el as HTMLButtonElement).type = "button";
         el.appendChild(addIcon)
         el.setAttribute("aria-label", "Add Subrow");
         el.setAttribute("data-action", "add-subrow");
         if (payload?.rowUid) el.dataset.rowUid = payload.rowUid;
+        break;
+
+
+      case "@table>trow>total":
+        for (const p of payload) {
+          // console.log({ payload })
+          const title = document.createElement("div");
+          title.className = "title"
+          title.textContent = p.title;
+          const value = document.createElement("div");
+          value.className = "value"
+          value.textContent = p.value;
+          el.append(title, value);
+        }
         break;
     }
   }
@@ -896,13 +965,20 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
         const norm = __normalizeCell(rawCell);
         const headerTitle = typeof this.data.header?.[ci] === "string" ? this.data.header[ci] : (this.data.header?.[ci] as TableCellData).text; // <= this will be used to generate and calculate footer render total
         // Step 3a: Create a tcell object for the current cell.
-        cells.push(
-          tcell(`col${ci}`).header(headerTitle as string).value(norm.text).options({ ...(bodyOptions?.[ci] || {}), ...norm.options }).create()
-        );
+        const model = tcell(`col${ci}`).header(headerTitle as string).value(norm.text).options({ ...(bodyOptions?.[ci] || {}), ...norm.options }).create();
+        (model as any).proxy = normalizedRow[ci];
+        (model as any).columnIndex = ci;
+
+        cells.push(model);
         // apply calculation for the row using formula if defined
         if (bodyOptions && bodyOptions[ci] && bodyOptions[ci].formula) {
           __applyRowFormula(cells, ci, bodyOptions[ci].formula as string);
-          normalizedRow[ci] = cells[ci].value;
+          // normalizedRow[ci] = cells[ci].value;
+          const computedValue = cells[ci].value;
+          if (normalizedRow[ci] !== computedValue) {
+            // Menembak proxy setter HANYA jika nilainya berubah secara riil
+            Reflect.set(normalizedRow, ci, computedValue);
+          }
         }
       }
 
@@ -915,6 +991,7 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
         uid: uid,
         parentUid: raw.subrowOfUid || null,
         cells,
+        data: normalizedRow,
         rowOptions: isSubRow ? raw.rowOptions || {} : {},
       });
     }
@@ -922,6 +999,8 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
     // console.log({ body });
     return body;
   }
+
+
 
   private _createFooterDomModel(footerInput: any | TableCellData[]): TableRowModel[] | null {
     const { editable, pageSize, autoNumbering, footerOptions } = this.config;
@@ -983,11 +1062,12 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
     if (pageSize) {
       const row = { rowIndex: footer.length, cells: [] as TableCellModel[] };
       if (editable) {
+        const hasSubRow = this.data.body!.some((r) => r && (r as TableCellData).subrowOfUid != null);
         row.cells.push(
           // Step 3a: If editable, create a pagination placeholder spanning all but the last column.
           tcell("pagination")
             .value("PAGINATION_PLACEHOLDER")
-            .colspan(this._totalColumns! - 1)
+            .colspan(this._totalColumns! - (hasSubRow ? 0 : 1))
             .create()
         );
 
@@ -1000,6 +1080,7 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
           row.cells.push(tcell("placeholder").value("").create());
         }
       } else {
+
         row.cells.push(tcell("pagination").value("PAGINATION_PLACEHOLDER").colspan(this._totalColumns).create());
       }
       footer.push(row);
@@ -1013,8 +1094,10 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
   // =========================================================================
   // Private Methods - Rendering
   // =========================================================================
+  private _createGrandTotalColumnPayload(headerTitle: { title: string; colIndex: number }, config: TableConfig): any[] {
 
-  private _createGrandTotalColumn(headerTitle: { title: string; colIndex: number }, config: TableConfig): string {
+    const payload = [];
+
     const colIndex = headerTitle.colIndex - (config.autoNumbering ? 1 : 0);
     const sum = this.data.body!
       .map((r: any) => {
@@ -1028,11 +1111,10 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
       .filter((v) => typeof v === "number")
       .reduce((a, b) => a + b, 0);
 
-    let total = `
-      <div class="cell page">
-        <div class="title">GRAND TOTAL</div>
-        ${__formatValue(sum, config.bodyOptions?.[colIndex] || {})}
-      </div>`;
+    payload.push({
+      title: "Grand Total",
+      value: __formatValue(sum, config.bodyOptions?.[colIndex] || {})
+    })
 
     if (config.pageSize) {
       const pageVals = this.pageRows
@@ -1046,15 +1128,16 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
         .filter((v) => typeof v === "number");
 
       const pageSum = pageVals.reduce((a, b) => a + b, 0);
-      const pageTotal = `
-        <div class="cell grand">
-          <div class="title">PAGE ${this.currentPage} TOTAL</div>
-          ${__formatValue(pageSum, config.bodyOptions?.[colIndex] || {})}
-        </div>`;
-      total = pageTotal + total;
-    }
 
-    return total;
+      payload.push({
+        title: `Page ${this.currentPage} Total`,
+        value: __formatValue(pageSum, config.bodyOptions?.[colIndex] || {})
+      })
+    }
+    this._isRowTotalRendered = true;
+    // result[headerTitle.colIndex] = this.render("@table>trow>total", payload.reverse());
+
+    return payload.reverse();
   }
 
   private _countRenderedColumns(domModel: DOMModel | null = null): number {
@@ -1256,10 +1339,10 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
           // Step 3b: Extract the original column title from the placeholder key.
           const title = c.key.replace("render-total-", "");
           // Step 3c: Replace the placeholder cell with a new tcell containing the grand total HTML.
-          // The `_createGrandTotalColumn` method generates the formatted total content.
+          // The `_createGrandTotalColumnPayload` method generates the formatted total content.
 
           row.cells[idx] = tcell(title)
-            .value(this._createGrandTotalColumn({ title, colIndex: idx }, this.config))
+            .value(this.render("@table>trow>total", this._createGrandTotalColumnPayload({ title, colIndex: idx }, this.config)))
             .class(`sum ${title}`)
             .create();
         }
@@ -1351,7 +1434,7 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
           .create();
         // Step 4c: Insert the total cell into the parent row's cells array.
         rowModel.cells.splice(insertPos, 0, totalCell);
-        console.log({ totalCell })
+        // console.log({ totalCell })
       }
       // add empty cell in row-total column for orphan subrow for correct table alignment.
       const isOrphanSubRow = isSubRow && !domModel.body.some((rowModel) => rowModel.uid === rawRow.subrowOfUid);
@@ -1361,14 +1444,12 @@ export class TableBuilder extends Builder2<TableElementType, iTableConfig> {
       }
     }
 
+    this._isRowTotalRendered = true;
     // Step 5: Adjust the colspan of the footer cell immediately before the inserted column
     // to accommodate the new "Row Total" column.
     if (domModel.footer[0].cells.length > 0) {
       domModel.footer[0].cells[insertPos - 1].options.colSpan = 2;
     }
   }
-
-
-
 
 }

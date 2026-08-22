@@ -21,8 +21,8 @@ export class ProductGridBuilder extends Builder<"@grid" | "@grid>container", any
    * 👑 PINTU PREPARE: Melumat array massal kiriman dari ProductController pusat
    */
   public prepare(data: any): HTMLElement {
+    // console.log(data)
     const rawList = Array.isArray(data.content) ? data.content : [];
-
     // 1. Lahirkan cangkang luar grid list
     const gridRoot = this.render("@grid", rawList);
     const container = this.render("@grid>container", rawList);
@@ -42,12 +42,12 @@ export class ProductGridBuilder extends Builder<"@grid" | "@grid>container", any
         mode: "auto"
       });
 
-      const rawFabrics = Array.isArray(productData.fabrics) ? productData.fabrics : [];
-      const baseImage = productData.artwork?.src || productData.src || "";
+      const rawFabrics = Array.isArray(productData.colors) ? productData.colors : [];
+      const baseImage = productData.imageUrl || productData.src || "";
 
-      const mappedVariants = rawFabrics.map((fabric: any) => ({
-        name: fabric.color,
-        color: fabric.HEX,      // Ambil kode HEX untuk disiram ke background-color bapak
+      const mappedVariants = rawFabrics.map((color: any) => ({
+        name: color.name,
+        color: color.value,      // Ambil kode HEX untuk disiram ke background-color bapak
         src: baseImage       // Gunakan aset gambar transparan yang sama untuk di-multiply!
       }));
 

@@ -88,6 +88,7 @@ export class ProductCardBuilder extends Builder<ProductCardElementType, iProduct
     // Ubah struktur data 'fabrics' dan 'artwork' dari Sheets menjadi 
     // format variants hibrida Carousel + Tab secara JIT di RAM memori!
     // ====================================================
+    // console.log(content)
     const rawItem = content?.content || content || {};
 
     this.currentDisplayIndex = 0;
@@ -106,7 +107,7 @@ export class ProductCardBuilder extends Builder<ProductCardElementType, iProduct
       const optionsContainer = this.render("@product>options", rawItem);
 
       rawItem.variants.forEach((variantObj: any, idx: number) => {
-        const itemBtn = this.render("@product>options>item", variantObj, true);
+        const itemBtn = this.render("@product>options>item", variantObj);
 
         if (itemBtn) {
           itemBtn.setAttribute("role", "radio");
@@ -162,7 +163,7 @@ export class ProductCardBuilder extends Builder<ProductCardElementType, iProduct
         const img = el as HTMLImageElement;
         // Pada milidetik pertama, suapkan asset gambar variant indeks ke-0
         const initialVariant = this.#item.variants?.[0];
-        const src = `${import.meta.env.BASE_URL}${(initialVariant?.src || this.#item.src || "")}`
+        const src = `${import.meta.env.BASE_URL}${(initialVariant?.imageUrl || this.#item.imageUrl || "")}`
         // console.log({ src, img }) // <= logging correct url but still not rendered
         img.src = src;
         img.alt = this.#item.title || "product-thumbnail";
@@ -243,15 +244,15 @@ export class ProductCardBuilder extends Builder<ProductCardElementType, iProduct
   // 🎢 HIGH-UTILITY INTERACTION METHODS (MUTATOR CAROUSEL + TAB HYBRID ANDA)
   // ====================================================
 
-  public _navigate(index: number) {
-    const buttons = this.load("@product>options>item", "all") as HTMLButtonElement[];
+  public _navigate(index: number, el: any) {
+    const buttons = el.querySelectorAll("buttons") as HTMLButtonElement[];
     if (!buttons || !buttons.length) return;
 
     // Kunci nomor indeks agar berputar melingkar (infinite loop array)
     const targetIndex = (index + buttons.length) % buttons.length;
     this.currentDisplayIndex = targetIndex;
 
-    this._handleChange();
+    this._handleChange(buttons);
     this.select();
   }
 
@@ -300,11 +301,10 @@ export class ProductCardBuilder extends Builder<ProductCardElementType, iProduct
     }
   }
 
-  private _handleChange() {
-    const cardIndex = (this as any).instanceSiblingIndex !== undefined ? (this as any).instanceSiblingIndex : 0;
-    const buttons = this.load("@product>options>item", "all") as HTMLButtonElement[];
-    const displayBox = this.load("@product>display", cardIndex) as HTMLElement;
-    const displayImg = this.load("@product>display>image", cardIndex) as HTMLImageElement;
+  private _handleChange(buttons: HTMLButtonElement[]) {
+    // const cardIndex = (this as any).instanceSiblingIndex !== undefined ? (this as any).instanceSiblingIndex : 0;
+    const displayBox = this.load("@product>display") as HTMLElement;
+    const displayImg = this.load("@product>display>image") as HTMLImageElement;
     const variants = this.#item.variants || [];
     const activeVariant = variants[this.currentDisplayIndex];
     if (!activeVariant) return;

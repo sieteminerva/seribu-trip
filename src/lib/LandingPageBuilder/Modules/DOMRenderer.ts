@@ -198,7 +198,6 @@ export class DOMRenderer<
       // Sederhana, horizontal, dan bersih setipis silet mengikuti pakem sakral Anda!
       // =========================================================================
 
-      // attachMetadata(currentElement, this.records, identity.tree!.key);
       this.attachMetadata(currentGlobalKey, currentElement, value, identity.tree);
 
       this.mountHandler(currentGlobalKey, currentElement, identity.tree);
@@ -275,9 +274,10 @@ export class DOMRenderer<
     const builderTemplateKey = isBuilderRoot ? `@${String(val.builder)}` : null;
 
     const manualMarkupRecordItem: iNodeRecordItem = {
+      key: globalKey,
       element: el,
-      raw: val,
-      proxy: null,
+      // raw: val,
+      payload: null,
       relations: tree
     };
 
@@ -313,7 +313,7 @@ export class DOMRenderer<
 
         if (manualMarkupRecordItem.relations) {
           manualMarkupRecordItem.relations.children = rootChildren;
-          manualMarkupRecordItem.proxy = builderRootMeta?.proxy ?? manualMarkupRecordItem.proxy;
+          manualMarkupRecordItem.payload = builderRootMeta?.payload ?? manualMarkupRecordItem.payload;
         }
 
         builderOutputMeta.forEach((childRec: any) => {

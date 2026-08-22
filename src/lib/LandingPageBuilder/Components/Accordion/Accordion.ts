@@ -3,11 +3,10 @@ import { Builder } from "../Base";
 import "./Accordion.css";
 
 export type AccordionElementType =
-  | "@container"
   | "@accordion"
-  | "@accordion>title"
-  | "@accordion>content"
-  | "@accordion>content>desc"
+  | "@accordion>section"
+  | "@accordion>section>title"
+  | "@accordion>section>content"
 
 export interface iAccordionConfig extends iBuilderConfig<AccordionElementType> { }
 
@@ -21,11 +20,10 @@ export class AccordionBuilder extends Builder<AccordionElementType, iAccordionCo
     const defaultConfig: Required<iAccordionConfig> = {
       themeId: "default",
       selectors: {
-        "@container": { tagName: "div", className: "accordion" },
-        "@accordion": { tagName: "details" },
-        "@accordion>title": { tagName: "summary" },
-        "@accordion>content": { tagName: "div", className: "content" },
-        "@accordion>content>desc": { tagName: "p", className: "desc" },
+        "@accordion": { tagName: "div", className: "accordion" },
+        "@accordion>section": { tagName: "details" },
+        "@accordion>section>title": { tagName: "summary" },
+        "@accordion>section>content": { tagName: "div", className: "content" },
       },
       namespace: null,
       emit: () => { }
@@ -36,23 +34,9 @@ export class AccordionBuilder extends Builder<AccordionElementType, iAccordionCo
 
   public prepare(data: iBasicNode, _config?: Partial<iAccordionConfig>): HTMLElement {
 
-    const container = this.render("@container");
     const items = Array.isArray(data.content) ? data.content : [data.content];
 
-    items.forEach((item: any) => {
-      const details = this.render("@accordion" as any, data, true);
-      const summary = this.render("@accordion>title" as any, item, true);
-      const content = this.render("@accordion>content", item, true);
-      const desc = this.render("@accordion>content>desc", item, true);
-
-      content?.appendChild(desc!);
-
-      details!.append(summary!, content!);
-
-      container!.append(details!);
-    });
-
-    return this.load("@container") as HTMLElement;
+    return this.render("@accordion", items) as HTMLElement;
   }
 
   public initialize(): void {
@@ -63,12 +47,30 @@ export class AccordionBuilder extends Builder<AccordionElementType, iAccordionCo
     if (!payload) return;
 
     switch (typeKey) {
-      case "@accordion>title":
-        el.textContent = payload.title || "Untitled Header";
+      case "@accordion":
+        // console.log(payload)
+        for (const p of payload) {
+          const section = this.render("@accordion>section", p)!
+          el.appendChild(section);
+        }
         break;
 
-      case "@accordion>content>desc":
-        el.textContent = payload.description || "";
+      case "@accordion>section":
+        // console.log(payload)
+        const title = this.render("@accordion>section>title", payload.title)!
+        const content = this.render("@accordion>section>content", payload.description)!
+        el.append(title, content);
+        break;
+
+      case "@accordion>section>title":
+        el.textContent = payload || "Untitled Header";
+        break;
+
+      case "@accordion>section>content":
+        const p = document.createElement("p")
+        p.className = "desc"
+        p.textContent = payload || "Untitled Content";
+        el.appendChild(p);
         break;
 
       // Pos selektor pembungkus murni (@container, @accordion, @content) 

@@ -136,16 +136,16 @@ export class FooterBuilder extends Builder<FooterElementType, iFooterConfig> {
 
       for (const col of content.columns) {
 
-        const column = this.render("@footer>row>column", col, true);
-        const header = this.render("@footer>row>column>header", col, true);
-        const desc = this.render("@footer>row>column>desc", col, true);
-        const list = this.render("@footer>row>column>list", content, true);
+        const column = this.render("@footer>row>column", col);
+        const header = this.render("@footer>row>column>header", col);
+        const desc = this.render("@footer>row>column>desc", col);
+        const list = this.render("@footer>row>column>list", content);
 
         // Loop linear menyemburkan baris atomik tautan link kontak dari Sheets (.unstyled-list>item)
         if (list) {
           const actions = Array.isArray(col.actions) ? col.actions : [];
           actions.forEach((payload: any) => {
-            const item = this.render("@footer>row>column>list>item", payload, true);
+            const item = this.render("@footer>row>column>list>item", payload);
             list.appendChild(item!);
           });
         }

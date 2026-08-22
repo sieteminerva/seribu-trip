@@ -1,5 +1,14 @@
+*:has(> table.table) {
+  container-type: inline-size;
+  container-name: tableParent;
+  overflow-x: auto;
+}
+.table-container {
+  max-width: 100%;
+}
 .table,
 table.table {
+  box-sizing: border-box;
   display: table;
   position: relative;
   width: 100%;
@@ -11,13 +20,15 @@ table.table {
   border-radius: 0.28571429rem;
   overflow: hidden;
   font-size: 0.95rem;
+
+  overflow-x: auto;
 }
 
 .table th,
 .table td,
-table.table > thead > tr > th,
-table.table > thead > tr > td,
-table.table > tbody > tr > td,
+table.table > thead > tr > th:not([data-col-index="-1"]),
+table.table > thead > tr > td:not([data-col-index="-1"]),
+table.table > tbody > tr > td:not(.actions.cell, [data-col-index="-1"]),
 table.table > tfoot > tr > th,
 table.table > tfoot > tr > td {
   padding: 0.78571429em 1em;
@@ -26,18 +37,31 @@ table.table > tfoot > tr > td {
   text-align: left;
   display: table-cell;
   vertical-align: middle;
-  width: min-content;
-  /* max-width: 150px; */
+  width: fit-content;
+  min-width: 200px;
+  white-space: nowrap;
+  /* line-break: anywhere; */
+  /* white-space-collapse: break-spaces; */
+  /* word-break: break-word; */
 }
 
 .table thead th,
 table.table > thead > tr > th {
   background: var(--surface-bg);
   color: var(--text-heading);
-  font-weight: 700;
+  font-weight: 500;
   border-bottom: 1px solid var(--border-soft);
   border-left: 1px solid var(--border-soft);
   filter: brightness(0.95); /* 15% darker */
+  text-transform: capitalize;
+}
+
+table.table > tbody > tr > td[data-col-index="-1"],
+table.table > tbody > tr > td.actions.cell,
+table.table > thead > tr > th[data-col-index="-1"],
+table.table > thead > tr > th:last-child {
+  width: auto;
+  min-width: unset;
 }
 
 table.table > tbody > tr .cell:not(.actions) {
@@ -48,6 +72,9 @@ table.table > tbody > tr .cell:not(.actions) {
   border-radius: calc(var(--input-border-radius) / 2);
   border: 1px solid transparent;
   color: var(--text-main);
+  word-break: break-word;
+  overflow: hidden;
+  max-height: calc(2lh + 0.8em);
 }
 
 .table tbody tr:nth-child(even) {
@@ -55,7 +82,7 @@ table.table > tbody > tr .cell:not(.actions) {
 }
 
 .table tbody tr:hover {
-  background: var(--surface-muted);
+  background: var(--border-soft);
 }
 
 table.table > tbody > tr > td,
@@ -116,7 +143,8 @@ table.table td.actions.cell {
   flex-direction: row;
   flex-wrap: nowrap;
   align-content: center;
-  max-width: 120px;
+  min-width: min-content;
+  width: fit-content;
 }
 
 table.table > tbody > tr > td.actions.cell.center.aligned {
@@ -268,17 +296,38 @@ table.table > tfoot > tr > th.sum {
   width: fit-content;
   max-width: 150px;
   filter: brightness(0.95);
+  padding: 0.5em;
 }
 
 table.table > tfoot > tr > th.sum > .cell {
-  display: block;
-  position: relative;
+  display: inline-flex;
+  /* position: relative; */
   /* min-width: 100px; */
   padding: 0 0.5em;
   height: 100%;
-  font-size: 1em;
-  text-align: right;
+  width: -webkit-fill-available;
+  font-size: 0.9em;
+  /* text-align: right; */
   color: var(--text-main);
+  justify-content: space-between;
+  gap: 0.5em;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+@container tableParent (max-width: 1080px) {
+  .table.table > tfoot > tr > th.sum > .cell {
+    flex-direction: column;
+    align-items: stretch;
+    /* text-align: center; */
+    & .title,
+    .value {
+      align-self: start;
+      padding: 0 0.5em;
+      /* width: 90%; */
+    }
+  }
 }
 
 table.table > tfoot > tr > th.sum > .cell:not(:last-child) {
@@ -290,13 +339,28 @@ table.table > tfoot > tr > th.sum > .cell:not(:first-child) {
 }
 
 table.table > tfoot > tr > th.sum > .cell > .title {
-  display: block;
-  position: relative;
-  float: left;
+  /* display: block; */
   font-size: 68%;
-  color: var(--accent);
+
   text-align: left;
-  margin-right: 0.25em;
+  height: 100%;
+  margin: 0;
+  min-width: 30%;
+  min-height: 1rem;
+  text-transform: uppercase;
+  vertical-align: middle;
+  align-content: center;
+}
+
+table.table > tfoot > tr > th.sum > .cell > .value {
+  text-align: right;
+  /* align-self: flex-end; */
+  justify-content: end;
+  min-width: 50%;
+  min-height: 1rem;
+  align-content: center;
+  text-align: right;
+  color: var(--accent-strong);
 }
 
 table.table > tfoot > tr.row-pagination > th,
@@ -350,7 +414,8 @@ table.table > tfoot > tr > th:last-child:has(button) {
 
 .table.small th,
 .table.small td {
-  padding: 0.6em 0.85em;
+  /* padding: 0.6em 0.85em; */
+  padding: 5px;
 }
 
 .table.compact th,
@@ -391,5 +456,320 @@ table {
   td .cell.right.aligned,
   th.right.aligned {
     text-align: right;
+  }
+}
+
+@container tableParent (max-width: 700px) {
+  table.table,
+  .table {
+    border: none;
+    & > thead {
+      display: none;
+    }
+
+    & tbody {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    & tbody tr {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border-soft);
+      border-radius: 0.5rem;
+      background: var(--surface-bg);
+      padding: 0.5rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+
+    & tbody tr:nth-child(even) {
+      background: var(--surface-bg); /* Konsistensi background kartu */
+    }
+
+    & tbody tr td:hover {
+      background: var(--border-soft);
+    }
+
+    & tbody tr td {
+      width: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      /* gap: 0.5em; */
+      /* justify-content: space-between; */
+      /* align-items: center; */
+      padding: 0.75rem 0.5rem;
+      border-left: none;
+      border-bottom: none;
+      min-height: auto;
+    }
+
+    & tbody tr td:first-child {
+      display: flex;
+      flex-direction: row;
+      justify-content: right;
+      align-items: center;
+      border-left: none;
+      min-height: auto;
+      padding: 5px;
+    }
+
+    & tbody tr td .cell:not(.actions):not(.grand) {
+      text-align: left;
+    }
+
+    & tbody tr td[data-header]::before {
+      content: attr(data-header);
+      font-weight: 500;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-transform: capitalize;
+      padding: 0 0.5rem;
+      padding-bottom: 0.5rem;
+      flex-shrink: 0;
+      /* border-bottom: 1px solid var(--border-soft); */
+      text-decoration: underline;
+    }
+
+    & tbody tr td[data-header]:first-child::before {
+      content: attr(data-header);
+      font-size: 1.4rem;
+      padding: 0;
+      text-decoration: none;
+    }
+
+    & tbody tr td[data-header]:last-child::before {
+      content: none;
+      font-size: 1.4rem;
+      padding: 0;
+      text-decoration: none;
+    }
+
+    & tbody tr td.autoNumber {
+      display: flex;
+      justify-content: right;
+      width: 100%;
+    }
+
+    & tbody tr td.autoNumber .cell:not(.grand) {
+      width: auto;
+    }
+
+    & tbody tr td.actions.cell:not(.grand) {
+      max-width: 100%;
+      justify-content: right;
+      border-left: none;
+    }
+
+    & .actions-set {
+      width: auto; /* Mencegah tombol aksi melebar penuh */
+      justify-content: flex-end;
+    }
+
+    & tfoot,
+    & tfoot tr,
+    & tfoot tr th {
+      display: block;
+      width: 100%;
+    }
+
+    & tfoot tr th.sum {
+      max-width: 100%;
+      border-left: none;
+      border-right: none;
+    }
+
+    & tfoot tr th:last-child:has(button) {
+      display: flex !important;
+      padding: 1rem 1rem;
+      justify-content: center;
+      padding: 1rem 0;
+    }
+
+    & tfoot tr.row-pagination th,
+    & tfoot tr:has(th > .pagination) th {
+      display: block;
+      width: 100%;
+      padding: 1rem 0.5rem;
+      text-align: center;
+    }
+
+    & tfoot .pagination.menu {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      overflow-x: auto; /* Mengizinkan scroll horizontal jika tombol kepanjangan */
+      padding: 0.25rem 0;
+      -webkit-overflow-scrolling: touch;
+      gap: 2px; /* Beri sedikit jarak antar tombol agar tidak terlalu rapat */
+    }
+
+    & tfoot .pagination.menu .item {
+      flex-shrink: 0; /* Mencegah tombol mengkerut/gepeng */
+      min-width: 2.5rem; /* Sedikit diperbesar dari 2.2rem agar mudah ditekan */
+      height: 2.5rem;
+      font-size: 0.9rem;
+      border-radius: 0.25rem; /* Memberikan sudut membulat agar ramah di layar sentuh */
+    }
+
+    & tfoot th:has(> .add-row-btn) {
+      justify-content: center !important;
+    }
+  }
+}
+
+table.table.stacked,
+.table.stacked {
+  border: none;
+  & > thead {
+    display: none;
+  }
+
+  & tbody {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  & tbody tr {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-soft);
+    border-radius: 0.5rem;
+    background: var(--surface-bg);
+    padding: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  }
+
+  & tbody tr:nth-child(even) {
+    background: var(--surface-bg) !important;
+  }
+
+  & tbody tr td:hover {
+    background: var(--border-soft);
+  }
+
+  & tbody tr td {
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem 0.5rem;
+    border-left: none;
+    border-bottom: none;
+    min-height: auto;
+  }
+
+  & tbody tr td:first-child {
+    display: flex;
+    flex-direction: row;
+    justify-content: right;
+    align-items: center;
+    border-left: none;
+    min-height: auto;
+    padding: 5px;
+  }
+
+  & tbody tr td .cell:not(.actions) {
+    text-align: left;
+  }
+
+  & tbody tr td[data-header]::before {
+    content: attr(data-header);
+    font-weight: 500;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    text-transform: capitalize;
+    padding: 0 0.5rem;
+    padding-bottom: 0.3rem;
+    flex-shrink: 0;
+    /* border-bottom: 1px solid var(--border-soft); */
+    text-decoration: underline;
+  }
+
+  & tbody tr td[data-header]:first-child::before {
+    content: attr(data-header);
+    font-size: 1.4rem;
+    padding: 0;
+    text-decoration: none;
+  }
+
+  & tbody tr td[data-header]:last-child::before {
+    content: none;
+    font-size: 1.4rem;
+    padding: 0;
+    text-decoration: none;
+  }
+
+  & tbody tr td.autoNumber {
+    display: flex;
+    justify-content: right;
+    width: 100%;
+  }
+
+  & tbody tr td.autoNumber .cell:not(.grand) {
+    width: auto;
+  }
+
+  & tbody tr td.actions.cell:not(.grand) {
+    max-width: 100%;
+    justify-content: right;
+    border-left: none !important;
+  }
+
+  & .actions-set {
+    width: auto; /* Mencegah tombol aksi melebar penuh */
+    justify-content: flex-end;
+  }
+
+  & tfoot,
+  & tfoot tr,
+  & tfoot tr th {
+    display: block;
+    width: 100%;
+  }
+
+  & tfoot tr th.sum {
+    max-width: 100%;
+    border-left: none;
+    border-right: none;
+  }
+
+  & tfoot tr th:last-child:has(button) {
+    display: flex !important;
+    padding: 1rem 1rem;
+    justify-content: center;
+  }
+
+  & tfoot tr.row-pagination th,
+  & tfoot tr:has(th > .pagination) th {
+    display: block;
+    width: 100%;
+    padding: 1rem 0.5rem;
+    text-align: center;
+  }
+
+  & tfoot .pagination.menu {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    overflow-x: auto; /* Mengizinkan scroll horizontal jika tombol kepanjangan */
+    padding: 0.25rem 0;
+    -webkit-overflow-scrolling: touch;
+    gap: 2px; /* Beri sedikit jarak antar tombol agar tidak terlalu rapat */
+  }
+  & tfoot .pagination.menu .item {
+    flex-shrink: 0; /* Mencegah tombol mengkerut/gepeng */
+    min-width: 2.5rem; /* Sedikit diperbesar dari 2.2rem agar mudah ditekan */
+    height: 2.5rem;
+    font-size: 0.9rem;
+    border-radius: 0.25rem; /* Memberikan sudut membulat agar ramah di layar sentuh */
   }
 }

@@ -8,6 +8,7 @@ import { HashRouter, type iRouteState } from "./Services/HashRouter";
 import { DOMTreeMemory } from "./Modules/DOMTreeMemory";
 import { EventBus, RenderingEventBus } from "./Services/EventBus";
 import { DataLogger } from "./Utils/DataLogger";
+import { AioTransformer } from "../../content/AioTransformer";
 
 const DISPLAY_LOG = GLOBAL_DISPLAY_LOG;
 
@@ -22,20 +23,31 @@ export interface iLandingPageBuilderConfig {
   onSectionRendered?: (sectionId: string, element: HTMLElement) => void;
 }
 
+export interface iPageController {
+  readonly route: string;
+  // onPrepare?(context: { builder: LandingPageBuilder; persistedTheme: string | null }): Promise<any[]> | any[];
+  onPrepare?(context: { pages: any; menu: any; footer: any; theme: string | null }): Promise<any> | any;
+  onReady?(elements: Map<string, HTMLElement>, shell: HTMLElement): void;
+  onDestroy?(): void;
+  attachMenu?(menuNode: iBasicNode): iBasicNode;
+}
+
 export class LandingPageBuilder {
   /* NODE/ELEMENT  */
   private container!: HTMLElement;
+  private pageControllers = new Map<string, iPageController>();
   public shell: HTMLElement | null = null;
 
   private _menuData: iBasicNode | null = null;
   private footer: HTMLElement | iBasicNode | null = null;
-  private pages: Record<string, (iNodeContent<any> | iBasicNode)[]> = {};
+  public pages: Record<string, (iNodeContent<any> | iBasicNode)[]> = {};
   #nodes = new Map<string, HTMLElement>();
 
   /* ROUTE */
   private defaultRoute!: string;
-  private currentRoute!: string;
+  public currentRoute!: string;
   public pendingFragment: string = "";
+  private routeInitialized: boolean = false;
 
   /* CONFIG */
   private useMenu!: boolean;
@@ -48,6 +60,7 @@ export class LandingPageBuilder {
   public router!: HashRouter;
   public theme: ThemeRenderer | null = null;
   public events = new EventEmitter();
+  public transformer: AioTransformer | null = null;
 
   _isInternalRendering!: boolean;
 
@@ -63,6 +76,7 @@ export class LandingPageBuilder {
       this.factory = new DOMRenderer();
       this.theme = new ThemeRenderer();
       this.component = new ComponentRegistry();
+      this.transformer = new AioTransformer();
 
       EventBus.listen();
 
@@ -94,10 +108,9 @@ export class LandingPageBuilder {
 
       });
 
-      const urlState = this.router.parseUrlHash();
-      this.currentRoute = urlState.route;
-      this.pendingFragment = urlState.fragment;
-      this.currentThemeId = urlState.theme || persistedTheme || (config.theme as string) || "default";
+      this.currentRoute = this.defaultRoute;
+      this.pendingFragment = "";
+      this.currentThemeId = persistedTheme || (config.theme as string) || "default";
       localStorage.setItem("active_theme", this.currentThemeId);
 
     } catch (error: any) {
@@ -110,8 +123,8 @@ export class LandingPageBuilder {
     return this._menuData;
   }
 
-  public set menu(newMenuBlueprint: HTMLElement | iBasicNode | null) {
-    this._menuData = newMenuBlueprint;
+  public set menu(menuSchema: HTMLElement | iBasicNode | null) {
+    this._menuData = menuSchema;
 
     // 💡 LIVE HOT-SWAP SINKRONUS:
     // Jika shell sudah terpasang di DOM dan renderedNodesMap sudah memegang navbar lama,
@@ -125,25 +138,27 @@ export class LandingPageBuilder {
 
       if (cleanMenuBlueprint) {
         // Ambil element navbar fisik lama yang sedang menempel di layar
-        const oldNavbarElement = (this as any).renderedNodesMap.get("system-navbar");
+        const oldElement = this.#nodes.get("system-navbar");
 
         // Bakar blueprint baru menjadi HTMLElement hidup lewat pintu utama .compile() Anda
-        const newNavbarElement = this.compile(cleanMenuBlueprint);
+        const newElement = this.compile(cleanMenuBlueprint);
 
-        if (newNavbarElement && oldNavbarElement && this.shell.contains(oldNavbarElement)) {
+        if (newElement && oldElement && this.shell.contains(oldElement)) {
           // 🧙‍♂️ ABAKADABRA: Tukar fisiknya secara instan di layar menggunakan native DOM API!
-          this.shell.replaceChild(newNavbarElement, oldNavbarElement);
-          (this as any).renderedNodesMap.set("system-navbar", newNavbarElement);
-        } else if (newNavbarElement) {
-          // Jika sebelumnya tidak ada menu tapi useMenu diaktifkan, langsung prepend di atas
-          this.shell.prepend(newNavbarElement);
-          (this as any).renderedNodesMap.set("system-navbar", newNavbarElement);
+          this.shell.replaceChild(newElement, oldElement);
+          this.#nodes.set("system-navbar", newElement);
         }
+        // else if (newElement) {
+        //   // Jika sebelumnya tidak ada menu tapi useMenu diaktifkan, langsung prepend di atas
+        //   this.shell.prepend(newElement);
+        //   this.#nodes.set("system-navbar", newElement);
+        // }
       } else {
         // Jika menu di-set menjadi null, copot fisiknya dari layar
-        const oldNavbarElement = (this as any).renderedNodesMap.get("system-navbar");
-        if (oldNavbarElement) oldNavbarElement.remove();
-        (this as any).renderedNodesMap.delete("system-navbar");
+        const oldElement = this.#nodes.get("system-navbar");
+        if (oldElement) oldElement.remove();
+        this.#nodes.delete("system-navbar");
+        this._menuData = null;
       }
     }
   }
@@ -159,9 +174,11 @@ export class LandingPageBuilder {
    */
   private onPageRebuild(route: string, payload: any): void {
     // Pancarkan sebelum render untuk kebutuhan plugin luar, data sudah 100% matang ter-hydrate!
-    this.events.emit("beforeRender", payload as any);
+    this.events.emit("beforeRender", { route, ...payload } as any);
 
     const metadata = { records: [] } as any;
+
+    // console.log("TRANSFORMED", this.transformer?.toObject(payload.pages))
 
     const describeElement = (el: HTMLElement) => {
       const tag = el?.tagName ? el.tagName.toLowerCase() : "unknown";
@@ -225,6 +242,15 @@ export class LandingPageBuilder {
       this._handleScrollSection();
     });
 
+    const controller = this.pageControllers.get(route.toLowerCase());
+    if (controller && typeof controller.onReady === "function") {
+      try {
+        controller.onReady(new Map(this.#nodes), this.shell as HTMLElement);
+      } catch (err) {
+        console.error(`[Controller] Error in onReady for route "${route}":`, err);
+      }
+    }
+
     this.events.emit("ready", {
       shell: this.shell as HTMLElement,
       elements: new Map(this.#nodes),
@@ -251,10 +277,24 @@ export class LandingPageBuilder {
   }
 
   /**
- * 🏗️ THE TRUE PURE RENDER MACHINE (Ultra Ramping & Sempurna!)
- * Hanya bertugas menempelkan elemen hidup yang sudah dimatangkan penuh oleh .compile()
- */
+   * 🏗️ THE TRUE PURE RENDER MACHINE (Ultra Ramping & Sempurna!)
+   * Hanya bertugas menempelkan elemen hidup yang sudah dimatangkan penuh oleh .compile()
+   */
   async render(route: string = this.currentRoute): Promise<void> {
+
+    if (!this.routeInitialized) {
+      const urlState = this.router.parseUrlHash();
+      this.currentRoute = urlState.route;
+      this.pendingFragment = urlState.fragment || "";
+      this.currentThemeId = urlState.theme || this.currentThemeId;
+      localStorage.setItem("active_theme", this.currentThemeId);
+      this.routeInitialized = true;
+      route = this.currentRoute;
+    }
+
+    this.events.emit("pageChanged", {
+      route
+    })
     // Unlock body scroll in case a modal or overlay left it locked
     document.body.style.overflow = "";
 
@@ -264,6 +304,19 @@ export class LandingPageBuilder {
     }
 
     const previousRoute = this.currentRoute || route;
+
+    // Trigger onDestroy on previous page controller
+    if (previousRoute && previousRoute !== route) {
+      const prevController = this.pageControllers.get(previousRoute.toLowerCase());
+      if (prevController && typeof prevController.onDestroy === "function") {
+        try {
+          prevController.onDestroy();
+        } catch (err) {
+          console.error(`[Controller] Error in onDestroy for route "${previousRoute}":`, err);
+        }
+      }
+    }
+
     const detachHandler = RenderingEventBus.handler(previousRoute, this.shell, this.container);
 
     if (this.shell.parentElement) {
@@ -301,31 +354,44 @@ export class LandingPageBuilder {
       payload
     });
 
-
-
   }
 
-
-
-  private _prepareDataSnapshot() {
-    const rawPages = NodeTransformer.safeCloneNode(this.pages[this.currentRoute] || []);
-    const rawMenu = NodeTransformer.safeCloneNode(this.menu as any);
-    const rawFooter = NodeTransformer.safeCloneNode(this.footer as any);
-
-    return {
-      pages: rawPages,
-      menu: rawMenu,
-      footer: rawFooter
-    };
-  }
 
   private async prepare(): Promise<{ pages: any, menu: any, footer: any, context: any } | undefined> {
     try {
       // 0. Clean up previous page/route node registries & instance identity counters
       this.component?.clear();
 
+      // Check if current route has a registered controller
+      let activePagesData = this.pages[this.currentRoute] || [];
+
+      for (const [route, controller] of this.pageControllers) {
+        if (controller && typeof controller.onPrepare === "function") {
+          // this.router.updateValidRoute(route)
+          // console.log(ro)
+          const pageData = await controller.onPrepare({
+            pages: this.pages, menu: this.menu, footer: this.footer, theme: this.currentThemeId
+          });
+          if (pageData) {
+            this.menu = pageData.menu
+            if (route === this.currentRoute.toLowerCase()) {
+              try {
+                activePagesData = pageData.pages;
+                // console.log({ activeMenu, activePagesData })
+              } catch (err) {
+                console.error(`[Controller] Error in onPrepare for route "${this.currentRoute}":`, err);
+              }
+            }
+          }
+        }
+      }
+
       // 1. Amankan snapshot memori imutabel (Data master murni)
-      const snapshot = this._prepareDataSnapshot();
+      const snapshot = {
+        pages: NodeTransformer.safeCloneNode(activePagesData),
+        menu: NodeTransformer.safeCloneNode(this.menu as any),
+        footer: NodeTransformer.safeCloneNode(this.footer as any)
+      };
 
       const context = {
         /** Fungsi live penimpa konfigurasi internal builder */
@@ -419,40 +485,43 @@ export class LandingPageBuilder {
         return;
       }
 
-      for (const key of Object.keys(item)) {
-        const value = item[key];
-        if (!value || typeof value !== "object" || value instanceof HTMLElement) continue;
-
-        // Deteksi Komponen Builder Kustom
-        if (value.builder && this.component?.has(value.builder)) {
-          // Letupkan komponen hidup secara instan di level memori runtime!
-          const liveDomElement = this.component.build(value.builder, value);
-
-          if (liveDomElement instanceof HTMLElement) {
-            if (value.attrs && typeof value.attrs === "object") {
-              Object.entries(value.attrs).forEach(([aName, aValue]) => {
-                liveDomElement.setAttribute(aName, String(aValue));
-              });
-            }
-
-            // Penguncian Lifecycle isRoot Sejati
-            if (value.isRoot === true) {
-              Object.keys(value).forEach((k) => {
-                if (k !== "content" && k !== "builder" && k !== "isRoot" && k !== "attrs") {
-                  delete value[k];
-                }
-              });
-              value.content = liveDomElement; // Dibajak murni jadi Kasus A HTMLElement Hidup
-            } else {
-              value.content = liveDomElement;
-            }
-
-            this.events.emit("elementAdded", { element: liveDomElement, parent: this.shell! });
-            break;
-          }
-        } else {
-          scanAndBuild(value); // Terus menyelam mencari builder bersarang di tingkat terdalam
+      // Deteksi Komponen Builder Kustom pada level item ini sendiri (Mendukung Nested)
+      if (item.builder && this.component?.has(item.builder)) {
+        // Rekursi bottom-up: selami content komponen ini dulu (jika ada builder bersarang di dalamnya)
+        if (item.content) {
+          scanAndBuild(item.content);
         }
+        // console.log({ config: item.config })
+        // Letupkan komponen hidup secara instan di level memori runtime!
+        const liveDomElement = this.component.build(item.builder, item);
+
+        if (liveDomElement instanceof HTMLElement) {
+          if (item.attrs && typeof item.attrs === "object") {
+            Object.entries(item.attrs).forEach(([aName, aValue]) => {
+              liveDomElement.setAttribute(aName, String(aValue));
+            });
+          }
+
+          // Penguncian Lifecycle isRoot Sejati
+          if (item.isRoot === true) {
+            Object.keys(item).forEach((k) => {
+              if (k !== "content" && k !== "builder" && k !== "isRoot" && k !== "attrs") {
+                delete item[k];
+              }
+            });
+            item.content = liveDomElement; // Dibajak murni jadi Kasus A HTMLElement Hidup
+          } else {
+            item.content = liveDomElement;
+          }
+
+          this.events.emit("elementAdded", { element: liveDomElement, parent: this.shell! });
+        }
+        return; // Jika sudah dibangun, tidak perlu iterasi propertinya sebagai objek biasa
+      }
+
+      // Jika bukan komponen builder, iterasi properti di dalamnya (untuk mencari nested)
+      for (const key of Object.keys(item)) {
+        scanAndBuild(item[key]);
       }
     };
 
@@ -489,6 +558,34 @@ export class LandingPageBuilder {
   private normalizeRoute(route: string): string {
     const resolved = route.trim().replace(/^#/, "");
     return resolved || "home";
+  }
+
+  /**
+   * Mendaftarkan controller halaman untuk mengatur data dan lifecycle route tertentu secara dinamis.
+   */
+  public registerPage(route: string, controller: iPageController): this {
+    const normRoute = route.trim().toLowerCase();
+    this.pageControllers.set(normRoute, controller);
+
+    // Pastikan rute terdaftar di system list agar router menganggapnya valid
+    if (!this.pages[normRoute]) {
+      this.pages[normRoute] = [];
+    }
+
+    // Update router valid routes
+    this.router.updateValidRoutes(Object.keys(this.pages));
+
+    // If the current URL hash now matches a newly registered route,
+    // re-parse it and correct the current route state before first render.
+    const urlState = this.router.parseUrlHash();
+    if (urlState.route !== this.currentRoute) {
+      this.currentRoute = urlState.route;
+      this.pendingFragment = urlState.fragment;
+      this.currentThemeId = urlState.theme || this.currentThemeId;
+      localStorage.setItem("active_theme", this.currentThemeId);
+    }
+
+    return this;
   }
 
 }

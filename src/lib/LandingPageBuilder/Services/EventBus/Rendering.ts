@@ -32,7 +32,7 @@ export class RenderingEventBus {
 
       DataLogger(DISPLAY_LOG,
         { functionName: "✅ [RenderingEventBus]", action: `Receiver` },
-        { message: "ready event [received]", route: e.detail.route, shell: `${e.detail.shell.tagName.toLowerCase()}.${e.detail.shell.className}`, payload: JSON.stringify(e.detail.payload) });
+        { message: "ready event [received]", route: e.detail.route, shell: `${e.detail.shell.tagName.toLowerCase()}.${e.detail.shell.className}`, payload: e.detail.payload });
 
     };
 

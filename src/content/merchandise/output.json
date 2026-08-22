@@ -1,0 +1,244 @@
+[
+  {
+    "uid": "dsr7524x",
+    "name": "O-Neck Standard",
+    "category": "T-Shirt",
+    "title": "Standard O-neck",
+    "description": "",
+    "price": "getPrice",
+    "colors": [
+      {
+        "name": "white",
+        "value": "#ffffff"
+      },
+      {
+        "name": "black",
+        "value": "#212121"
+      },
+      {
+        "name": "light grey",
+        "value": "#cacaca"
+      },
+      {
+        "name": "red",
+        "value": "#f83939"
+      },
+      {
+        "name": "violet",
+        "value": "#9966cc"
+      },
+      {
+        "name": "dark brown",
+        "value": "#37220e"
+      },
+      {
+        "name": "navy",
+        "value": "#151935"
+      },
+      {
+        "name": "green",
+        "value": "#1bb752"
+      }
+    ],
+    "artwork": {
+      "src": "apparel/man_tshirt_standard_o-neck.png",
+      "mask": {
+        "fullbody": "",
+        "sleeve_right": "",
+        "sleeve_left": "",
+        "ribs_neck": "",
+        "ribs_lefthand": "",
+        "ribs_righthand": ""
+      }
+    }
+  },
+  {
+    "uid": "dsr7523s",
+    "name": "Man Long Sleeve",
+    "category": "Shirt",
+    "title": "Man Long Sleeve",
+    "description": "",
+    "price": "getPrice",
+    "colors": [
+      {
+        "name": "black",
+        "value": "#212121"
+      },
+      {
+        "name": "white",
+        "value": "#fffbfb"
+      },
+      {
+        "name": "dark grey",
+        "value": "#423b3b"
+      },
+      {
+        "name": "misty grey",
+        "value": "#cacaca"
+      },
+      {
+        "name": "violet",
+        "value": "#9966cc"
+      },
+      {
+        "name": "cream",
+        "value": "#fbfde2"
+      },
+      {
+        "name": "orange",
+        "value": "#ff932e"
+      }
+    ],
+    "artwork": {
+      "src": "apparel/man_shirt_long_slevee.png",
+      "mask": {
+        "fullbody": "",
+        "sleeve_right": "",
+        "sleeve_left": "",
+        "ribs_neck": "",
+        "ribs_lefthand": "",
+        "ribs_righthand": ""
+      }
+    }
+  },
+  {
+    "uid": "dsr7534e",
+    "name": "Event's Balloon",
+    "category": "Merchandise",
+    "title": "Event's Balloon",
+    "description": "",
+    "price": "getPrice",
+    "colors": [
+      {
+        "name": "black",
+        "value": "#212121"
+      },
+      {
+        "name": "white",
+        "value": "#fffbfb"
+      },
+      {
+        "name": "red",
+        "value": "#ff0000"
+      },
+      {
+        "name": "pink",
+        "value": "#ff89ed"
+      },
+      {
+        "name": "violet",
+        "value": "#9966cc"
+      },
+      {
+        "name": "transparent",
+        "value": "#fbfde2"
+      },
+      {
+        "name": "blue",
+        "value": "#0245fc"
+      },
+      {
+        "name": "green",
+        "value": "#1bb752"
+      }
+    ],
+    "imageUrl": "apparel/Promotion_Balloon.png",
+    "mask": {
+      "fullbody": "",
+      "sleeve_right": "",
+      "sleeve_left": "",
+      "ribs_neck": "",
+      "ribs_lefthand": "",
+      "ribs_righthand": ""
+    }
+  },
+  {
+    "uid": "dsk7524m",
+    "name": "Standard Mug",
+    "category": "Merchandise",
+    "title": "Standard Mug",
+    "description": "",
+    "price": "getPrice",
+    "colors": [
+      {
+        "name": "black",
+        "value": "#212121"
+      },
+      {
+        "name": "white",
+        "value": "#fffbfb"
+      },
+      {
+        "name": "cream",
+        "value": "#fbfde2"
+      }
+    ],
+    "imageUrl": "apparel/Promotion_Mug.png"
+  },
+  {
+    "uid": "psr4524b",
+    "name": "Pin",
+    "category": "Merchandise",
+    "title": "Pin",
+    "description": "",
+    "price": "getPrice",
+    "colors": [
+      {
+        "name": "black",
+        "value": "#212121"
+      },
+      {
+        "name": "white",
+        "value": "#fffbfb"
+      },
+      {
+        "name": "cream",
+        "value": "#fbfde2"
+      },
+      {
+        "name": "yellow",
+        "value": "#F7EA14"
+      },
+      {
+        "name": "red",
+        "value": "#EC2A2A"
+      }
+    ],
+    "imageUrl": "apparel/Promotion_Pin.png"
+  },
+  {
+    "uid": "dsf7454a",
+    "name": "Cushion",
+    "category": "Accesories",
+    "title": "Cushion",
+    "description": "",
+    "price": "getPrice",
+    "colors": [
+      {
+        "name": "black",
+        "value": "#020000"
+      },
+      {
+        "name": "white",
+        "value": "#ffffffe3"
+      },
+      {
+        "name": "yellow",
+        "value": "#fffc30"
+      },
+      {
+        "name": "red",
+        "value": "#EC2A2A"
+      },
+      {
+        "name": "brown",
+        "value": "#382b2b"
+      },
+      {
+        "name": "grey",
+        "value": "#5B5B5B"
+      }
+    ],
+    "imageUrl": "apparel/Promotion_Cushion.png"
+  }
+]

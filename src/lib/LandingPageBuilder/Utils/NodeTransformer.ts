@@ -106,6 +106,7 @@ export class NodeTransformer {
         innerBlock.isArrayDelegated = true; // Flag penyelamat agar DOMRenderer luar tidak ikut melakukan loop .forEach!
       }
       else if (nodeObj.builder) {
+        // console.log({ payload })
         innerBlock.content = payload;
       }
       else if (Array.isArray(payload)) {

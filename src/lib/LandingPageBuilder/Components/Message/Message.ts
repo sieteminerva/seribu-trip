@@ -37,12 +37,12 @@ export class MessageBuilder extends Builder<MessageElementType, iMessageConfig> 
   constructor(config: Partial<iMessageConfig> = {}) {
     super();
     const defaultSelectors = {
-      "@message": { tagName: "div", className: "message" },
-      "@message>close": { tagName: "i", className: "close" },
+      "@message": { tagName: "div", className: "toast" },
+      "@message>close": { tagName: "i", className: "close circle icon", wrapper: "button.close" },
       "@message>content": { tagName: "div", className: "content" },
       "@message>content>header": { tagName: "h2", className: "header" },
-      "@message>content>desc": { tagName: "p", className: "desc" },
-      "@message>content>icon": { tagName: "i", className: "info" } // "error", "success", "info", "warning"
+      "@message>content>desc": { tagName: "p", className: "message" },
+      "@message>content>icon": { tagName: "i" } // "error", "success", "info", "warning"
     };
     const defaultConfig: Required<iMessageConfig> = {
       themeId: "default",
@@ -63,9 +63,9 @@ export class MessageBuilder extends Builder<MessageElementType, iMessageConfig> 
   public prepare(content: Partial<iMessageContent>, _config: Partial<iMessageConfig> = {}): HTMLElement {
     if (_config) this.config = this.resolveConfig(this.config, _config);
 
-    const defaultContent = {
+    const defaultContent: { header: string; icon: string; type: "error" | "success" | "info" | "warning"; message: string; } = {
       header: "Congrats!",
-      icon: "bell outline icon",
+      icon: "bell icon",
       type: "info",
       message: "",
     };
@@ -78,35 +78,14 @@ export class MessageBuilder extends Builder<MessageElementType, iMessageConfig> 
     // ====================================================
     const existingDOMElement = document.getElementById(this.config.id);
     if (existingDOMElement) {
-      console.log(`[Message Engine] Active notification #${this.config.id} detected. Executing instant unmount bypass...`);
+      // console.log(`[Message Engine] Active notification #${this.config.id} detected. Executing instant unmount bypass...`);
       this.unmount(this.config.id, this.config.onClose);
     }
 
     // 1. Lahirkan Cangkang Makro Terluar Boks Notifikasi (@message)
     const messageElement = this.render("@message", messageContent);
 
-    // 2. Lahirkan Tombol Silang Penutup JIT
-    const closeIcon = this.render("@message>close", messageContent);
 
-    // 3. Lahirkan Ikon Penuntun Utama Kiri
-    const leadingIcon = this.render("@message>content>icon", messageContent);
-
-    // 4. Lahirkan Boks Konten Kanan beserta Judul & Paragraf Deskripsi
-    const contentBox = this.render("@message>content", messageContent);
-    const headerEl = this.render("@message>content>header", messageContent);
-    const messageParagraph = this.render("@message>content>desc", messageContent);
-
-    // ====================================================
-    // 🎢 THE PERFECT VANILLA WEAVING (JAHIT STRUKTUR DOM)
-    // ====================================================
-    if (headerEl && messageContent.header) contentBox?.appendChild(headerEl);
-    if (messageParagraph) contentBox?.appendChild(messageParagraph);
-
-    if (messageElement) {
-      if (closeIcon && !this.config.persist) messageElement.appendChild(closeIcon);
-      if (leadingIcon && messageContent.icon) messageElement.appendChild(leadingIcon);
-      if (contentBox) messageElement.appendChild(contentBox);
-    }
 
     // 5. Cari kontainer penempelan (document.body vs custom element ID)
     let containerElement: HTMLElement | null = null;
@@ -135,6 +114,27 @@ export class MessageBuilder extends Builder<MessageElementType, iMessageConfig> 
         // Suntikkan kelas jenis notifikasi secara dinamis (e.g., "message visible success icon")
         el.className = `visible ${payload.type || "info"} ${payload.icon ? "icon" : ""} ${el.className || ""}`.trim();
         el.style.boxShadow = "0 1px 2px 0 rgba(34, 36, 38, .15)";
+
+        // 2. Lahirkan Tombol Silang Penutup JIT
+        const closeIcon = this.render("@message>close")!.__outer;
+        // 3. Lahirkan Ikon Penuntun Utama Kiri
+        const msgContainer = this.render("@message>content");
+        const icon = this.render("@message>content>icon", payload.icon);
+        // 4. Lahirkan Boks Konten Kanan beserta Judul & Paragraf Deskripsi
+        const header = this.render("@message>content>header", payload.header);
+        const message = this.render("@message>content>desc", payload.message);
+
+        // ====================================================
+        // 🎢 THE PERFECT VANILLA WEAVING (JAHIT STRUKTUR DOM)
+        // ====================================================
+        if (header && payload.header) msgContainer?.appendChild(header);
+        if (message) msgContainer?.appendChild(message);
+
+
+        if (closeIcon && !this.config.persist) el.appendChild(closeIcon);
+        if (icon && payload.icon) el.appendChild(icon);
+        if (msgContainer) el.appendChild(msgContainer);
+
         break;
 
       case "@message>close":
@@ -143,16 +143,16 @@ export class MessageBuilder extends Builder<MessageElementType, iMessageConfig> 
 
       case "@message>content>icon":
         // Tempelkan kelas ikon ikon standard (e.g., "check circle icon") hantaran Sheets
-        if (payload.icon) el.className = payload.icon;
+        if (payload) el.className = payload || "notification icon";
         break;
 
       case "@message>content>header":
         // 🔒 SUPER AMAN DARI XSS: Ganti innerHTML kaku menjadi textContent suci!
-        el.textContent = payload.header || "";
+        el.textContent = payload || "";
         break;
 
       case "@message>content>desc":
-        el.textContent = payload.message || "";
+        el.textContent = payload || "";
         break;
     }
   }
@@ -165,7 +165,7 @@ export class MessageBuilder extends Builder<MessageElementType, iMessageConfig> 
       closeIcon.addEventListener("click", () => {
         this.unmount(this.config.id, this.config.onClose);
       });
-      console.log("[Message Lifecycle] Toast close button attached securely.");
+      // console.log("[Message Lifecycle] Toast close button attached securely.");
     }
   }
 
@@ -210,4 +210,5 @@ export class MessageBuilder extends Builder<MessageElementType, iMessageConfig> 
       }
     }
   }
+
 }

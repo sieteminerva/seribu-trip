@@ -1,7 +1,9 @@
 import type { iBuilderConfig, iBuilderRegistry } from "../../interface";
 import { Builder } from "../Base";
+import { MessageBuilder } from "../Message/Message";
 import { TableBuilder } from "../Table/Table";
 import { FileUploader } from "./FileUploader";
+import { IdAddressBuilder } from "./IdAddress/id-address-builder";
 import { InputBuilder } from "./Input";
 
 export type FormElementType =
@@ -13,7 +15,8 @@ export type FormElementType =
   | "@form>actions"
   | "@form>actions>submit"
   | "@form>actions>submit-group"
-  | "@form>footer";
+  | "@form>footer"
+  | "@form>buttons-set";
 
 export interface iFormConfig extends iBuilderConfig<FormElementType> {
   id?: string;
@@ -30,8 +33,9 @@ export interface iFormConfig extends iBuilderConfig<FormElementType> {
   resetOnComplete?: boolean;
   createEventListener?: boolean;
   minHeight?: string;
+  multistep?: boolean;
   footer?: HTMLElement | string | null;
-  onSubmit?: null | Function
+  onSubmit?: null | Function;
 }
 
 export class FormBuilder extends Builder<FormElementType, iFormConfig> {
@@ -55,7 +59,8 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
       "@form>actions": { tagName: "div", className: "form-actions" },
       "@form>actions>submit": { tagName: "button", className: "button primary", type: "submit" as "submit" },
       "@form>actions>submit-group": { tagName: "button", className: "button primary", type: "button" as "button" },
-      "@form>footer": { tagName: "div", className: "form-footer" }
+      "@form>footer": { tagName: "div", className: "form-footer" },
+      "@form>buttons-set": { tagName: "div", className: "buttons set" }
     };
 
     const defaultConfig: Required<iFormConfig> = {
@@ -65,7 +70,7 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
       description: "",
       method: "post",
       action: "submit",
-      className: "native form",
+      className: "",
       submitButton: true,
       buttonText: "Submit",
       buttonClass: "button primary",
@@ -76,6 +81,7 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
       footer: null,
       themeId: "default",
       selectors: defaultSelectors,
+      multistep: false,
       namespace: null,
       emit: null,
       onSubmit: (_data: any) => { },
@@ -87,31 +93,45 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
    * REFACTOR TOTAL: Merakit Form menggunakan struktur iBasicNode[] murni
    */
   public prepare(inputs: Array<any | HTMLElement | string> | any, _config: Partial<iFormConfig> = {}): HTMLElement {
-    // const inputs = data.content;
-    // console.log(inputs)
+    // Unwrap builder wrapper: { builder: "form", content: [...] } → [...fields]
+    // console.log("FORMS", inputs)
+    // console.log("config", _config)
+    if (inputs && typeof inputs === "object" && !Array.isArray(inputs) && inputs.content !== undefined) {
+      inputs = inputs.content;
+    }
     this.#inputs = Array.isArray(inputs) ? inputs : [inputs];
 
-    const wrapper = this.render("@container", inputs);
+    // const wrapper = this.render("@container", inputs);
 
     const form = this.render("@form", inputs) as HTMLFormElement;
     const formId = form.id;
 
     // Iterasi dan transformasikan setiap input secara murni
-    this.#inputs.forEach((input: any) => {
+    for (const [index, input] of Object.entries(this.#inputs)) {
 
       if (input instanceof HTMLElement) {
-        this.submitButtonId = this.scanForSubmitButton(input, formId) || this.submitButtonId;
-        form.append(input);
+        const btn = this.scanForSubmitButton(input, formId);
+        if (btn) {
+          this.submitButtonId = btn.id || this.submitButtonId;
+          form.append(btn);
+        } else {
+          form.append(input);
+        }
       }
 
       // ==========================================
       // KASUS B: Input berupa Raw HTML String
       // ==========================================
       else if (typeof input === "string") {
-        const foundId = this.scanForSubmitButton(input, formId);
-        if (foundId) this.submitButtonId = foundId;
+        const btn = this.scanForSubmitButton(input, formId);
+        // console.log("founded!!!!!", foundId)
+        if (btn) {
+          this.submitButtonId = btn.id;
+          form.appendChild(btn)
+        } else {
+          form.insertAdjacentHTML("beforeend", input as any);
+        }
         // Masukkan langsung string HTML-nya agar di-parse alami oleh DOMRenderer
-        form.insertAdjacentHTML("beforeend", input as any);
       }
 
       // ==========================================
@@ -119,7 +139,18 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
       // ==========================================
       else if (input && typeof input === "object" && "group" in input) {
         const fieldset = this.renderGroup(input, formId);
-        // console.log("group", { input })
+        if (input.id) fieldset.id = input.id;
+        if (input.className) fieldset.className = fieldset.className + " " + input.className;
+        if (_config.multistep) {
+          if (fieldset) {
+            fieldset.dataset.index = index;
+            if (Number(index) === 0) fieldset.classList.add("active")
+          };
+          const last = Number(index) === (this.#inputs.length - 1);
+          const buttons = this.render("@form>buttons-set", { index, isLast: last, formId })!;
+          fieldset.appendChild(buttons)
+        }
+        // console.log("group", fieldset, this.#inputs.length)
         form.appendChild(fieldset);
       }
 
@@ -129,17 +160,20 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
       else {
         // InputBuilder.prepare() mengelola isRoot dan melahirkan <div class="input-wrapper"> murni
         const inputEl = new InputBuilder({ formId: formId } as any).create(input);
-        if (this.config.submitButton) {
-          this.submitButtonId = this.scanForSubmitButton(inputEl, formId) || this.submitButtonId;
-        }
+        // if (this.config.submitButton) {
+        //   const btn = this.scanForSubmitButton(inputEl, formId)
+        //   if (btn) {
+        //     this.submitButtonId = btn.id || this.submitButtonId
+        //     form.append(btn);
+        //   };
+        // }
 
-        // Dorong langsung objek elemen fisiknya ke dalam formContentArray
         form.append(inputEl as any);
       }
 
-    });
+    };
 
-    if (!this.submitButtonId && this.config.submitButton) {
+    if (!this.submitButtonId && this.config.submitButton && !this.config.multistep) {
       const defaultSubmitBtn = this.render("@form>actions>submit", { isGroupBtn: false, formId }) as HTMLButtonElement;
       this.submitButtonId = defaultSubmitBtn.id;
       form.append(defaultSubmitBtn)
@@ -154,17 +188,17 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
       }
     }
 
-    if (wrapper && form) wrapper.appendChild(form);
+    // if (wrapper && form) wrapper.appendChild(form);
 
     // console.log(form)
-    return this.load("@container") as HTMLElement;
+    return form as HTMLElement;
   }
 
   /**
    * Recursively renders a group (fieldset) and its child inputs or sub-groups.
    */
   private renderGroup(groupInput: any, formId: string): HTMLElement {
-    const fieldset = this.render("@form>group", groupInput, true) as HTMLElement;
+    const fieldset = this.render("@form>group", groupInput) as HTMLElement;
 
     if (groupInput.group && Array.isArray(groupInput.group)) {
       groupInput.group.forEach((innerInput: any, _index: number) => {
@@ -172,20 +206,23 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
 
         // Case 1: Raw HTML String
         if (typeof innerInput === "string") {
-          const foundId = this.scanForSubmitButton(innerInput, formId);
-          if (foundId) this.submitButtonId = foundId;
+          const btn = this.scanForSubmitButton(innerInput, formId);
+          // console.log("AAA", btn)
+          if (btn) this.submitButtonId = btn.id;
           fieldset.insertAdjacentHTML("beforeend", innerInput as any);
-
+          const s = fieldset.querySelector("[type='submit']")
+          if (s) s.id = this.submitButtonId!;
         }
         // Case 2: Nested Group Object -> RECURSE!
         else if (innerInput && typeof innerInput === "object" && "group" in innerInput) {
           const nestedFieldset = this.renderGroup(innerInput, formId);
           if (innerInput.id) nestedFieldset.id = innerInput.id;
           if (innerInput.table !== undefined) {
-            // console.log(innerInput.table.content)
-            const groupSubmitBtn = this.render("@form>actions>submit-group", { isGroupBtn: false, groupId: innerInput.id }, true) as HTMLButtonElement;
+            console.log(innerInput.table.content)
+            const groupSubmitBtn = this.render("@form>actions>submit-group", { isGroupBtn: false, groupId: innerInput.id }) as HTMLButtonElement;
             const table = new TableBuilder()
             const tableEl = table.create(innerInput.table.content)
+
             if (innerInput.table.id) tableEl.id = innerInput.table.id;
 
             groupSubmitBtn.onclick = (e) => {
@@ -193,7 +230,7 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
               const is = (nestedFieldset as HTMLFieldSetElement).elements
               // console.log(is)
               const groupValues = [];
-              for (const element of is) {
+              for (const element of (is as any)) {
                 if (!element) break;
                 if (element instanceof HTMLInputElement && (element.type === "checkbox" || element.type === "radio")) {
                   if ((element as HTMLInputElement).checked) {
@@ -219,8 +256,8 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
             ? innerInput
             : new InputBuilder({ formId: formId } as any).create(innerInput);
 
-          const foundId = this.scanForSubmitButton(inputEl, formId);
-          if (foundId) this.submitButtonId = foundId;
+          const btn = this.scanForSubmitButton(inputEl, formId);
+          if (btn) this.submitButtonId = btn.id;
 
           fieldset.append(inputEl as any);
         }
@@ -229,7 +266,7 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
 
     // Handle submit button per group level if specified
     if (groupInput.submitButton) {
-      const submitBtn = this.render("@form>actions>submit", { isGroupBtn: true, formId }, true) as HTMLButtonElement;
+      const submitBtn = this.render("@form>actions>submit", { isGroupBtn: true, formId }) as HTMLButtonElement;
       this.submitButtonId = submitBtn.id;
       fieldset.appendChild(submitBtn);
     }
@@ -237,13 +274,16 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
     return fieldset;
   }
 
-  public initialize(): void {
-    const formElement = this.load("@form") as HTMLFormElement;
+  public initialize(formElement: HTMLFormElement): void {
     if (formElement && this.config.createEventListener) {
       this.attachFormListener(formElement);
     }
+
+
+
     console.log(`[Form Engine v2] Form ID "${formElement?.id}" successfully compiled with active listeners.`);
   }
+
 
   protected template(typeKey: FormElementType, el: HTMLElement, payload?: any): void {
     switch (typeKey) {
@@ -252,10 +292,11 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
         break;
 
       case "@form": {
+        // console.log(this.config)
         const form = el as HTMLFormElement;
         const randomSuffix = Math.random().toString(36).substring(7);
         form.id = this.config.id ? `form-${this.config.id}`.replace(/\s+/g, "-") : `form-${randomSuffix}`;
-        form.className = `${this.config.className} ${form.className || ""}`.trim();
+        form.className = `${this.config.className} ${this.config.multistep ? "multistep" : ""} ${form.className || ""}`.trim();
         form.method = this.config.method;
         if (this.config.action) form.action = this.config.action;
         break;
@@ -291,9 +332,9 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
           btn.id = payload.formId ? `btn-${payload.formId}` : `btn-group-${Math.random().toString(36).substring(7)}`;
         } else {
           btn.id = `btn-${payload?.formId || "default"}`;
-          btn.style.marginTop = "1rem";
-          btn.style.padding = "1rem";
-          btn.style.float = "right";
+          // btn.style.marginTop = "1rem";
+          // btn.style.padding = "1rem";
+          // btn.style.float = "right";
         }
         break;
       }
@@ -308,9 +349,40 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
           btn.id = payload.groupId ? `btn-${payload.groupId}` : `btn-group-${Math.random().toString(36).substring(7)}`;
         } else {
           btn.id = `btn-${payload?.groupId || "default"}`;
-          btn.style.marginTop = "1rem";
-          btn.style.padding = "1rem";
-          btn.style.float = "right";
+          // btn.style.marginTop = "1rem";
+          // btn.style.padding = "1rem";
+          // btn.style.float = "right";
+        }
+        break;
+      }
+
+      case "@form>buttons-set": {
+
+        const next = document.createElement("button");
+        next.className = "next"
+        next.type = "button";
+        const nIcon = document.createElement("i");
+        nIcon.className = "icon arrow right";
+        next.textContent = "next";
+        next.appendChild(nIcon);
+
+        const back = document.createElement("button");
+        back.className = "back"
+        back.type = "button";
+        const bIcon = document.createElement("i");
+        bIcon.className = "icon arrow left";
+        back.textContent = "back";
+        back.prepend(bIcon);
+        // console.log({ payload })
+        if (Number(payload.index) === 0) {
+          el.append(next);
+        } else if (payload.isLast) {
+          const submit = this.render("@form>actions>submit") as HTMLButtonElement;
+          submit.id = "btn-" + payload.formId
+          submit.className = "btn-submit";
+          el.append(back, submit)
+        } else {
+          el.append(back, next)
         }
         break;
       }
@@ -327,14 +399,100 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
     this.destroy(); // Bersihkan saku memori Map privat!
   }
 
+  private _handleMultiStep(form: HTMLFormElement): void {
+    const fieldsets = Array.from(form.querySelectorAll("fieldset"));
+    let currentStep = 0;
+
+    // Fungsi untuk memperbarui tampilan step
+    function showStep(stepIndex: number) {
+      for (const fieldset of fieldsets) {
+        const currentIndex = Number(fieldset.dataset.index)
+        if (currentIndex === stepIndex) {
+          fieldset.classList.add("active");
+          if (currentIndex < (fieldsets.length - 1)) fieldsets[currentIndex + 1].setAttribute("animate", "next");
+          if (currentIndex > 0) fieldsets[currentIndex - 1].setAttribute("animate", "back")
+        } else {
+          fieldset.classList.remove("active");
+        }
+
+      }
+    }
+
+    // Inisialisasi: Tampilkan step pertama (index 0)
+    showStep(currentStep);
+
+    // Listener hanya dipasang pada tombol navigasi yang dibuat oleh
+    // FormBuilder. Tombol dari widget lain di dalam form tidak ikut tertangkap.
+    form.querySelectorAll<HTMLButtonElement>(".buttons.set > .next, .buttons.set > .back")
+      .forEach((button) => {
+        button.addEventListener("click", (event) => {
+          event.preventDefault();
+
+          if (button.classList.contains("next")) {
+            const currentFieldset = fieldsets[currentStep];
+            if (currentFieldset && !currentFieldset.checkValidity()) {
+              currentFieldset.reportValidity();
+              return;
+            }
+
+            if (currentStep < fieldsets.length - 1) {
+              currentStep++;
+              showStep(currentStep);
+            }
+          } else if (currentStep > 0) {
+            currentStep--;
+            showStep(currentStep);
+          }
+        });
+      });
+  }
   /**
    * Logika Listener asinkronus (FileUploader, Event submit, CustomEvent) tetap aman terisolasi di sini
    */
   private attachFormListener(form: HTMLFormElement): void {
     // console.log("Form Listeners Attached")
-
+    let table: any = null;
+    let IdAddress = null;
     if (typeof FileUploader !== "undefined" && typeof FileUploader.initAll === "function") {
       FileUploader.initAll(form);
+      const csvInput = form.querySelector("input[type='file'][data-uploader-csv]");
+      csvInput?.addEventListener("change", async (_e: any) => {
+        // 1. Cari dan hapus tabel lama terlebih dahulu jika sudah ada (supaya tidak menumpuk)
+        const existingTable = form.querySelector('.table-container');
+        if (existingTable) {
+          existingTable.remove();
+        }
+
+        // 3. Jika file ada, lanjutkan proses pembuatan tabel seperti biasa
+        const tableData = await FileUploader.parseCSVToTable(form.id);
+
+        table = new TableBuilder({
+          renderAsCard: false,
+          autoFreezeAt: 1
+        })
+
+        // 2. Cek apakah file kosong (artinya pengguna me-remove file)
+        if (!(csvInput as HTMLInputElement).files || (csvInput as HTMLInputElement).files?.length === 0) {
+          table.destroy();
+          return; // Berhenti di sini, jangan buat tabel baru
+        }
+
+        // 4. Tambahkan class penanda agar mudah dicari dan dihapus nanti
+        const tableEl = table.create(tableData);
+
+        (csvInput.parentElement as HTMLElement)?.insertAdjacentElement('afterend', tableEl);
+      });
+    }
+
+    if (form.querySelectorAll("[data-level]").length > 1) {
+      const DEPLOYMENT_ID = "AKfycbwjQ_iNQClJuyf5z1ZlJcJ-j6LEnINfvbBmjBFlE4T3X4dVAoxF_GzUCCv6TXZ_apfhpA";
+      const API_URL = `https://script.google.com/macros/s/${DEPLOYMENT_ID}/exec`;
+      IdAddress = new IdAddressBuilder({
+        container: form,
+        url: API_URL,
+        geocode: false,
+      });
+      IdAddress.init()
     }
 
     const toggleLoadingState = (success: boolean) => {
@@ -345,13 +503,12 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
       }
     };
 
+    if (this.config.multistep) this._handleMultiStep(form);
+
     form.addEventListener("submit", async (e) => {
-      form.classList.add("loading");
       e.preventDefault();
 
-      const submitter = e.submitter;
-      if (this.submitButtonId && submitter && submitter.id !== this.submitButtonId) return;
-
+      form.classList.add("loading");
       const formData = new FormData(form);
       const data = Object.fromEntries(formData as any);
 
@@ -362,7 +519,20 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
       // if (typeof FileUploader !== "undefined" && typeof FileUploader.getFiles === "function") {
       //   files = await FileUploader.getFiles(form.id);
       // }
+      if (IdAddress && IdAddress.detail) {
+        // console.log("detail:", IdAddress.detail)
+        Object.keys(IdAddress.detail).forEach((inputKey) => {
+          if (inputKey.endsWith("_name")) {
+            const outputKey = inputKey.replace("_name", "");
+            if (outputKey in data) {
+              data[outputKey] = String((IdAddress.detail as any)[inputKey]).toLowerCase();
+            }
+          }
+        });
+      }
+
       const dataWithFiles = Object.keys(files).length > 0 ? Object.assign({}, data, files) : data;
+      dataWithFiles.product = table.toJson();
       console.log({ dataWithFiles })
       form.dispatchEvent(
         new CustomEvent("formSubmit", {
@@ -371,8 +541,30 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
             formId: form.id,
             data: dataWithFiles,
             complete: (success: boolean, messageConfig: any, resetForm: boolean) => {
-              if (messageConfig) console.log("message system not implemented yet!")
+
               toggleLoadingState(success);
+              // Jika server atau router mengirimkan konfigurasi konten pesan status
+              if (messageConfig && typeof MessageBuilder !== "undefined") {
+
+                // Lahirkan notifikasi instan menggunakan engine terisolasi Anda!
+                // Target kontainer diset dinamis menempel di atas form, atau default body jika kosong
+                const toast = new MessageBuilder({
+                  id: `msg-${form.id}`, // Id unik berbasis form agar anti-menumpuk kembung
+                  element: form,        // Selipkan pesan tepat di lantai teratas boks form terkait
+                  duration: success ? 4000 : 6000 // Beri waktu membaca lebih lama jika status error
+                });
+
+                // Memicu kompilasi DOM 5-Fase secara otonom
+                toast.prepare({
+                  header: messageConfig.header || (success ? "Operasi Sukses!" : "Terjadi Kendala"),
+                  message: messageConfig.message || "Data Anda telah diproses oleh orkestrator.",
+                  type: messageConfig.type || (success ? "success" : "error"),
+                  icon: messageConfig.icon || (success ? "checkmark circle icon" : "icon error")
+                });
+
+                // Amankan fungsi interaktivitas click silang internal tombol close
+                toast.initialize();
+              }
               if (resetForm || this.config.resetOnComplete) form.reset();
             },
             reset: () => form.reset()
@@ -383,16 +575,14 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
     if (this.submitButtonId) {
       const button = this.load("@form>actions>submit") as HTMLButtonElement;
 
-
       if (button) {
-        if (button.id) console.log(button.id)
         button.addEventListener("click", (e) => {
           e.preventDefault();
-          // Memicu form validation HTML5 native secara legal lintas penunjuk elemen!
           form.requestSubmit(button);
         });
       }
     }
+
   }
 
 
@@ -400,22 +590,23 @@ export class FormBuilder extends Builder<FormElementType, iFormConfig> {
    * Helper internal untuk memindai string HTML mentah atau element hidup 
    * guna mencari tombol submit yang sudah ada (untuk link ID)
    */
-  private scanForSubmitButton(input: any, formId: string): string | null {
+  private scanForSubmitButton(input: any, formId: string): HTMLButtonElement | null {
     if (!input) return null;
-    let btn: HTMLElement | null = null;
+    let btn: HTMLButtonElement | null = null;
 
     if (input instanceof HTMLButtonElement) {
       btn = input.type === "submit" ? input : input.querySelector("button[type=submit], input[type=submit]");
     } else if (typeof input === "string") {
+      console.log("found string submit button")
       const wrapper = document.createElement("div");
-      wrapper.innerHTML = input.trim();
+      wrapper.insertAdjacentHTML("beforeend", input.trim());
       btn = wrapper.querySelector("button[type=submit], input[type=submit]");
     }
 
     if (btn) {
       if (!btn.id) btn.id = `btn-${formId}`;
       btn.setAttribute("form", formId);
-      return btn.id;
+      return btn;
     }
     return null;
   }

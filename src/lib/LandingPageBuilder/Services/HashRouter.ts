@@ -47,13 +47,14 @@ export class HashRouter {
   }
 
   public navigate(routeId: string, themeId?: string | null, fragmentId?: string, _isValidRoute: boolean = false): void {
+    // console.log(routeId, fragmentId, themeId)
     const activeTheme = this._normalizeTheme(themeId || this.currentThemeId);
 
     // 🧙‍♂️ THE DYNAMIC ROUTE SENSOR INTEGRATION
     // Evaluasi string input sejak gerbang navigasi terdepan!
     let targetRoute = this._normalizeRoute(routeId);
     let targetFragment = fragmentId?.trim().replace(/^#/, "") || "";
-
+    console.log(this.validRoutes)
     // Jika yang mau dituju ternyata bukan rute halaman resmi, melainkan nama seksi polos (#faq-section)
     if (!this.validRoutes.includes(targetRoute.toLowerCase()) && !_isValidRoute) {
       console.warn(`[Router] Redirecting dynamic section anchor click to default page path.`);
@@ -90,28 +91,44 @@ export class HashRouter {
       return this.redirect(this.defaultRoute, persistedTheme);
     }
 
-    const [mainPath, ...fragmentParts] = rawHash.split("#");
-    const fragment = fragmentParts.join("#").trim().replace(/^#/, "");
-
-    const [routePart, queryString = ""] = mainPath.split("?");
+    // Separate main path and query string
+    const [rawPathPart, queryString = ""] = rawHash.split("?");
+    const pathPart = rawPathPart.trim().replace(/^\/+/, "");
     const query = new URLSearchParams(queryString);
     const queryTheme = query.get("theme");
 
     let extractedTheme: string | null = queryTheme ? this._normalizeTheme(queryTheme) : null;
-    let targetRoute = routePart.trim();
+    let targetRoute = "";
+    let targetFragment = "";
 
-    // Backward compatibility untuk format lama: #theme/route
-    if (!queryTheme && targetRoute.includes("/")) {
-      const pathParts = targetRoute.split("/");
-      if (pathParts.length === 2) {
-        extractedTheme = this._normalizeTheme(pathParts[0]);
-        targetRoute = pathParts[1];
+    const segments = pathPart.split("/").map(part => part.trim()).filter(Boolean);
+    if (segments.length > 1) {
+      const firstPart = segments[0];
+      const remainder = segments.slice(1).join("/");
+
+      if (queryTheme) {
+        // Modern encoded format: #route/fragment?theme=...
+        targetRoute = firstPart;
+        targetFragment = remainder;
+      } else {
+        // Legacy format without explicit theme query: #theme/route or #route/fragment
+        if (this.validRoutes.includes(firstPart.toLowerCase())) {
+          targetRoute = firstPart;
+          targetFragment = remainder;
+        } else if (this.validRoutes.includes(remainder.toLowerCase())) {
+          extractedTheme = this._normalizeTheme(firstPart);
+          targetRoute = remainder;
+        } else {
+          targetRoute = firstPart;
+          targetFragment = remainder;
+        }
       }
+    } else {
+      targetRoute = segments[0] || pathPart.trim();
     }
 
     let finalRoute = this._normalizeRoute(targetRoute);
-    let finalFragment = this._safeDecode(fragment);
-
+    let finalFragment = this._safeDecode(targetFragment);
 
     // Jika hasil parsing membaca nama routePart yang TERBUKTI TIDAK ADA di dalam database rute halaman...
     if (!this.validRoutes.includes(finalRoute.toLowerCase())) {
@@ -135,6 +152,18 @@ export class HashRouter {
   }
 
   /**
+   * Mengupdate daftar rute yang valid secara dinamis (misalnya ketika mendaftarkan controller baru)
+   */
+  public updateValidRoutes(validRoutes: string[]): void {
+    this.validRoutes = validRoutes.map(r => r.trim().toLowerCase());
+  }
+
+  public updateValidRoute(route: string): void {
+    console.log(this.validRoutes)
+    this.validRoutes.push(route);
+  }
+
+  /**
  * Pembersih memory leak saat instance dihancurkan
  */
   public destroy(): void {
@@ -149,7 +178,7 @@ export class HashRouter {
 
 
   private _normalizeRoute(route: string): string {
-    const resolved = route.trim().replace(/^#/, "");
+    const resolved = route.trim().replace(/^#/, "").replace(/^\/+/, "");
     return resolved || "home";
   }
 

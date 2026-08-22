@@ -1,0 +1,103 @@
+{
+  "status": "success",
+  "meta": {
+    "currentPage": 1,
+    "perPage": 5,
+    "totalItems": 25,
+    "totalPages": 5,
+    "links": {
+      "first": "https://google.com",
+      "prev": null,
+      "self": "https://google.com",
+      "next": "https://google.com",
+      "last": "https://google.com"
+    }
+  },
+  "data": [
+    {
+      "uid": "dsr7524x",
+      "name": "O-Neck Standard",
+      "category": "T-Shirt",
+      "title": "Standard O-neck",
+      "description": "",
+      "price": 85000,
+      "colors": "white~#ffffff, black~#212121, light grey~#cacaca, violet~#9966cc",
+      "imageUrl": "apparel/man_tshirt_standard_o-neck.png",
+      "builder": "product-card-grid",
+      "mask": "ddge5sg, ddgr4sg"
+    },
+    {
+      "uid": "ddge5sg",
+      "category": "mask",
+      "node": "mask",
+      "name": "fullbody",
+      "title": "",
+      "builder": "product-card-grid",
+      "imageUrl": "apparel/overlay/fullbody.png"
+    },
+    {
+      "uid": "ddgr4sg",
+      "category": "mask",
+      "node": "mask",
+      "name": "sleeve_right",
+      "title": "",
+      "builder": "product-card-grid",
+      "imageUrl": "apparel/overlay/sleeve_right.png"
+    },
+    {
+      "uid": "dsr7523s",
+      "name": "Man Long Sleeve",
+      "category": "Shirt",
+      "title": "Man Long Sleeve",
+      "description": "",
+      "price": 135000,
+      "colors": "dark brown~#37220e, navy~#151935",
+      "imageUrl": "apparel/man_shirt_long_slevee.png",
+      "builder": "product-card-grid"
+    },
+    {
+      "uid": "dsr7534e",
+      "name": "Event's Balloon",
+      "category": "Merchandise",
+      "title": "Event's Balloon",
+      "description": "",
+      "price": 2000,
+      "colors": "white~#ffffff, black~#212121, blue~#0245fc, green~#1bb752",
+      "imageUrl": "apparel/Promotion_Balloon.png",
+      "builder": "product-card-grid"
+    },
+    {
+      "uid": "dsk7524m",
+      "name": "Standard Mug",
+      "category": "Merchandise",
+      "title": "Standard Mug",
+      "description": "",
+      "price": 12000,
+      "colors": "black~#212121, white~#fffbfb, cream~#fbfde2",
+      "imageUrl": "apparel/Promotion_Mug.png",
+      "builder": "product-card-grid"
+    },
+    {
+      "uid": "psr4524b",
+      "name": "Pin",
+      "category": "Merchandise",
+      "title": "Pin",
+      "description": "",
+      "price": 4000,
+      "colors": "white~#fffbfb, navy~#151935, red~#EC2A2A, yellow~#F7EA14",
+      "imageUrl": "apparel/Promotion_Pin.png",
+      "builder": "product-card-grid"
+    },
+    {
+      "uid": "dsf7454a",
+      "name": "Cushion",
+      "category": "Accesories",
+      "title": "Cushion",
+      "description": "",
+      "price": 60000,
+      "colors": "black~#020000, white~#ffffffe3, yellow~#fffc30, brown~#382b2b",
+      "imageUrl": "apparel/Promotion_Cushion.png",
+      "builder": "product-card-grid"
+    }
+  ]
+}

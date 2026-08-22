@@ -26,13 +26,14 @@
   --border-color: rgba(34, 36, 38, 0.15);
 
   /* Shared Asset & Interface Parameters */
-  --input-min-height: 37px;
-  --input-border-radius: 0.75em;
+  /* --input-min-height: 37px; */
+  --input-min-height: 1 lh;
+  --input-border-radius: 0.55em;
   --input-picker-height: calc(3 * var(--input-min-height, 37px));
   --dropdown-transition-delay: 30ms;
   --dropdown-arrow-content: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'><path fill-rule='evenodd' clip-rule='evenodd' d='M12.707 14.707a1 1 0 0 1-1.414 0l-5-5a1 1 0 0 1 1.414-1.414L12 12.586l4.293-4.293a1 1 0 1 1 1.414 1.414l-5 5Z' fill='rgba(91, 63, 134, 0.65)'/></svg>");
   --spinner-content: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><circle cx='10' cy='10' r='8' fill='none' stroke='rgba(138,138,178,0.3)' stroke-width='4'/><circle cx='10' cy='10' r='8' fill='none' stroke='rgba(91, 63, 134, 0.65)' stroke-width='3' stroke-linecap='round' stroke-dasharray='45'><animateTransform attributeName='transform' attributeType='XML' type='rotate' from='0 10 10' to='360 10 10' dur='0.6s' repeatCount='indefinite'/><animate attributeName='stroke-dashoffset' values='0;90;180' dur='3s' repeatCount='indefinite'/></circle></svg>");
-  --scrollbar-width: 11px;
+  --scrollbar-width: 10px;
 
   /* Spacing Hierarchy Engine */
   --masonry-columns: 3;
@@ -325,6 +326,10 @@ body {
   align-items: center;
   gap: 1rem;
   color: var(--text-muted);
+
+  & .description {
+    margin-bottom: 0;
+  }
 }
 .column.stat strong {
   font-size: 1.5rem;
@@ -404,6 +409,37 @@ body {
     --margin-layout: 2rem;
   }
 }
+
+.sidebar {
+  z-index: 999;
+  display: block;
+  background-color: var(--surface-bg);
+  position: fixed;
+  height: 100%;
+  width: 200px;
+  visibility: visible;
+  transform: translateX(0);
+  transition: all 100ms ease-in;
+  box-shadow: var(--shadow-soft);
+}
+
+.sidebar.hidden {
+  visibility: hidden;
+  transform: translateX(-200px);
+}
+
+.sidebar ~ #app {
+  transform: translateX(0);
+  transform-origin: right;
+  transition: translateX 100ms ease-in-out;
+  transition-delay: 100ms;
+}
+
+.sidebar ~ #app.squeeze {
+  margin-left: 200px;
+  /* right: 0; */
+  /* width: calc(100% - 200px); */
+}
 /* ==========================================================================
    1. Form & Global Resets
    ========================================================================== */
@@ -420,7 +456,7 @@ textarea:focus-visible {
 /* ==========================================================================
    2. Input Wrapper & Display Layouts
    ========================================================================== */
-.input-wrapper {
+.native.form .input-wrapper {
   display: block;
   box-sizing: border-box;
   width: 100%;
@@ -428,12 +464,12 @@ textarea:focus-visible {
   text-align: left;
 }
 
-.input-wrapper[data-display="block"] {
+.native.form .input-wrapper[data-display="block"] {
   /* Inherits display: block and width: 100% from base */
   margin-bottom: 1em;
 }
 
-.input-wrapper[data-display="inline"] {
+.native.form .input-wrapper[data-display="inline"] {
   display: inline-grid;
   width: auto;
   margin-right: 1em;
@@ -442,23 +478,23 @@ textarea:focus-visible {
 }
 
 /* --- Block Groups --- */
-.input-wrapper.group[data-display="block"] {
+.native.form .input-wrapper.group[data-display="block"] {
   display: grid;
   grid-template-columns: 1fr;
   row-gap: 0.25em;
   height: max-content;
 }
 
-.input-wrapper.group[data-display="block"] > label {
+.native.form .input-wrapper.group[data-display="block"] > label {
   margin-bottom: 0;
 }
 
-.input-wrapper.group[data-display="block"] > input:not(:last-of-type) {
+.native.form .input-wrapper.group[data-display="block"] > input:not(:last-of-type) {
   margin-bottom: 0.75em;
 }
 
 /* --- Inline Groups --- */
-.input-wrapper.group[data-display="inline"] {
+.native.form .input-wrapper.group[data-display="inline"] {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.25em 1em;
@@ -466,31 +502,31 @@ textarea:focus-visible {
   margin-right: 0;
 }
 
-.input-wrapper.group[data-display="inline"] > label:nth-of-type(1),
-.input-wrapper.group[data-display="inline"] > input:nth-of-type(1),
-.input-wrapper.group[data-display="inline"] > span.spinner:nth-of-type(1) {
+.native.form .input-wrapper.group[data-display="inline"] > label:nth-of-type(1),
+.native.form .input-wrapper.group[data-display="inline"] > input:nth-of-type(1),
+.native.form .input-wrapper.group[data-display="inline"] > span.spinner:nth-of-type(1) {
   grid-column: 1;
 }
 
-.input-wrapper.group[data-display="inline"] > label:nth-of-type(2),
-.input-wrapper.group[data-display="inline"] > input:nth-of-type(2),
-.input-wrapper.group[data-display="inline"] > span.spinner:nth-of-type(2) {
+.native.form .input-wrapper.group[data-display="inline"] > label:nth-of-type(2),
+.native.form .input-wrapper.group[data-display="inline"] > input:nth-of-type(2),
+.native.form .input-wrapper.group[data-display="inline"] > span.spinner:nth-of-type(2) {
   grid-column: 2;
 }
 
-.input-wrapper.group[data-display="inline"] > label {
+.native.form .input-wrapper.group[data-display="inline"] > label {
   grid-row: 1;
 }
 
-.input-wrapper.group[data-display="inline"] > input,
-.input-wrapper.group[data-display="inline"] > span.spinner {
+.native.form .input-wrapper.group[data-display="inline"] > input,
+.native.form .input-wrapper.group[data-display="inline"] > span.spinner {
   grid-row: 2;
 }
 
 /* ==========================================================================
    3. Labels & Base Form Controls
    ========================================================================== */
-.input-wrapper label {
+.native.form .input-wrapper label {
   display: block;
   margin-bottom: 0.25em;
   color: var(--primary-text-color);
@@ -498,72 +534,80 @@ textarea:focus-visible {
   font-weight: 600;
 }
 
-.input-wrapper select,
-.input-wrapper ::picker(select) {
+.native.form .input-wrapper select,
+.native.form .input-wrapper ::picker(select) {
   appearance: base-select;
   cursor: pointer;
 }
 
 /* Shared Core Input Inputs styles */
-.input-wrapper input:not([type="checkbox"]),
-.input-wrapper select,
-.input-wrapper textarea {
+.native.form .input-wrapper input:not([type="checkbox"]),
+.native.form .input-wrapper select,
+.native.form .input-wrapper textarea {
   font-family: inherit;
   box-sizing: border-box;
   display: block;
   width: 100%;
-  min-height: var(--input-min-height);
-  line-height: calc(var(--input-min-height) - (0.57em * 2), 1.6);
+  /* min-height: var(--input-min-height); */
+  height: 1.7lh;
+  /* line-height: calc(var(--input-min-height) - (0.57em * 2), 1.6); */
+  line-height: 1.3rem;
   padding: 0.4em 1em;
   font-size: 1rem;
   border: 1px solid var(--border-color);
-  border-radius: var(--input-border-radius) !important;
+  border-radius: var(--input-border-radius);
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
   transition: 200ms;
   background-color: var(--primary-background-color);
   color: var(--primary-text-color);
+  /* scrollbar-gutter: stable; */
+  scrollbar-width: thin;
 }
 
-.input-wrapper input:not([type="checkbox"]),
-.input-wrapper select {
+.native.form .input-wrapper textarea {
+  height: 4lh;
+  field-sizing: content;
+}
+
+.native.form .input-wrapper input:not([type="checkbox"]),
+.native.form .input-wrapper select {
   max-height: var(--input-min-height);
 }
 
-.input-wrapper textarea {
+.native.form .input-wrapper textarea {
   min-height: calc(var(--input-min-height) * 2.5);
   resize: vertical;
   white-space: normal;
 }
 
 /* --- Form Fields Base Interactive States --- */
-.input-wrapper input:not([type="checkbox"]):hover,
-.input-wrapper input:not([type="checkbox"]):focus,
-.input-wrapper input:not([type="checkbox"]):active,
-.input-wrapper input:not([type="checkbox"]):focus-visible,
-.input-wrapper textarea:hover,
-.input-wrapper textarea:focus,
-.input-wrapper textarea:active,
-.input-wrapper textarea:focus-visible,
-.input-wrapper select:hover,
-.input-wrapper select:active,
-.input-wrapper select:focus-visible,
-.input-wrapper select:open,
-.input-wrapper ::picker(select):popover-open,
-.input-wrapper:has(select:active) ::picker(select):popover-open,
-.input-wrapper:has(select:focus) ::picker(select):popover-open {
+.native.form .input-wrapper input:not([type="checkbox"]):hover,
+.native.form .input-wrapper input:not([type="checkbox"]):focus,
+.native.form .input-wrapper input:not([type="checkbox"]):active,
+.native.form .input-wrapper input:not([type="checkbox"]):focus-visible,
+.native.form .input-wrapper textarea:hover,
+.native.form .input-wrapper textarea:focus,
+.native.form .input-wrapper textarea:active,
+.native.form .input-wrapper textarea:focus-visible,
+.native.form .input-wrapper select:hover,
+.native.form .input-wrapper select:active,
+.native.form .input-wrapper select:focus-visible,
+.native.form .input-wrapper select:open,
+.native.form .input-wrapper ::picker(select):popover-open,
+.native.form .input-wrapper:has(select:active) ::picker(select):popover-open,
+.native.form .input-wrapper:has(select:focus) ::picker(select):popover-open {
   border: 1px solid var(--primary-border-color);
   background-color: var(--gsheets-accent-color);
 }
 
 /* Open Select Special Rounding Layer Override */
-.input-wrapper select:open,
-.input-wrapper:has(select:open) select,
-.input-wrapper:has(select:open) select:hover,
-.input-wrapper:has(select:open) select:active {
+.native.form .input-wrapper select:open,
+.native.form .input-wrapper:has(select:open) select,
+.native.form .input-wrapper:has(select:open) select:hover,
+.native.form .input-wrapper:has(select:open) select:active {
   transition: 200ms;
-  border-radius: var(--input-border-radius) var(--input-border-radius) 0 0 !important;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -594,117 +638,126 @@ textarea:focus-visible {
 /* ==========================================================================
    5. Select Options & Elements Content Parts
    ========================================================================== */
-.input-wrapper select option {
+.native.form .input-wrapper select option {
   color: var(--primary-hover-color);
   transition: all 100ms;
 }
 
-.input-wrapper select option,
-.input-wrapper select::part(selectedcontent) {
+.native.form .input-wrapper select option,
+.native.form .input-wrapper select::part(selectedcontent) {
   display: block;
   position: relative;
   box-sizing: border-box;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.5em;
+  line-height: 1.2rem;
   padding: 0.5em 0.5em;
 }
 
-.input-wrapper select option::checkmark {
+.native.form .input-wrapper select option::checkmark {
   margin-right: 0.25em;
 }
 
-.input-wrapper select option:hover,
-.input-wrapper select option:focus {
+.native.form .input-wrapper select option:hover,
+.native.form .input-wrapper select option:focus {
   color: var(--default-text-color);
   background-color: var(--light-border-color);
 }
 
-.input-wrapper select::part(selectedcontent),
-.input-wrapper select option:checked {
+.native.form .input-wrapper select::part(selectedcontent),
+.native.form .input-wrapper select option:checked {
   background-color: var(--primary-light-color);
   color: var(--primary-text-color);
 }
 
 /* --- Placeholder Colors vs Active Content Colors --- */
-.input-wrapper input:not([type="checkbox"])::placeholder,
-.input-wrapper textarea::placeholder,
-.input-wrapper select,
-.input-wrapper select:has(> option.placeholder:checked) {
+.native.form .input-wrapper input:not([type="checkbox"])::placeholder,
+.native.form .input-wrapper textarea::placeholder,
+.native.form .input-wrapper select,
+.native.form .input-wrapper select:has(> option.placeholder:checked) {
   color: var(--placeholder-color);
 }
 
-.input-wrapper input:not([type="checkbox"]),
-.input-wrapper select:has(> option[selected]) {
+.native.form .input-wrapper input:not([type="checkbox"]),
+.native.form .input-wrapper select:has(> option[selected]) {
   color: var(--primary-text-color);
 }
 
 /* ==========================================================================
    6. Custom Picker Popovers [::picker(select)]
    ========================================================================== */
-.input-wrapper ::picker(select) {
+.native.form .input-wrapper ::picker(select) {
+  /* scrollbar-gutter: stable; */
+  scrollbar-width: thin;
   box-sizing: border-box;
   max-height: var(--input-picker-height);
-  max-width: calc(95% - var(--scrollbar-width));
   top: anchor(bottom);
   border: 1px solid var(--border-color);
-  white-space: nowrap;
-  overflow-x: hidden;
-  text-overflow: ellipsis;
   opacity: 0;
   transform-origin: top;
-  transform: translateY(-4px) scaleY(0%) scaleX(99.7%);
+  transform: translateY(-4px) scaleY(0%);
   transition: all 150ms ease;
   transition-behavior: allow-discrete;
   transition-delay: var(--dropdown-transition-delay);
   border-radius: var(--input-border-radius);
   background-color: var(--gsheets-accent-color);
+  white-space: nowrap;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
   color: transparent;
+  max-height: 5.15lh;
 }
 
-.input-wrapper ::picker(select):popover-open {
+.native.form .input-wrapper ::picker(select):popover-open {
   opacity: 1;
   transition-delay: var(--dropdown-transition-delay);
-  transform: translateY(0) scaleY(1) scaleX(1);
+  transform: translateY(0) scaleY(1);
   scrollbar-color: var(--primary-color) rgba(255, 229, 238, 0.562);
-  scrollbar-width: thin;
-  border-radius: 0 0 var(--input-border-radius) var(--input-border-radius) !important;
+  /* scrollbar-gutter: stable; */
+  border-radius: 0 0 var(--input-border-radius) var(--input-border-radius);
   box-shadow: 0 2px 3px 0 var(--border-color);
+  width: anchor-size(width);
+}
+
+.native.form .input-wrapper select:open {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 /* Unified Flattened Borders on Active Popovers */
-.input-wrapper:has(select:active) ::picker(select):popover-open,
-.input-wrapper:has(select:focus) ::picker(select):popover-open,
-.input-wrapper ::picker(select),
-.input-wrapper ::picker(select):popover-open {
+.native.form .input-wrapper:has(select:active) ::picker(select):popover-open,
+.native.form .input-wrapper:has(select:focus) ::picker(select):popover-open,
+.native.form .input-wrapper ::picker(select),
+.native.form .input-wrapper ::picker(select):popover-open {
   border-top: none;
 }
 
 @starting-style {
-  .input-wrapper ::picker(select):popover-open {
+  .native.form .input-wrapper ::picker(select):popover-open {
     display: block;
     opacity: 0;
-    transform: translateY(-4px) scaleY(0%) scaleX(99.7%);
+    transform: translateY(-4px) scaleY(0%);
   }
 }
 
 /* ==========================================================================
    7. Spinner Icons & Dynamic Indicators
    ========================================================================== */
-.input-wrapper select::picker-icon,
-.input-wrapper span.spinner {
+
+.native.form .input-wrapper select::picker-icon,
+.native.form .input-wrapper span.spinner {
   box-sizing: border-box;
   justify-self: right;
   z-index: 99;
+  align-content: center;
 }
 
-.input-wrapper select.loading::picker-icon,
-.input-wrapper span.spinner {
+.native.form .input-wrapper select.loading::picker-icon,
+.native.form .input-wrapper.loading > select::picker-icon,
+.native.form .input-wrapper span.spinner {
+  align-content: center;
   content: var(--spinner-content);
 }
 
-.input-wrapper select:not(.loading)::picker-icon {
+.native.form .input-wrapper select:not(.loading)::picker-icon {
   content: var(--dropdown-arrow-content);
   color: var(--primary-border-color);
   transform: scale(85%) translateY(-21px);
@@ -712,32 +765,43 @@ textarea:focus-visible {
   transform-origin: center -35%;
 }
 
-.input-wrapper select:not(.loading):open::picker-icon {
+.native.form .input-wrapper select:not(.loading):open::picker-icon {
   rotate: 90deg;
 }
 
-.input-wrapper select.loading::picker-icon {
-  transform: translateY(-19.5px);
+.native.form .input-wrapper select.loading::picker-icon,
+.native.form .input-wrapper.loading > select::picker-icon {
+  transform: translateY(-1.28rem) translateX(-2px);
+  align-content: center;
 }
 
-.input-wrapper span.spinner {
+.native.form .input-wrapper:has(input:not([type="checkbox"]))::before {
+  content: var(--spinner-content); /* <= svg inline */
+  position: absolute;
   display: block;
-  position: relative;
-  transform: translateX(-19.5px) translateY(-29.5px);
+  visibility: hidden;
+  justify-self: right;
+  text-align: right;
+  z-index: 99;
+  transform: translateX(-19px) translateY(1.27lh);
 }
 
-.input-wrapper input:not([type="checkbox"]) ~ span.spinner {
+.native.form .input-wrapper.loading:has(input:not([type="checkbox"]))::before {
+  visibility: visible;
+}
+
+.native.form .input-wrapper input:not([type="checkbox"]) ~ span.spinner {
   visibility: hidden;
 }
 
-.input-wrapper input:not([type="checkbox"]).loading ~ span.spinner {
+.native.form .input-wrapper input:not([type="checkbox"]).loading ~ span.spinner {
   visibility: visible;
 }
 
 /* ==========================================================================
    8. Toggle Switch Components
    ========================================================================== */
-.input-wrapper.toggle-switch {
+.native.form .input-wrapper.toggle-switch {
   display: inline-grid;
   align-items: center;
   justify-content: start;
@@ -746,19 +810,19 @@ textarea:focus-visible {
   height: auto;
 }
 
-.input-wrapper.toggle-switch:has(> label[data-position="top"]) {
+.native.form .input-wrapper.toggle-switch:has(> label[data-position="top"]) {
   grid-template-areas: "label" "control";
 }
-.input-wrapper.toggle-switch:has(> label[data-position="left"]) {
+.native.form .input-wrapper.toggle-switch:has(> label[data-position="left"]) {
   grid-template-areas: "label control";
 }
-.input-wrapper.toggle-switch:has(> label[data-position="right"]) {
+.native.form .input-wrapper.toggle-switch:has(> label[data-position="right"]) {
   grid-template-areas: "control label";
 }
-.input-wrapper.toggle-switch:has(> label[data-position="bottom"]) {
+.native.form .input-wrapper.toggle-switch:has(> label[data-position="bottom"]) {
   grid-template-areas: "control" "label";
 }
-.input-wrapper.toggle-switch > label {
+.native.form .input-wrapper.toggle-switch > label {
   grid-area: label;
   margin-bottom: 0;
   color: var(--primary-text-color);
@@ -767,20 +831,20 @@ textarea:focus-visible {
   cursor: pointer;
   user-select: none;
 }
-.input-wrapper.toggle-switch > .control {
+.native.form .input-wrapper.toggle-switch > .control {
   position: relative;
   grid-area: control;
   display: inline-block;
 }
 
-.input-wrapper.toggle-switch > .control > input[type="checkbox"],
-.input-wrapper.toggle-switch > .control > input[type="checkbox"],
-.input-wrapper.toggle-switch > .control {
+.native.form .input-wrapper.toggle-switch > .control > input[type="checkbox"],
+.native.form .input-wrapper.toggle-switch > .control > input[type="checkbox"],
+.native.form .input-wrapper.toggle-switch > .control {
   width: 44px;
   height: 26px;
 }
 
-.input-wrapper.toggle-switch > .control > input[type="checkbox"] {
+.native.form .input-wrapper.toggle-switch > .control > input[type="checkbox"] {
   position: absolute;
   inset: 0;
   z-index: 1;
@@ -788,20 +852,20 @@ textarea:focus-visible {
   opacity: 0;
   cursor: pointer;
 }
-.input-wrapper.toggle-switch > .control > .slider {
+.native.form .input-wrapper.toggle-switch > .control > .slider {
   position: absolute;
   inset: 0;
   display: block;
   background-color: rgb(208, 208, 214);
   transition: 0.4s;
 }
-.input-wrapper.toggle-switch > .control > .slider[data-shape="round"] {
+.native.form .input-wrapper.toggle-switch > .control > .slider[data-shape="round"] {
   border-radius: 25px;
 }
-.input-wrapper.toggle-switch > .control > .slider[data-shape="square"] {
+.native.form .input-wrapper.toggle-switch > .control > .slider[data-shape="square"] {
   border-radius: 4px;
 }
-.input-wrapper.toggle-switch > .control > .slider:before {
+.native.form .input-wrapper.toggle-switch > .control > .slider:before {
   position: absolute;
   content: "";
   height: 18px;
@@ -811,57 +875,444 @@ textarea:focus-visible {
   background-color: white;
   transition: 0.4s;
 }
-.input-wrapper.toggle-switch > .control > .slider[data-shape="round"]:before {
+.native.form .input-wrapper.toggle-switch > .control > .slider[data-shape="round"]:before {
   border-radius: 50%;
 }
-.input-wrapper.toggle-switch > .control > .slider[data-shape="square"]:before {
+.native.form .input-wrapper.toggle-switch > .control > .slider[data-shape="square"]:before {
   border-radius: 2px;
 }
-.input-wrapper.toggle-switch > .control > input[type="checkbox"]:checked ~ .slider {
+.native.form .input-wrapper.toggle-switch > .control > input[type="checkbox"]:checked ~ .slider {
   background-color: var(--primary-color);
 }
-.input-wrapper.toggle-switch > .control > input[type="checkbox"]:focus-visible ~ .slider {
+.native.form .input-wrapper.toggle-switch > .control > input[type="checkbox"]:focus-visible ~ .slider {
   box-shadow: 0 0 1px #2196f3;
 }
-.input-wrapper.toggle-switch > .control > input[type="checkbox"]:checked ~ .slider:before {
+.native.form .input-wrapper.toggle-switch > .control > input[type="checkbox"]:checked ~ .slider:before {
   transform: translateX(18px);
 } /* ==========================================================================9. Validation Error States========================================================================== */
-.input-wrapper input.error,
-.input-wrapper select.error,
-.input-wrapper:has(select.error:open) ::picker(select):popover-open {
+.native.form .input-wrapper input.error,
+.native.form .input-wrapper select.error,
+.native.form .input-wrapper:has(select.error:open) ::picker(select):popover-open {
   background-color: #fff6f6;
   border: 1px solid #fd5b5b;
 }
-.input-wrapper:has(select.error:open) ::picker(select):popover-open {
+.native.form .input-wrapper:has(select.error:open) ::picker(select):popover-open {
   border-top: none;
 }
-.input-wrapper input.error,
-.input-wrapper select.error,
-.input-wrapper:has(select.error:open) ::picker(select):popover-open,
-.input-wrapper input.error::placeholder,
-.input-wrapper select.error:has(> option:first-child:checked) {
+.native.form .input-wrapper input.error,
+.native.form .input-wrapper select.error,
+.native.form .input-wrapper:has(select.error:open) ::picker(select):popover-open,
+.native.form .input-wrapper input.error::placeholder,
+.native.form .native.form .input-wrapper select.error:has(> option:first-child:checked) {
   color: #ff93ae;
 }
-.input-wrapper:has(> input.error) label,
-.input-wrapper:has(> select.error) label {
+.native.form .input-wrapper:has(> input.error) label,
+.native.form .input-wrapper:has(> select.error) label {
   color: #ff114d;
 }
 
-.form fieldset {
+.native.form fieldset {
   border: 1px solid rgba(183, 164, 216, 0.45);
   border-radius: 16px;
   padding: 1rem;
   margin-bottom: 1rem;
 }
 
-.form fieldset .input-wrapper {
+.native.form fieldset .input-wrapper {
   width: 100%;
 }
 
-.form legend {
+.native.form legend {
   padding: 0 0.35rem;
   color: var(--secondary-text-color);
   font-weight: 700;
+}
+
+/* ============ 
+   INLINE STYLE
+   ============ */
+
+.inline.form,
+.form fieldset.inline-style {
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 20px;
+  line-height: 1.8;
+  color: #2c3e50;
+  width: 100%;
+  max-width: 800px;
+  /* margin: 40px auto; */
+  justify-self: center;
+  padding: 20px;
+  display: block;
+}
+
+/* 2. Tata Letak Wrapper dan Label */
+.inline.form .input-wrapper,
+.form fieldset.inline-style .input-wrapper {
+  display: inline;
+  margin-bottom: 0;
+  margin-right: 8px;
+  width: auto;
+}
+
+.inline.form .input-wrapper label,
+.form fieldset.inline-style .input-wrapper label {
+  display: inline;
+  font-weight: normal;
+  color: #34495e;
+  margin-right: 6px;
+}
+
+/* 3. Penggabungan Kode Redundant untuk Elemen Interaktif (Input, Select, Textarea) */
+.inline.form .input-wrapper input:not([type="radio"], [type="file"], [type="checkbox"]),
+.inline.form .input-wrapper select,
+.inline.form .input-wrapper textarea,
+.form fieldset.inline-style .input-wrapper input:not([type="radio"], [type="file"], [type="checkbox"]),
+.form fieldset.inline-style .input-wrapper textarea,
+.form fieldset.inline-style .input-wrapper select {
+  field-sizing: content;
+  border-radius: unset;
+  appearance: unset;
+  width: auto;
+  display: inline-block;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 400;
+  background: transparent;
+  outline: none;
+  border: none;
+  border-bottom: 1px dashed darkgoldenrod;
+  padding: 2px 0.5em 2px 2px;
+  margin: 0 4px;
+  transition: all 0.3s ease;
+  vertical-align: baseline;
+  min-width: min-content;
+  cursor: pointer;
+  color: darkgoldenrod;
+  /* height: 1lh; */
+}
+
+.inline.form .input-wrapper input:not([type="radio"], [type="file"], [type="checkbox"]):hover,
+.inline.form .input-wrapper select:hover,
+.inline.form .input-wrapper textarea:hover,
+.form fieldset.inline-style .input-wrapper input:not([type="radio"], [type="file"], [type="checkbox"]):hover,
+.form fieldset.inline-style .input-wrapper select:hover,
+.form fieldset.inline-style .input-wrapper textarea:hover {
+  color: #2c3e50;
+  border: none;
+  border-bottom: 1px solid transparent;
+  outline: none;
+}
+
+.inline.form .input-wrapper select:active,
+.inline.form .input-wrapper select:focus-visible,
+.form fieldset.inline-style .input-wrapper select:active,
+.form fieldset.inline-style .input-wrapper select:focus-visible {
+  border: none;
+  border-bottom: 1px solid transparent;
+  outline: none;
+}
+
+/* 4. Penggabungan Efek Fokus Bersama */
+.inline.form .input-wrapper input:not([type="radio"], [type="file"], [type="checkbox"]):focus,
+.inline.form .input-wrapper select:focus,
+.inline.form .input-wrapper textarea:focus,
+.form fieldset.inline-style .input-wrapper input:not([type="radio"], [type="file"], [type="checkbox"]):focus,
+.form fieldset.inline-style .input-wrapper select:focus,
+.form fieldset.inline-style .input-wrapper textarea:focus {
+  color: #2c3e50;
+  border: none;
+  /* background-color: rgba(46, 204, 113, 0.05); */
+  width: fit-content;
+}
+
+/* 5. Aturan Khusus Masing-Masing Elemen */
+.inline.form .input-wrapper textarea,
+.form fieldset.inline-style .input-wrapper textarea {
+  height: unset;
+  resize: vertical;
+  vertical-align: middle;
+}
+
+.inline.form .input-wrapper select,
+.form fieldset.inline-style .input-wrapper select {
+  cursor: pointer;
+  appearance: base-select;
+  min-width: max-content;
+  height: 1lh;
+}
+
+.inline.form .input-wrapper select:open,
+.inline.form .input-wrapper:has(select:open) select,
+.inline.form .input-wrapper:has(select:open) select:hover,
+.inline.form .input-wrapper:has(select:open) select:active .form fieldset.inline-style .input-wrapper select:open,
+.form fieldset.inline-style .input-wrapper:has(select:open) select,
+.form fieldset.inline-style .input-wrapper:has(select:open) select:hover,
+.form fieldset.inline-style .input-wrapper:has(select:open) select:active {
+  border-bottom-left-radius: unset;
+  border-bottom-right-radius: unset;
+}
+
+/* 6. Fitur Customizable Dropdown (Picker) */
+.inline.form .input-wrapper ::picker(select),
+.form fieldset.inline-style .input-wrapper ::picker(select) {
+  appearance: base-select;
+  box-sizing: border-box;
+  max-width: fit-content;
+  /* width: anchor-size(width); */
+  min-width: min-content;
+  top: anchor(bottom);
+
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform-origin: top;
+  transform: translateY(-4px) translateX(-25%) scaleY(0%) scaleX(99.7%);
+  transition: all 150ms ease;
+  transition-behavior: allow-discrete;
+  transition-delay: var(--dropdown-transition-delay);
+  background-color: rgba(216, 216, 216, 0.911);
+  color: inherit;
+  max-height: 5.7lh;
+}
+
+.inline.form .input-wrapper select option,
+.form fieldset.inline-style .input-wrapper select option {
+  transition: all 100ms;
+  color: #2c3e50;
+}
+
+.inline.form .input-wrapper select option:hover,
+.inline.form .input-wrapper select option:focus,
+.form fieldset.inline-style .input-wrapper select option:hover,
+.form fieldset.inline-style .input-wrapper select option:focus {
+  color: var(--default-text-color);
+  background-color: rgba(167, 152, 115, 0.719);
+}
+
+.inline.form .input-wrapper select option:checked,
+.inline.form .input-wrapper select::part(selectedcontent),
+.form fieldset.inline-style .input-wrapper select option:checked,
+.form fieldset.inline-style .input-wrapper select::part(selectedcontent) {
+  background-color: rgba(184, 135, 11, 0.13);
+  color: rgba(122, 109, 72, 0.719);
+}
+
+.inline.form .input-wrapper ::picker(select):popover-open,
+.form fieldset.inline-style .input-wrapper ::picker(select):popover-open {
+  opacity: 1;
+  border-radius: unset;
+  transition-delay: var(--dropdown-transition-delay);
+  transform: translateY(-50%) translateX(-25%) scaleY(1) scaleX(1);
+  scrollbar-width: thin;
+  box-shadow: 0 2px 3px 0 var(--border-color);
+}
+
+.inline.form .input-wrapper select::picker-icon,
+.form fieldset.inline-style .input-wrapper select::picker-icon {
+  display: none;
+}
+
+@starting-style {
+  .inline.form .input-wrapper ::picker(select):popover-open,
+  .form fieldset.inline-style .input-wrapper ::picker(select):popover-open {
+    display: block;
+    opacity: 0;
+    transform: translateY(-4px) translateX(-25%) scaleY(0%) scaleX(99.7%);
+  }
+}
+
+/* 7. Gaya Tombol Submit */
+.inline.form button,
+.form fieldset.inline-style button:not(.edit-btn, .add-btn, .remove-btn, .add-row-btn) {
+  display: inline-flex;
+  margin-top: 1em;
+  justify-self: center;
+  align-items: center;
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--primary-text-color);
+  background-color: transparent;
+  border: 1px solid var(--light-border-color);
+  border-radius: var(--input-border-radius);
+  padding: 4px 1em;
+  /* min-width: 120px; */
+  margin-left: 10px;
+  cursor: pointer;
+  text-align: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease;
+}
+
+.inline.form .buttons.set button i,
+.form fieldset.inline-style .buttons.set button i {
+  margin-top: 3px;
+  margin-left: 5px;
+  margin-right: 5px;
+  display: inline-block;
+}
+
+.inline.form button.btn-submit,
+.form fieldset.inline-style button.btn-submit {
+  background-color: var(--primary-hover-color);
+  color: var(--default-text-color);
+}
+
+.inline.form button.btn-submit:hover,
+.form fieldset.inline-style button.btn-submit:hover {
+  background-color: var(--primary-hover-color);
+  color: var(--default-text-color);
+}
+
+.inline.form button:hover,
+.form fieldset.inline-style button:hover {
+  background-color: var(--primary-hover-color);
+  color: var(--default-text-color);
+}
+
+.inline.form button:active,
+.form fieldset.inline-style button:active {
+  transform: scale(0.98);
+}
+
+.inline.form .input-wrapper input:not([type="radio"], [type="file"], [type="checkbox"]),
+.inline.form textarea,
+.form fieldset.inline-style .input-wrapper input:not([type="radio"], [type="file"], [type="checkbox"]),
+.form fieldset.inline-style .input-wrapper textarea {
+  appearance: unset;
+}
+
+.inline.form .input-wrapper .input-popover,
+.form fieldset.inline-style .input-wrapper .input-popover {
+  position-area: bottom span-right;
+  margin: unset;
+  inset: unset;
+
+  appearance: base-select;
+  box-sizing: border-box;
+  top: anchor(bottom);
+  border: 1px solid var(--border-color);
+  border-top: none;
+  opacity: 0;
+  transform-origin: top;
+  transform: translateY(0) translateX(0) scaleY(0%) scaleX(99.7%);
+  transition: all 150ms ease;
+  transition-behavior: allow-discrete;
+  transition-delay: var(--dropdown-transition-delay);
+  background-color: rgba(216, 216, 216, 1);
+  color: inherit;
+
+  /* display: block !important;
+  opacity: 1 !important;
+  transform: translateY(-70%) translateX(0) scaleY(1) !important;
+  position: absolute !important;
+  transition: none !important; */
+
+  box-shadow: 0 14px 20px rgba(136, 135, 81, 0.356);
+}
+
+.inline.form .input-wrapper .input-popover,
+.form fieldset.inline-style .input-wrapper .input-popover {
+  display: block;
+  padding: 0.75em 0.5em 0.5em 0.5em;
+  & textarea {
+    field-sizing: content;
+    background-color: rgba(255, 255, 255, 0.185);
+    min-height: 1.7lh;
+    padding: 0.25em;
+    font-size: 1.8rem;
+    font-weight: 100;
+    color: darkgoldenrod;
+    line-height: 2rem;
+    resize: vertical;
+    vertical-align: middle;
+    min-width: 400px;
+    max-width: 500px;
+    height: auto;
+    max-height: 5.4lh;
+  }
+  & textarea::placeholder {
+    font-weight: 100;
+    color: rgba(184, 135, 11, 0.384);
+  }
+  & .info {
+    display: block;
+    margin-top: 0.5em;
+    padding: 0 0.25em;
+    font-size: 70%;
+    font-style: italic;
+    max-width: 320px;
+    line-height: 1.2rem;
+  }
+}
+
+.inline.form .input-wrapper .input-popover:popover-open,
+.form fieldset.inline-style .input-wrapper .input-popover:popover-open {
+  opacity: 1;
+  transition-delay: var(--dropdown-transition-delay);
+  transform: translateY(-80%) translateX(0) scaleY(1) scaleX(1);
+  scrollbar-width: thin;
+  box-shadow: 0 2px 3px 0 var(--border-color);
+}
+
+@starting-style {
+  .inline.form .input-wrapper .input-popover:popover-open,
+  .form fieldset.inline-style .input-wrapper .input-popover:popover-open {
+    display: block;
+    opacity: 0;
+    transform: translateY(0) translateX(0) scaleY(0%) scaleX(99.7%);
+  }
+}
+
+.form .buttons.set {
+  display: flex;
+  justify-self: center;
+}
+
+.multistep.form {
+  & fieldset {
+    transition: "all" 200ms ease-in-out;
+    display: none;
+  }
+  & fieldset.active {
+    display: block;
+  }
+
+  & fieldset[animate="next"] {
+    animation: scaleUpSlideLeft 0.4s ease-out forwards;
+  }
+
+  & fieldset[animate="back"] {
+    animation: scaleUpSlideRight 0.4s ease-out forwards;
+  }
+}
+
+@keyframes scaleUpSlideLeft {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateX(50px); /* Mulai dari agak kanan & mengecil */
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateX(0); /* Normal di tengah */
+  }
+}
+
+/* Keyframes untuk Back */
+@keyframes scaleUpSlideRight {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateX(-50px); /* Mulai dari agak kiri & mengecil */
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateX(0); /* Normal di tengah */
+  }
 }
 /* ====================================================
    🌌 GLOBAL BASE ICON SPECIFICATION (STANDARD V2 FRAMEWORK)
@@ -978,12 +1429,16 @@ i.checkmark.icon {
 }
 
 i.icon.cross.circle,
-i.cross.circle.icon {
+i.cross.circle.icon,
+i.icon.close.circle,
+i.close.circle.icon {
   mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%20width%3D%2224%22%20height%3D%2224%22%3E%3Cpath%20fill%3D%22currentColor%22%20fill-rule%3D%22evenodd%22%20stroke%3D%22currentColor%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%22.25%22%20d%3D%22M62.56%204.83c8.83-.24%2017.85%201.25%2025.83%204.96%2016.4%207.62%2029.11%2021.07%2034.41%2038.6%2011.45%2037.94-17.87%2077.15-56.97%2078.2-7.9.22-16.43-1.08-23.65-4.29-10.71-4.78-19.97-10.96-27.04-20.6C-7.8%2070.43%204.19%2027.92%2037.92%2010.77c7.6-3.87%2016.1-5.71%2024.64-5.94ZM57.9%2016.14c-6.02.67-11.95%202.87-17.22%205.69C.66%2043.21%208.74%20104.67%2053.32%20114.17c6.36%201.36%2013.1%201.76%2019.56.62%2029.8-5.25%2050.04-38.64%2037.89-67.38-5.95-14.08-16.23-22.76-29.94-28.73-6.89-3-15.52-3.36-22.93-2.54Zm6.6%2041.3c6.53-5.6%2012.35-12.26%2018.44-18.33%202.46-2.46%206.01-3.97%208.89-1.11%202.26%202.26%202.03%205.68-.04%207.96C85.64%2052.75%2078.7%2058.85%2072.4%2065.5c5.21%206.77%2012.28%2012.56%2018.32%2018.62%202.59%202.6%204.09%206.39.9%209.33-3.5%203.23-7.03.32-9.62-2.28-4.74-4.74-12.21-14.02-17.53-17.34-3.57%201.27-14.63%2014-18.06%2017.42-2.79%202.8-6.74%205.59-10.09%201.6-3.12-3.71-.09-7.11%202.59-9.78C43.2%2078.8%2053.54%2070.33%2056.07%2065.5c-5-6.53-11.98-12.12-17.8-17.93-2.5-2.51-4.84-6.07-1.87-9.33%203.33-3.65%207.21-1.1%209.92%201.6%204.29%204.3%2013.33%2015.22%2018.18%2017.6Z%22%2F%3E%3C%2Fsvg%3E");
 }
 
 i.icon.cross,
-i.cross.icon {
+i.cross.icon,
+i.icon.close,
+i.close.icon {
   mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%20width%3D%2224%22%20height%3D%2224%22%3E%3Cpath%20fill%3D%22currentColor%22%20fill-rule%3D%22evenodd%22%20stroke%3D%22currentColor%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%22.25%22%20d%3D%22M73.61%2063.5c.21%202.7%204.95%205.96%206.86%207.86%206.72%206.73%2013.44%2013.45%2020.17%2020.17%203.29%203.3%208.96%208.54%203.94%2013.21-5.09%204.74-10.11-1.1-13.53-4.63-6.44-6.65-13.11-13.12-19.66-19.67-1.93-1.93-5.16-6.62-7.89-6.84-9.45%208.99-18.49%2018.46-27.71%2027.68-3.37%203.37-8.07%208.15-12.66%203.43-4.58-4.7.43-9.31%203.77-12.65%209.18-9.18%2018.52-18.22%2027.54-27.56-.25-2.72-4.95-5.96-6.88-7.89C40.95%2050%2034.34%2043.39%2027.73%2036.77c-3.46-3.45-9.21-8.28-4.47-13.36%204.31-4.62%209.19-.04%2012.37%203.13C44.91%2035.82%2054%2045.35%2063.5%2054.4c2.73-.22%205.96-4.91%207.89-6.84%206.67-6.67%2013.36-13.31%2019.98-20.02%203.42-3.46%208.4-9.22%2013.34-4.41%204.71%204.58-.05%209.3-3.42%2012.67-9.21%209.21-18.77%2018.19-27.68%2027.7Z%22%2F%3E%3C%2Fsvg%3E");
 }
 
@@ -1013,6 +1468,36 @@ i.plus.square.icon {
 i.icon.trash,
 i.trash.icon {
   mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%20width%3D%2224%22%20height%3D%2224%22%3E%3Cpath%20fill%3D%22currentColor%22%20fill-rule%3D%22evenodd%22%20stroke%3D%22currentColor%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%22.25%22%20d%3D%22M48%20.06h31.98c.11.25%206.17%203.78%207.77%206.36%201.72%202.81.47%206.36%201.81%209.08%205.93.9%2012.96-1.35%2018.68.72%206.9%202.5%209.89%2011.38%205.57%2017.42-1.69%202.36-4.28%203.09-6.39%204.86-.19%2017.66-.01%2035.34-.01%2053%200%207.79%201.59%2017.61-.59%2025.15-.91%203.14-2.85%206.21-5.46%208.21-1.27.97-4.9%201.93-5.39%203.08H32.01c-.51-1.16-4.14-2.09-5.41-3.06-2.57-1.95-4.43-4.9-5.39-7.96-2.29-7.28-.73-16.87-.73-24.42V41.83c0-1.04.29-2.62-.25-3.54-.75-1.25-2.86-1.47-3.93-2.42-3.89-3.46-5.73-9.54-2.88-14.28%205.78-9.61%2016.49-3.57%2025.08-6.23%201.44-3.47.44-6.93%202.67-10.37%201.4-2.16%206.38-4%206.83-4.93Zm34.67%2015.58c4.96-13.33-17.94-9.63-24.84-9.63-2.7%200-6.74-.75-9.26.39-3.47%201.58-4.62%205.81-3.25%209.24zM22.91%2021.8c-5.03.69-6.93%208.48-1.38%2010.14%205.64%201.68%2015.55.34%2021.64.34h46.66c4.96%200%2019.41%202.28%2020.02-4.84.7-8.2-14.71-5.77-19.68-5.77H45.5c-7.35%200-15.3-.85-22.59.13Zm77.92%2016.52h-73.7c-1.85%203.55-.61%2014.12-.61%2018.51v45.34c0%206.3-1.39%2014.75%204.86%2018.61%204.38%202.71%2012.2%201.21%2017.12%201.21h31c4.44%200%209.49.66%2013.86-.15%208.63-1.61%208.01-10.46%208.01-17.34V57.83c0-4.78%201.32-15.52-.54-19.51Zm-54.34%208.19c4.43.32%202.72%2010.15%202.72%2012.99v38c0%202.7%201.51%2011.11-2.72%2011.41-4.98.36-3.31-10.24-3.31-13.08v-38c0-2.73-1.43-11.66%203.31-11.32Zm35.02-.01c4.67-.24%203.24%208.6%203.24%2011.33v38c0%202.84%201.67%2013.34-3.24%2013.09-4.29-.22-2.79-8.71-2.79-11.42v-38c0-2.85-1.7-12.77%202.79-13Zm-18.28.24c5.25-1.16%203.76%207.89%203.76%2010.76v38c0%202.9%201.45%2013.6-3.15%2013.4-4.58-.2-2.86-10.18-2.86-13.07V58.5c0-2.78-1.51-10.92%202.25-11.76Z%22%2F%3E%3C%2Fsvg%3E");
+}
+
+i.icon.three.dots.framed,
+i.three.dots.framed.icon {
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%20width%3D%2224%22%20height%3D%2224%22%3E%3Cpath%20fill%3D%22currentColor%22%20d%3D%22m47.25%2041.469%204.044-.012a958%20958%200%200%201%208.42.022c3.568.022%207.134.01%2010.701-.015%202.778-.014%205.556-.01%208.334%200%201.945.005%203.89-.007%205.834-.02%209.804.103%2018.295%201.513%2025.855%208.118%205.103%205.639%207.669%2012.48%208%2020.063-.494%208.396-3.464%2014.02-8.915%2020.332-8.155%206.603-16.859%206.653-26.925%206.61q-2.232.007-4.464.018-4.657.014-9.316-.009a902%20902%200%200%200-11.865.042c-3.069.022-6.137.02-9.206.012q-2.186%200-4.371.02c-9.82.086-17.934-.767-25.508-7.563C12.438%2083.56%2010%2077.309%209.563%2069.625c.33-7.583%202.896-14.424%208-20.062%208.67-7.577%2018.602-8.165%2029.687-8.094M24.664%2059.615c-2.69%203.839-3.279%207.62-3.05%2012.244.84%204.651%203.551%207.388%206.948%2010.454%203.793%202.625%206.69%202.819%2011.191%202.848l3.58.03%203.874.012%203.98.017q4.172.015%208.344.02c3.555.006%207.108.03%2010.663.058%203.4.023%206.8.025%2010.2.03l3.855.038%203.61-.01%203.162.011c4.16-.513%207.518-2.034%2010.624-4.867%203.488-4.48%204.734-7.633%204.628-13.375-.463-3.603-1.772-6.492-4.273-9.125-6.58-5.001-12.962-4.581-21-4.531l-4.09-.012q-4.271-.008-8.543.022a843%20843%200%200%201-10.903-.015c-2.813-.014-5.625-.01-8.437%200a725%20725%200%200%201-5.96-.02c-10.372.102-10.372.102-18.403%206.171%22%2F%3E%3Cpath%20fill%3D%22currentColor%22%20d%3D%22M92%2061c2.5%201.438%202.5%201.438%204%204%20.482%203.07.624%205.948%200%209-2.17%202.902-3.149%203.036-6.875%203.938-3.114.258-4.164.044-7.125-1.313-2.522-3.31-2.672-5.416-2.41-9.496C80%2065%2080%2065%2081.5%2062.437c3.55-2.04%206.503-2.215%2010.5-1.437m-24%200c2.5%201.438%202.5%201.438%204%204%20.482%203.07.624%205.948%200%209-2.17%202.902-3.149%203.036-6.875%203.938-3.114.258-4.164.044-7.125-1.313-2.522-3.31-2.672-5.416-2.41-9.496C56%2065%2056%2065%2057.5%2062.437c3.55-2.04%206.503-2.215%2010.5-1.437m-24%200c2.5%201.438%202.5%201.438%204%204%20.482%203.07.624%205.948%200%209-2.17%202.902-3.149%203.036-6.875%203.938-3.114.258-4.164.044-7.125-1.313-2.522-3.31-2.672-5.416-2.41-9.496C32%2065%2032%2065%2033.5%2062.437c3.55-2.04%206.503-2.215%2010.5-1.437%22%2F%3E%3C%2Fsvg%3E");
+}
+
+i.icon.three.dots.horizontal,
+i.three.dots.horizontal.icon {
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%20width%3D%2224%22%20height%3D%2224%22%3E%3Cpath%20fill%3D%22currentColor%22%20d%3D%22M73.313%2050.563c3.973%203.603%206.468%207.282%206.847%2012.746C79.805%2068.452%2078.526%2072.113%2075%2076c-4%202.986-7.613%204.347-12.625%204-4.963-.88-8.574-2.588-11.664-6.727-2.61-4.457-3.21-8.088-2.309-13.168%201.415-4.982%203.888-7.967%208.285-10.542%205.896-2.625%2010.93-1.687%2016.626%201m49.062.187c3.494%202.995%205.37%205.544%206.059%2010.152.008%206.149.013%2010.411-4.434%2015.098-4.128%203.42-8.752%204.135-14%204-5.888-1.668-8.572-4.161-12-9-1.66-4.98-1.599-9.303.125-14.187%202.503-3.756%205.38-6.97%209.793-8.461%205.183-.876%209.83-.001%2014.457%202.398m-98.305-.52c3.437%202.797%205.978%205.327%206.93%209.77.447%205.63.22%209.17-3%2014-3.957%204.24-6.95%205.8-12.762%206.133-5.083-.302-8.395-2.381-12.113-5.695-3.778-4.334-3.46-7.845-3.406-13.45C.095%2056.996%201.252%2054.897%204%2052c5.973-4.33%2013.467-5.694%2020.07-1.77%22%2F%3E%3C%2Fsvg%3E");
+}
+
+i.icon.three.dots.square.vertical,
+i.three.dots.square.vertical.icon {
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%20width%3D%2224%22%20height%3D%2224%22%3E%3Cpath%20fill%3D%22currentColor%22%20d%3D%22m64%2047.625%202.117-.035c4.476.025%207.399.56%2010.883%203.41%203.32%204.058%203.459%207.946%203.375%2013l.035%202.117C80.385%2070.593%2079.85%2073.516%2077%2077c-4.058%203.32-7.946%203.459-13%203.375l-2.117.035C57.407%2080.385%2054.484%2079.85%2051%2077c-3.32-4.058-3.459-7.946-3.375-13l-.035-2.117c.025-4.476.56-7.399%203.41-10.883%204.058-3.32%207.946-3.459%2013-3.375m-.062%2049.063%202.42-.05c4.648-.003%207.984.176%2011.642%203.362%202.357%204.033%202.268%207.903%202.25%2012.5l.016%203.906c-.32%204.319-.97%207.057-3.77%2010.38-4.02%201.956-8.024%201.686-12.433%201.651l-2.71.061c-4.209-.003-6.72-.132-10.42-2.275-3.611-4.152-3.119-8.214-3.183-13.598l-.078-3.898c.354-4.019%201.126-6.364%203.328-9.727%203.566-2.967%208.522-2.33%2012.938-2.312m0-97.125%202.708-.061c4.21.003%206.722.132%2010.42%202.275%203.612%204.152%203.12%208.214%203.184%2013.598l.078%203.898C79.974%2023.292%2079.202%2025.637%2077%2029c-3.566%202.967-8.522%202.33-12.937%202.313l-2.42.048C56.994%2031.365%2053.658%2031.186%2050%2028c-2.357-4.033-2.268-7.903-2.25-12.5l-.016-3.906c.32-4.319.97-7.057%203.77-10.38%204.02-1.956%208.024-1.686%2012.434-1.651%22%2F%3E%3C%2Fsvg%3E");
+}
+
+i.icon.three.dots.vertical,
+i.three.dots.vertical.icon {
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%20width%3D%2224%22%20height%3D%2224%22%3E%3Cpath%20fill%3D%22currentColor%22%20d%3D%22M70.18%2099.883c3.677%202.034%205.606%203.78%207.882%207.367%201.152%204.608%201.404%208.201-.062%2012.75-2.414%203.862-4.635%206.545-9%208-4.529.4-8.637.563-12.875-1.187-3.914-3.34-6.24-5.983-7.125-11.126-.335-5.026.89-8.73%204-12.687%204.926-4.416%2011.013-5.615%2017.18-3.117m1.695-98.695C75.789%204.526%2078.115%207.17%2079%2012.313c.335%205.026-.89%208.73-4%2012.687-3.403%203.05-6.431%203.919-10.937%204.563C59.223%2029.28%2055.553%2027.219%2052%2024c-2.926-4.61-3.522-8.487-2.715-13.781C50.521%206.383%2052.933%203.563%2056%201c5.18-1.727%2010.797-1.91%2015.875.188m.938%2050.062c3.856%203.085%204.98%205.83%206.062%2010.625.493%205.337-1.42%209.27-4.687%2013.438-3.884%202.996-7.414%203.937-12.25%203.5-4.65-.773-7.7-2.265-10.688-6-2.351-5.291-2.782-9.132-1.062-14.563%202.356-4.225%204.18-6.471%208.562-8.562%205.122-1.084%209.285-.561%2014.063%201.562%22%2F%3E%3C%2Fsvg%3E");
+}
+
+i.icon.hamburger,
+i.hamburger.icon {
+  mask-image: url("data:image/svg+xml, <svg width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M3 12h18M3 6h18M3 18h18'/></svg>");
+}
+
+i.icon.paper.clip,
+i.paper.clip.icon {
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%20width%3D%2224%22%20height%3D%2224%22%3E%3Cpath%20fill%3D%22currentColor%22%20d%3D%22M116.344%2016.281c4.78%204.96%206.803%2010.587%206.969%2017.407l.113%203.011c-.974%207.546-5.363%2012.83-10.628%2018.02l-1.855%201.876c-2.007%202.026-4.03%204.036-6.052%206.046q-2.116%202.12-4.23%204.241-4.425%204.432-8.867%208.846a2584%202584%200%200%200-11.31%2011.324%202899%202899%200%200%201-8.741%208.74q-2.088%202.085-4.167%204.177a993%20993%200%200%201-5.856%205.829l-1.708%201.732C52.902%20114.492%2044.894%20117.386%2035%20118c-9.34-.646-17.063-4.274-23.46-11.066C4.84%2098.519%204.191%2089.464%205%2079c3.6-14.64%2019.8-26.09%2030.052-36.402q3.09-3.11%206.156-6.239%203.731-3.803%207.494-7.574a688%20688%200%200%200%204.203-4.282c.858-.855%201.715-1.71%202.6-2.59l2.27-2.296C60.444%2017.677%2061.771%2017.49%2065%2018l2%202c-.175%205.166-1.843%207.45-5.472%2010.992l-1.405%201.392c-1.527%201.509-3.071%203-4.615%204.491a1829%201829%200%200%200-3.203%203.16%201840%201840%200%200%201-8.45%208.278A3150%203150%200%200%200%2030.35%2061.56a951%20951%200%200%201-4.717%204.596q-1.452%201.424-2.902%202.852l-2.555%202.489C15.646%2076.708%2013.81%2082.182%2014%2089c1.063%205.402%202.906%2010.22%207%2014%206.133%203.996%2011.687%206.306%2019%205%2010.136-3.217%2017.007-11.315%2024.25-18.656q2.021-2.024%204.046-4.046%204.216-4.22%208.41-8.463a2342%202342%200%200%201%2010.788-10.823q4.168-4.167%208.323-8.35%201.986-1.997%203.98-3.99a1121%201121%200%200%200%205.535-5.584c.548-.545%201.095-1.09%201.66-1.65%204.01-4.102%205.764-7.2%206.383-12.876-.523-4.964-2.513-7.91-6.219-11.199-2.493-1.576-3.974-1.855-6.906-1.925l-2.422-.13C89.382%2022.375%2082.562%2031.103%2076.628%2037l-2.917%202.89a2560%202560%200%200%200-6.058%206.032%201407%201407%200%200%201-7.775%207.685%201172%201172%200%200%200-5.999%205.961%20714%20714%200%200%201-4.262%204.198l-2.591%202.609-2.29%202.273C42.65%2071.475%2042.22%2073.518%2042%2077c1%202%201%202%203%203%202.276.661%202.276.661%205%200%202.633-1.974%204.811-4.352%207.059-6.746l2.02-2.078c2.852-2.934%205.674-5.896%208.498-8.856%202.067-2.157%204.149-4.3%206.232-6.441l1.913-2.04c2.865-2.942%204.603-4.638%208.602-5.831C87%2048%2087%2048%2089%2049c.522%202.983.607%205.13-1.17%207.679-5.127%205.648-10.417%2011.128-15.8%2016.531a935%20935%200%200%200-4.58%204.653c-11.154%2011.28-11.154%2011.28-18.11%2012.668-5.6-.073-8.967-.691-13.34-4.531-3.502-3.985-4.116-7.416-4.426-12.672%201.581-8.645%209.316-14.673%2015.254-20.59q1.611-1.617%203.221-3.237%203.368-3.379%206.748-6.744c2.875-2.863%205.733-5.742%208.587-8.625%202.211-2.23%204.432-4.45%206.656-6.668a751%20751%200%200%200%203.162-3.18c11.626-11.745%2026.226-20.473%2041.142-8.003%22%2F%3E%3C%2Fsvg%3E");
 }
 
 /* Arrow */
@@ -1361,10 +1846,21 @@ i.sunrise.icon {
     transform 0.3s;
 }
 
-.nav .navigations a {
+.nav .navigations a,
+.nav .actions a {
+  display: block;
   color: var(--text-muted);
   text-decoration: none;
   font-weight: 600;
+  height: 100%;
+  width: 100%;
+}
+
+.nav .navigations a i,
+.nav .actions a i {
+  display: block;
+  height: 100%;
+  width: 100%;
 }
 
 .nav .actions {
@@ -1438,6 +1934,16 @@ i.sunrise.icon {
       opacity: 0;
       transform: translateY(-100px);
     }
+  }
+}
+
+aside.sidebar nav.vertical {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  & .navigations {
+    flex-direction: column;
+    padding-top: clamp(3.5rem, 6.5vw, 5.5rem);
   }
 }
 /* ==========================================================================
@@ -1792,6 +2298,12 @@ i.sunrise.icon {
 .card.pricing .actions .button {
   width: 100%;
 }
+
+@media (min-width: 900px) {
+  .column:has(.card.pricing) {
+    padding: 0.4em;
+  }
+}
 /* Masonry Grid Styling */
 .masonry .grid {
   column-count: var(--masonry-columns, 3);
@@ -2031,8 +2543,191 @@ i.sunrise.icon {
 .gallery .modal .next {
   right: 1.5rem;
 }
+/* ==========================================================================
+   🏛️ VANILLA UI FRAMEWORK CORE - CORE EMBEDDED SPECIFICATION
+   Bebas jQuery, Bebas Bloatware, 100% Mengunci Transisi 120fps Premium
+   ========================================================================== */
+
+:root {
+  --ui-shadow-light: 0 1px 2px 0 rgba(34, 36, 38, 0.15);
+  --ui-shadow-modal: 0px 10px 30px rgba(0, 0, 0, 0.3);
+  --ui-border-radius: 4px;
+  --ui-font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* Semantic UI Pure Colors Re-mapped */
+  --ui-info-bg: #f8ffff;
+  --ui-info-text: #276f86;
+  --ui-info-border: #a9d5de;
+  --ui-success-bg: #fcfff5;
+  --ui-success-text: #2b9b2d;
+  --ui-success-border: #a3c293;
+  --ui-error-bg: #fff6f6;
+  --ui-error-text: #9f3a38;
+  --ui-error-border: #e0b4b4;
+  --ui-warning-bg: #fffaf3;
+  --ui-warning-text: #573a08;
+  --ui-warning-border: #c9ba9b;
+}
+
+/* ==========================================================================
+   🪐 2. THE SOVEREIGN INSTANT TOAST ENGINE (MessageBuilder)
+   ========================================================================== */
+
+/* Kelas Pembungkus Utama Mensimulasikan Struktur Murni Semantic-UI */
+.toast {
+  position: relative;
+  min-height: 1em;
+  margin: 1em 0em;
+  background: #f8f8f9;
+  padding: 1em 1.5em;
+  line-height: 1.4285em;
+  color: rgba(0, 0, 0, 0.87);
+  transition:
+    opacity 0.1s ease,
+    color 0.1s ease,
+    background 0.1s ease,
+    box-shadow 0.1s ease;
+  border-radius: var(--ui-border-radius);
+  box-shadow: var(--ui-shadow-light);
+  font-family: var(--ui-font-stack);
+  font-size: 1rem;
+  border: 1px solid rgba(34, 36, 38, 0.15);
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  width: 100%;
+  max-width: 800px;
+  justify-self: center;
+  /* Animasi Shimmy Masuk (Slide-In Slide Drop) */
+  animation: ToastShimmy 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Jika Diatur Menempel di Pojok Kanan Atas Sebagai Toast Global Floating */
+#global-status-message,
+[id*="-toast"] {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 1001;
+  width: 100%;
+  max-width: 400px;
+  margin: 0;
+}
+
+/* Ikon Silang Pojok Kanan Atas */
+
+.toast button:has(.close) {
+  cursor: pointer;
+  border: none;
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+  font-style: normal;
+  width: 24px;
+  height: 24px;
+  padding: 1px;
+  justify-content: center;
+  color: red;
+}
+
+.toast .close.icon:hover {
+  opacity: 1;
+}
+
+/* Layout Berbasis Kelas Icon Kiri */
+.toast i.icon:not(.close) {
+  flex-shrink: 0;
+  font-size: 2rem;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  align-self: center;
+}
+
+/* Rahim Konten Kanan */
+.toast .content {
+  flex-grow: 1;
+  padding-right: 1rem;
+}
+
+.toast .content .header {
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-top: unset;
+  margin-bottom: 0.25rem;
+  color: currentColor;
+}
+
+.toast .content p,
+.toast .content .message {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 0.95rem;
+}
+
+/* ==========================================================================
+   🪐 3. SEMANTIC VARIANT THEMES (MUTASI WARNA REAKTIF ANDA)
+   ========================================================================== */
+
+/* Info Variant */
+.info.toast {
+  background-color: var(--ui-info-bg);
+  color: var(--ui-info-text);
+  border-color: var(--ui-info-border);
+}
+
+/* Success & Positive Variant */
+.success.toast,
+.positive.toast {
+  background-color: var(--ui-success-bg);
+  color: var(--ui-success-text);
+  border-color: var(--ui-success-border);
+}
+
+/* Error & Negative Variant */
+.error.toast,
+.negative.toast {
+  background-color: var(--ui-error-bg);
+  color: var(--ui-error-text);
+  border-color: var(--ui-error-border);
+}
+
+/* Warning Variant */
+.warning.toast {
+  background-color: var(--ui-warning-bg);
+  color: var(--ui-warning-text);
+  border-color: var(--ui-warning-border);
+}
+
+/* ==========================================================================
+   🪐 4. KEYFRAMES PERFORMANCE MOTION GRAPHICS
+   ========================================================================== */
+@keyframes ToastShimmy {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+*:has(> table.table) {
+  container-type: inline-size;
+  container-name: tableParent;
+  overflow-x: auto;
+}
+.table-container {
+  max-width: 100%;
+}
 .table,
 table.table {
+  box-sizing: border-box;
   display: table;
   position: relative;
   width: 100%;
@@ -2044,13 +2739,15 @@ table.table {
   border-radius: 0.28571429rem;
   overflow: hidden;
   font-size: 0.95rem;
+
+  overflow-x: auto;
 }
 
 .table th,
 .table td,
-table.table > thead > tr > th,
-table.table > thead > tr > td,
-table.table > tbody > tr > td,
+table.table > thead > tr > th:not([data-col-index="-1"]),
+table.table > thead > tr > td:not([data-col-index="-1"]),
+table.table > tbody > tr > td:not(.actions.cell, [data-col-index="-1"]),
 table.table > tfoot > tr > th,
 table.table > tfoot > tr > td {
   padding: 0.78571429em 1em;
@@ -2059,18 +2756,31 @@ table.table > tfoot > tr > td {
   text-align: left;
   display: table-cell;
   vertical-align: middle;
-  width: min-content;
-  /* max-width: 150px; */
+  width: fit-content;
+  min-width: 200px;
+  white-space: nowrap;
+  /* line-break: anywhere; */
+  /* white-space-collapse: break-spaces; */
+  /* word-break: break-word; */
 }
 
 .table thead th,
 table.table > thead > tr > th {
   background: var(--surface-bg);
   color: var(--text-heading);
-  font-weight: 700;
+  font-weight: 500;
   border-bottom: 1px solid var(--border-soft);
   border-left: 1px solid var(--border-soft);
   filter: brightness(0.95); /* 15% darker */
+  text-transform: capitalize;
+}
+
+table.table > tbody > tr > td[data-col-index="-1"],
+table.table > tbody > tr > td.actions.cell,
+table.table > thead > tr > th[data-col-index="-1"],
+table.table > thead > tr > th:last-child {
+  width: auto;
+  min-width: unset;
 }
 
 table.table > tbody > tr .cell:not(.actions) {
@@ -2081,6 +2791,9 @@ table.table > tbody > tr .cell:not(.actions) {
   border-radius: calc(var(--input-border-radius) / 2);
   border: 1px solid transparent;
   color: var(--text-main);
+  word-break: break-word;
+  overflow: hidden;
+  max-height: calc(2lh + 0.8em);
 }
 
 .table tbody tr:nth-child(even) {
@@ -2088,7 +2801,7 @@ table.table > tbody > tr .cell:not(.actions) {
 }
 
 .table tbody tr:hover {
-  background: var(--surface-muted);
+  background: var(--border-soft);
 }
 
 table.table > tbody > tr > td,
@@ -2149,7 +2862,8 @@ table.table td.actions.cell {
   flex-direction: row;
   flex-wrap: nowrap;
   align-content: center;
-  max-width: 120px;
+  min-width: min-content;
+  width: fit-content;
 }
 
 table.table > tbody > tr > td.actions.cell.center.aligned {
@@ -2301,17 +3015,38 @@ table.table > tfoot > tr > th.sum {
   width: fit-content;
   max-width: 150px;
   filter: brightness(0.95);
+  padding: 0.5em;
 }
 
 table.table > tfoot > tr > th.sum > .cell {
-  display: block;
-  position: relative;
+  display: inline-flex;
+  /* position: relative; */
   /* min-width: 100px; */
   padding: 0 0.5em;
   height: 100%;
-  font-size: 1em;
-  text-align: right;
+  width: -webkit-fill-available;
+  font-size: 0.9em;
+  /* text-align: right; */
   color: var(--text-main);
+  justify-content: space-between;
+  gap: 0.5em;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+@container tableParent (max-width: 1080px) {
+  .table.table > tfoot > tr > th.sum > .cell {
+    flex-direction: column;
+    align-items: stretch;
+    /* text-align: center; */
+    & .title,
+    .value {
+      align-self: start;
+      padding: 0 0.5em;
+      /* width: 90%; */
+    }
+  }
 }
 
 table.table > tfoot > tr > th.sum > .cell:not(:last-child) {
@@ -2323,13 +3058,28 @@ table.table > tfoot > tr > th.sum > .cell:not(:first-child) {
 }
 
 table.table > tfoot > tr > th.sum > .cell > .title {
-  display: block;
-  position: relative;
-  float: left;
+  /* display: block; */
   font-size: 68%;
-  color: var(--accent);
+
   text-align: left;
-  margin-right: 0.25em;
+  height: 100%;
+  margin: 0;
+  min-width: 30%;
+  min-height: 1rem;
+  text-transform: uppercase;
+  vertical-align: middle;
+  align-content: center;
+}
+
+table.table > tfoot > tr > th.sum > .cell > .value {
+  text-align: right;
+  /* align-self: flex-end; */
+  justify-content: end;
+  min-width: 50%;
+  min-height: 1rem;
+  align-content: center;
+  text-align: right;
+  color: var(--accent-strong);
 }
 
 table.table > tfoot > tr.row-pagination > th,
@@ -2383,7 +3133,8 @@ table.table > tfoot > tr > th:last-child:has(button) {
 
 .table.small th,
 .table.small td {
-  padding: 0.6em 0.85em;
+  /* padding: 0.6em 0.85em; */
+  padding: 5px;
 }
 
 .table.compact th,
@@ -2426,6 +3177,321 @@ table {
     text-align: right;
   }
 }
+
+@container tableParent (max-width: 700px) {
+  table.table,
+  .table {
+    border: none;
+    & > thead {
+      display: none;
+    }
+
+    & tbody {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    & tbody tr {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border-soft);
+      border-radius: 0.5rem;
+      background: var(--surface-bg);
+      padding: 0.5rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+
+    & tbody tr:nth-child(even) {
+      background: var(--surface-bg); /* Konsistensi background kartu */
+    }
+
+    & tbody tr td:hover {
+      background: var(--border-soft);
+    }
+
+    & tbody tr td {
+      width: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      /* gap: 0.5em; */
+      /* justify-content: space-between; */
+      /* align-items: center; */
+      padding: 0.75rem 0.5rem;
+      border-left: none;
+      border-bottom: none;
+      min-height: auto;
+    }
+
+    & tbody tr td:first-child {
+      display: flex;
+      flex-direction: row;
+      justify-content: right;
+      align-items: center;
+      border-left: none;
+      min-height: auto;
+      padding: 5px;
+    }
+
+    & tbody tr td .cell:not(.actions):not(.grand) {
+      text-align: left;
+    }
+
+    & tbody tr td[data-header]::before {
+      content: attr(data-header);
+      font-weight: 500;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-transform: capitalize;
+      padding: 0 0.5rem;
+      padding-bottom: 0.5rem;
+      flex-shrink: 0;
+      /* border-bottom: 1px solid var(--border-soft); */
+      text-decoration: underline;
+    }
+
+    & tbody tr td[data-header]:first-child::before {
+      content: attr(data-header);
+      font-size: 1.4rem;
+      padding: 0;
+      text-decoration: none;
+    }
+
+    & tbody tr td[data-header]:last-child::before {
+      content: none;
+      font-size: 1.4rem;
+      padding: 0;
+      text-decoration: none;
+    }
+
+    & tbody tr td.autoNumber {
+      display: flex;
+      justify-content: right;
+      width: 100%;
+    }
+
+    & tbody tr td.autoNumber .cell:not(.grand) {
+      width: auto;
+    }
+
+    & tbody tr td.actions.cell:not(.grand) {
+      max-width: 100%;
+      justify-content: right;
+      border-left: none;
+    }
+
+    & .actions-set {
+      width: auto; /* Mencegah tombol aksi melebar penuh */
+      justify-content: flex-end;
+    }
+
+    & tfoot,
+    & tfoot tr,
+    & tfoot tr th {
+      display: block;
+      width: 100%;
+    }
+
+    & tfoot tr th.sum {
+      max-width: 100%;
+      border-left: none;
+      border-right: none;
+    }
+
+    & tfoot tr th:last-child:has(button) {
+      display: flex !important;
+      padding: 1rem 1rem;
+      justify-content: center;
+      padding: 1rem 0;
+    }
+
+    & tfoot tr.row-pagination th,
+    & tfoot tr:has(th > .pagination) th {
+      display: block;
+      width: 100%;
+      padding: 1rem 0.5rem;
+      text-align: center;
+    }
+
+    & tfoot .pagination.menu {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      overflow-x: auto; /* Mengizinkan scroll horizontal jika tombol kepanjangan */
+      padding: 0.25rem 0;
+      -webkit-overflow-scrolling: touch;
+      gap: 2px; /* Beri sedikit jarak antar tombol agar tidak terlalu rapat */
+    }
+
+    & tfoot .pagination.menu .item {
+      flex-shrink: 0; /* Mencegah tombol mengkerut/gepeng */
+      min-width: 2.5rem; /* Sedikit diperbesar dari 2.2rem agar mudah ditekan */
+      height: 2.5rem;
+      font-size: 0.9rem;
+      border-radius: 0.25rem; /* Memberikan sudut membulat agar ramah di layar sentuh */
+    }
+
+    & tfoot th:has(> .add-row-btn) {
+      justify-content: center !important;
+    }
+  }
+}
+
+table.table.stacked,
+.table.stacked {
+  border: none;
+  & > thead {
+    display: none;
+  }
+
+  & tbody {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  & tbody tr {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-soft);
+    border-radius: 0.5rem;
+    background: var(--surface-bg);
+    padding: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  }
+
+  & tbody tr:nth-child(even) {
+    background: var(--surface-bg) !important;
+  }
+
+  & tbody tr td:hover {
+    background: var(--border-soft);
+  }
+
+  & tbody tr td {
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem 0.5rem;
+    border-left: none;
+    border-bottom: none;
+    min-height: auto;
+  }
+
+  & tbody tr td:first-child {
+    display: flex;
+    flex-direction: row;
+    justify-content: right;
+    align-items: center;
+    border-left: none;
+    min-height: auto;
+    padding: 5px;
+  }
+
+  & tbody tr td .cell:not(.actions) {
+    text-align: left;
+  }
+
+  & tbody tr td[data-header]::before {
+    content: attr(data-header);
+    font-weight: 500;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    text-transform: capitalize;
+    padding: 0 0.5rem;
+    padding-bottom: 0.3rem;
+    flex-shrink: 0;
+    /* border-bottom: 1px solid var(--border-soft); */
+    text-decoration: underline;
+  }
+
+  & tbody tr td[data-header]:first-child::before {
+    content: attr(data-header);
+    font-size: 1.4rem;
+    padding: 0;
+    text-decoration: none;
+  }
+
+  & tbody tr td[data-header]:last-child::before {
+    content: none;
+    font-size: 1.4rem;
+    padding: 0;
+    text-decoration: none;
+  }
+
+  & tbody tr td.autoNumber {
+    display: flex;
+    justify-content: right;
+    width: 100%;
+  }
+
+  & tbody tr td.autoNumber .cell:not(.grand) {
+    width: auto;
+  }
+
+  & tbody tr td.actions.cell:not(.grand) {
+    max-width: 100%;
+    justify-content: right;
+    border-left: none !important;
+  }
+
+  & .actions-set {
+    width: auto; /* Mencegah tombol aksi melebar penuh */
+    justify-content: flex-end;
+  }
+
+  & tfoot,
+  & tfoot tr,
+  & tfoot tr th {
+    display: block;
+    width: 100%;
+  }
+
+  & tfoot tr th.sum {
+    max-width: 100%;
+    border-left: none;
+    border-right: none;
+  }
+
+  & tfoot tr th:last-child:has(button) {
+    display: flex !important;
+    padding: 1rem 1rem;
+    justify-content: center;
+  }
+
+  & tfoot tr.row-pagination th,
+  & tfoot tr:has(th > .pagination) th {
+    display: block;
+    width: 100%;
+    padding: 1rem 0.5rem;
+    text-align: center;
+  }
+
+  & tfoot .pagination.menu {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    overflow-x: auto; /* Mengizinkan scroll horizontal jika tombol kepanjangan */
+    padding: 0.25rem 0;
+    -webkit-overflow-scrolling: touch;
+    gap: 2px; /* Beri sedikit jarak antar tombol agar tidak terlalu rapat */
+  }
+  & tfoot .pagination.menu .item {
+    flex-shrink: 0; /* Mencegah tombol mengkerut/gepeng */
+    min-width: 2.5rem; /* Sedikit diperbesar dari 2.2rem agar mudah ditekan */
+    height: 2.5rem;
+    font-size: 0.9rem;
+    border-radius: 0.25rem; /* Memberikan sudut membulat agar ramah di layar sentuh */
+  }
+}
 :root {
   --allowed-color: rgba(21, 179, 60, 0.658);
   --unallowed-color: rgba(220, 20, 60, 0.486);
@@ -2433,6 +3499,7 @@ table {
   --editing-color: rgba(33, 133, 208, 0.854);
 }
 
+fieldset.inline-style .input-wrapper:has(input[type="file"]),
 .input-wrapper:has(input[type="file"]) {
   display: block;
   position: relative;
@@ -2440,9 +3507,10 @@ table {
 
 .input-wrapper input[type="file"] {
   padding: 0.29em 1em;
+  /* min-height: 1.2lh; */
 }
 
-.input-wrapper:has(input[type="file"]) .ui.message p {
+.input-wrapper:has(input[type="file"]) .message p {
   margin-top: 0 !important;
 }
 
@@ -2452,10 +3520,10 @@ table {
   background-color: var(--gsheets-accent-color);
   color: var(--primary-text-color);
   line-height: 0.9rem;
-  padding: 0.2em 0.7em;
+  padding: 0.15em 0.7em;
   border-radius: 0.5em;
   font-size: 0.9em;
-  height: 24px;
+  /* height: 24px; */
   font-weight: 600;
   transition: 100ms;
   align-self: center;
@@ -2563,6 +3631,10 @@ table {
   margin-right: 0.25em;
 }
 
+.file.list .item.info .message {
+  font-size: 0.9rem;
+}
+
 .file.list .item .content .message {
   margin-bottom: 0;
   font-size: 0.9rem;
@@ -2584,18 +3656,24 @@ table {
 
 .file.list .item .close.button {
   background: transparent;
-  border: none;
   cursor: pointer;
   transition: 100ms;
+  border: 1px solid var(--light-border-color);
+  padding: 0;
+  border-radius: 5px;
 }
 
 .close.button i {
   /* color: rgb(255, 72, 72); */
+  width: 16px;
+  height: 16px;
+  margin: 4px;
   color: var(--unallowed-color);
 }
 
 .file.list .item .close.button:hover {
   transform: scale(0.95);
+  border: 1px solid var(--unallowed-color);
 }
 
 .file.list .item .close.button:active {
@@ -2811,12 +3889,18 @@ table {
 .form:not(.initial) .input-wrapper:has(> .file:not(.hidden)) input {
   border-color: var(--light-border-color);
   border-width: 1px;
-  border-radius: var(--input-border-radius) var(--input-border-radius) 0 0 !important;
+  border-radius: var(--input-border-radius) var(--input-border-radius) 0 0;
   cursor: pointer;
 }
 
 /* Drag n Drop style */
-.input-wrapper.dragover > input {
+
+.input-wrapper.dragover:has(> .file) > input[type="file"] {
+  border-radius: var(--input-border-radius) var(--input-border-radius) 0 0;
+}
+
+.input-wrapper.dragover > input,
+.input-wrapper.dragover:has(> .file.hidden) > input {
   border-radius: var(--input-border-radius);
   border-color: var(--primary-border-color);
   border-style: double;
@@ -2824,10 +3908,6 @@ table {
   background: var(--primary-light-color) !important;
   box-shadow: 2px 2px 5px -3px rgba(59, 61, 71, 1) inset !important;
   transition: 100ms;
-}
-
-.input-wrapper.dragover:has(> .file) > input[type="file"] {
-  border-radius: var(--input-border-radius) var(--input-border-radius) 0 0;
 }
 
 .input-wrapper.dragover > input[type="file"]::file-selector-button {
@@ -2841,12 +3921,12 @@ table {
 .input-wrapper.dragover > input[type="file"]::after,
 .input-wrapper.dragover:has(> .file) > input[type="file"]::after {
   content: url("data:image/svg+xml,%3Csvg version='1.2' baseProfile='tiny' xmlns='http://www.w3.org/2000/svg' width='210' height='33.3' xml:space='preserve'%3E%3Cpath fill='%237A67A0' d='M17.6 1.9c4.2 0 7.9 1.7 10.6 4.4s4.4 6.5 4.4 10.6-1.7 7.9-4.4 10.6-6.5 4.4-10.6 4.4S9.7 30.2 7 27.5 2.6 21 2.6 16.9 4.2 9 6.9 6.3s6.5-4.4 10.7-4.4zm0 21.5c-.8 0-1.5-.7-1.5-1.5v-3.5h-3.5c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5h3.5v-3.5c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5v3.5h3.5c.8 0 1.5.7 1.5 1.5s-.7 1.5-1.5 1.5h-3.5v3.5c0 .8-.7 1.5-1.5 1.5zm9.2-15.7c-2.4-2.4-5.6-3.8-9.2-3.8s-6.9 1.5-9.2 3.8-3.8 5.6-3.8 9.2 1.5 6.9 3.8 9.2 5.6 3.8 9.2 3.8 6.9-1.5 9.2-3.8 3.8-5.6 3.8-9.2-1.5-6.8-3.8-9.2z'/%3E%3Cg fill='%237A67A0'%3E%3Cpath d='M43 12.2h1.9c.7 0 1.2.1 1.7.2.5.2.9.4 1.3.8s.6.8.8 1.5c.2.6.3 1.4.3 2.2 0 .9-.1 1.6-.3 2.2-.2.6-.5 1.1-.8 1.5s-.8.6-1.3.8c-.5.2-1.1.2-1.7.2H43v-9.4zm1.3 1.2v7.1h.6c.5 0 .8-.1 1.2-.2.3-.1.6-.3.9-.6.2-.3.4-.6.6-1.1.1-.5.2-1 .2-1.7s-.1-1.2-.2-1.7-.3-.8-.6-1.1c-.3-.3-.5-.5-.9-.6-.3-.1-.7-.2-1.2-.2h-.6zM56.4 16.8h-1.2c0-.6-.1-1-.4-1.3-.3-.3-.7-.4-1.2-.4-.3 0-.6 0-.8.1s-.5.1-.6.2l-.2.1v6.2h-1.2v-6.9s.1 0 .1-.1c.1 0 .2-.1.4-.2s.4-.2.6-.2c.2-.1.5-.1.8-.2.3-.1.6-.1 1-.1.9 0 1.6.2 2.1.6.4.5.6 1.2.6 2.2zM57.9 19.7c-.1-.5-.2-1.1-.2-1.8s.1-1.3.2-1.8.4-.9.6-1.2c.3-.3.6-.5 1-.6s.8-.2 1.3-.2 1 .1 1.3.2.7.3 1 .6c.3.3.5.7.6 1.2.1.5.2 1.1.2 1.8s-.1 1.3-.2 1.8-.4.9-.6 1.2c-.3.3-.6.5-1 .6-.4.1-.8.2-1.3.2s-1-.1-1.3-.2c-.4-.1-.7-.4-1-.6s-.4-.7-.6-1.2zm4.4-3.9c-.3-.4-.8-.6-1.4-.6-.6 0-1.1.2-1.4.6-.3.4-.5 1.1-.5 2.1s.2 1.7.5 2.1c.3.4.8.6 1.4.6.6 0 1.1-.2 1.4-.6.3-.4.5-1.1.5-2.1s-.1-1.7-.5-2.1zM67.5 14.1h.9c.9 0 1.6.2 2.1.7.5.5.8 1.2.8 2 0 .9-.3 1.6-.9 2.1s-1.4.8-2.4.8h-1.2v3.8h-1.2V16c0-.7.1-1.2.4-1.5.3-.2.8-.4 1.5-.4zm0 1.2c-.2 0-.4.1-.5.2-.1.1-.2.3-.2.5v2.6H68c.6 0 1.1-.2 1.5-.5.4-.3.5-.7.5-1.3 0-.5-.2-.9-.5-1.2-.3-.3-.7-.4-1.2-.4h-.8zM80.6 14.1h1.2v3.4c0 .3.1.6.4.8.3.2.7.3 1.1.3H85v-4.5h1.2v6.6c0 1-.3 1.7-.9 2.2-.6.4-1.5.6-2.6.6H82c-.2 0-.4 0-.5-.1h-.2v-1.1h1.4c.7 0 1.3-.1 1.7-.4.4-.2.6-.7.6-1.2v-1h-1.6c-.9 0-1.6-.2-2.1-.6-.5-.4-.8-1-.8-1.7v-3.3zM88 19.7c-.1-.5-.2-1.1-.2-1.8s.1-1.3.2-1.8.4-.9.6-1.2c.3-.3.6-.5 1-.6s.9-.3 1.4-.3c.5 0 1 .1 1.3.2s.7.3 1 .6c.3.3.5.7.6 1.2.1.5.2 1.1.2 1.8s-.1 1.3-.2 1.8-.4.9-.6 1.2c-.3.3-.6.5-1 .6-.4.1-.8.2-1.3.2s-1-.1-1.3-.2c-.4-.1-.7-.4-1-.6s-.5-.6-.7-1.1zm4.4-3.9c-.3-.4-.8-.6-1.4-.6-.6 0-1.1.2-1.4.6-.3.4-.5 1.1-.5 2.1s.2 1.7.5 2.1c.3.4.8.6 1.4.6.6 0 1.1-.2 1.4-.6.3-.4.5-1.1.5-2.1s-.2-1.7-.5-2.1zM95.7 14.1h1.2v4.8c0 .6.1 1 .4 1.3.3.3.7.4 1.2.4.3 0 .6 0 .8-.1.3-.1.5-.1.6-.2l.2-.1V14h1.2v7s-.1 0-.1.1c-.1 0-.2.1-.4.2s-.4.2-.6.2c-.2.1-.5.1-.8.2-.3.1-.6.1-1 .1-.9 0-1.6-.2-2.1-.6-.5-.4-.7-1.2-.7-2.2v-4.9zM109.1 16.8h-1.2c0-.6-.1-1-.4-1.3-.3-.3-.7-.4-1.2-.4-.3 0-.6 0-.8.1s-.5.1-.6.2l-.2.1v6.2h-1.2v-6.9s.1 0 .1-.1c.1 0 .2-.1.4-.2s.4-.2.6-.2c.2-.1.5-.1.8-.2.3-.1.6-.1 1-.1.9 0 1.6.2 2.1.6.3.5.6 1.2.6 2.2zM124.1 12.3v1.1h-1.5c-.6 0-1 .1-1.2.3-.2.2-.3.6-.3 1.2h3.1V16h-3.1v5.6h-1.2V16H118v-1.2h1.8c0-.5 0-.9.1-1.3.1-.3.2-.6.4-.8s.5-.4.8-.5c.4-.1.8-.1 1.4-.1h.8c.3 0 .4 0 .6.1l.2.1zM126 14.8h3.2v5.6h2.2v1.2h-5.6v-1.2h2.2V16h-2v-1.2zm1.2-3.3h2.2v1.4h-2.2v-1.4zM133.5 12.2h3.2v8.2h2.2v1.2h-5.6v-1.2h2.2v-7.1h-2v-1.1zM144 21.7c-1 0-1.8-.3-2.4-1-.6-.7-.9-1.6-.9-2.8 0-1.2.3-2.1.8-2.8.5-.7 1.2-1 2.1-1 .9 0 1.6.3 2.1.8s.8 1.2.8 2v.5c0 .4-.1.7-.3.9s-.5.3-1 .3H142v.4c0 .2.1.3.1.4 0 .1.1.3.2.4.1.2.2.3.4.4.1.1.3.2.5.3s.5.1.7.1h2v1.1H144zm1.3-4.4v-.5c0-.5-.2-.9-.5-1.2-.3-.3-.7-.4-1.2-.4-.2 0-.4 0-.6.1-.2.1-.3.2-.4.3-.1.1-.2.3-.3.4-.1.2-.1.3-.2.5 0 .2-.1.3-.1.4v.4h3.3zM152.2 11.1h1.4l-.1.1-.4.4c-.2.2-.4.4-.5.6s-.3.5-.6.9c-.2.4-.4.7-.5 1.1-.1.4-.3.9-.4 1.4-.1.6-.2 1.1-.2 1.7s0 1.2.1 1.7c.1.6.2 1 .4 1.4.2.4.3.8.5 1.1l.6.9c.2.2.4.4.5.6l.4.4.1.1h-1.4l-.1-.1-.4-.4c-.2-.2-.3-.4-.5-.6-.2-.2-.3-.5-.5-.9s-.4-.7-.5-1.1c-.1-.4-.3-.9-.4-1.4-.1-.6-.1-1.1-.1-1.7s0-1.2.1-1.7c.1-.6.2-1 .4-1.4.2-.4.3-.8.5-1.1l.6-.9c.2-.2.4-.4.5-.6s.3-.3.4-.4l.1-.1zM159.5 14.1h.8c.3 0 .4 0 .5.1h.2v1.1h-1.5c-.8 0-1.4.1-1.8.2-.4.2-.6.4-.6.8 0 .2.1.4.2.5.2.1.4.3.6.4.2.1.5.2.8.2l.9.3c.3.1.6.2.8.4.2.1.4.3.6.6s.2.5.2.9c0 .8-.3 1.4-1 1.7s-1.6.5-2.8.5h-.8c-.3 0-.4 0-.6-.1h-.2v-1.1h1.5c.8 0 1.4-.1 1.9-.2.4-.2.6-.4.6-.8 0-.2-.1-.4-.2-.5s-.3-.3-.5-.3c-.2-.1-.4-.2-.7-.2-.3-.1-.5-.1-.8-.2-.3-.1-.5-.1-.8-.2-.3-.1-.5-.2-.7-.4-.2-.1-.4-.3-.5-.6s-.2-.5-.2-.8c0-.8.3-1.4.9-1.7 1.2-.5 2.1-.6 3.2-.6zM165.1 11.1l.1.1.4.4c.2.2.3.4.5.6.2.2.3.5.5.9s.4.7.5 1.1.3.9.4 1.4c.1.6.1 1.1.1 1.7s0 1.2-.1 1.7c-.1.6-.2 1-.4 1.4-.2.4-.3.8-.5 1.1l-.6.9c-.2.2-.4.4-.5.6l-.4.4-.1.1h-1.4l.1-.1.4-.4c.2-.2.4-.4.5-.6.2-.2.3-.5.6-.9.2-.4.4-.7.5-1.1.1-.4.3-.9.4-1.4.1-.6.2-1.1.2-1.7s0-1.2-.1-1.7c-.1-.6-.2-1-.4-1.4-.2-.4-.3-.8-.5-1.1l-.6-.9c-.2-.2-.4-.4-.5-.6s-.3-.3-.4-.4l-.1-.1h1.4zM178.4 12.2h1.2v2.2c.5-.2 1-.3 1.6-.3.9 0 1.6.2 2.1.6.5.4.7 1.1.7 2.1v4.8h-1.2v-4.8c0-.6-.2-.9-.4-1.2-.3-.2-.6-.4-1.2-.4-.5 0-1.1.1-1.6.4v6h-1.2v-9.4zM189.1 21.7c-1 0-1.8-.3-2.4-1-.6-.7-.9-1.6-.9-2.8 0-1.2.3-2.1.8-2.8.5-.7 1.2-1 2.1-1 .9 0 1.6.3 2.1.8s.8 1.2.8 2v.5c0 .4-.1.7-.3.9s-.5.3-1 .3H187v.4c0 .2.1.3.1.4 0 .1.1.3.2.4.1.2.2.3.4.4.1.1.3.2.5.3s.5.1.7.1h2v1.1h-1.8zm1.3-4.4v-.5c0-.5-.2-.9-.5-1.2-.3-.3-.7-.4-1.2-.4-.2 0-.4 0-.6.1-.2.1-.3.2-.4.3-.1.1-.2.3-.3.4-.1.2-.1.3-.2.5 0 .2-.1.3-.1.4v.4h3.3zM199.3 16.8h-1.2c0-.6-.1-1-.4-1.3-.3-.3-.7-.4-1.2-.4-.3 0-.6 0-.8.1s-.5.1-.6.2l-.2.1v6.2h-1.2v-6.9s.1 0 .1-.1c.1 0 .2-.1.4-.2s.4-.2.6-.2c.2-.1.5-.1.8-.2.3-.1.6-.1 1-.1.9 0 1.6.2 2.1.6.4.5.6 1.2.6 2.2zM204.1 21.7c-1 0-1.8-.3-2.4-1-.6-.7-.9-1.6-.9-2.8 0-1.2.3-2.1.8-2.8.5-.7 1.2-1 2.1-1 .9 0 1.6.3 2.1.8s.8 1.2.8 2v.5c0 .4-.1.7-.3.9s-.5.3-1 .3H202v.4c0 .2.1.3.1.4 0 .1.1.3.2.4.1.2.2.3.4.4.1.1.3.2.5.3s.5.1.7.1h2v1.1h-1.8zm1.4-4.4v-.5c0-.5-.2-.9-.5-1.2-.3-.3-.7-.4-1.2-.4-.2 0-.4 0-.6.1-.2.1-.3.2-.4.3-.1.1-.2.3-.3.4-.1.2-.1.3-.2.5 0 .2-.1.3-.1.4v.4h3.3z'/%3E%3C/g%3E%3C/svg%3E%0A");
-  position: absolute;
+  position: relative;
   transform: scale(0.85);
-  top: 3px;
+  /* top: 1lh; */
   height: 36px;
   left: 0.5em;
-  bottom: 1px;
+  bottom: 1.15lh;
   width: calc(100% - 1em);
   line-height: 24px;
   border-radius: var(--input-border-radius);
@@ -3344,41 +4424,41 @@ table {
   cursor: pointer;
 }
 /* Theme Switch Toggle Layout styles */
-.theme-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.65rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  background: var(--surface-strong);
-  color: var(--text-muted);
-  cursor: pointer;
-  font-weight: 700;
-}
+.mode-switcher {
+  & .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.65rem;
+    border: 1px solid var(--border-soft);
+    border-radius: 999px;
+    background: var(--surface-strong);
+    color: var(--text-muted);
+    cursor: pointer;
+    font-weight: 700;
+  }
+  & .track {
+    width: 2.5rem;
+    height: 1.3rem;
+    border-radius: 999px;
+    background: var(--surface-muted);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border-soft);
+  }
+  & .thumb {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 999px;
+    background: var(--accent);
+    transform: translateX(0.15rem);
+    transition: transform 180ms ease;
+  }
 
-.theme-toggle-track {
-  width: 2.5rem;
-  height: 1.3rem;
-  border-radius: 999px;
-  background: var(--surface-muted);
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid var(--border-soft);
-}
-
-.theme-toggle-thumb {
-  width: 1rem;
-  height: 1rem;
-  border-radius: 999px;
-  background: var(--accent);
-  transform: translateX(0.15rem);
-  transition: transform 180ms ease;
-}
-
-.theme-toggle-btn.is-dark .theme-toggle-thumb {
-  transform: translateX(1.2rem);
+  & .toggle.is-dark .thumb {
+    transform: translateX(1.2rem);
+  }
 }
 /* Tabs Component - The Premium Modern-Nesting Specification */
 .tab {
@@ -3588,6 +4668,9 @@ table {
     opacity: 1;
     transform: translateY(0);
   }
+}
+.row.full-width:has(.product) {
+  justify-content: center;
 }
 .product {
   display: flex;

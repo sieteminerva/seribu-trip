@@ -81,16 +81,16 @@ export class ArticleBuilder extends Builder<ArticleModuleElementType, iArticleCo
    * 🧱 SUB-VIEW COMPONENT: Merakit Wajah Daftar Artikel (List View)
    */
   private _renderListViewComponent(container: HTMLElement, serverResponse: any): void {
-    const grid = this.render("@article>list", serverResponse, true);
+    const grid = this.render("@article>list", serverResponse);
     const articles = Array.isArray(serverResponse.data) ? serverResponse.data : [];
 
     // A. Loop Linear Mencetak Baris Kartu Artikel Ringkas
     articles.forEach((article: any) => {
       // Tembakkan templateWrapped karena selector @article>card memiliki properti .wrapper kustom!
-      const card = this.render("@article>card", article, true);
-      const thumb = this.render("@article>card>thumb", article, true);
-      const title = this.render("@article>card>title", article, true);
-      const summary = this.render("@article>card>summary", article, true);
+      const card = this.render("@article>card", article);
+      const thumb = this.render("@article>card>thumb", article);
+      const title = this.render("@article>card>title", article);
+      const summary = this.render("@article>card>summary", article);
 
       if (thumb && article.thumbnail) card?.append(thumb);
       if (title) card?.append(title);
@@ -174,7 +174,7 @@ export class ArticleBuilder extends Builder<ArticleModuleElementType, iArticleCo
 
         if (!targetHref) return; // Skip jika link bernilai null (misal: tombol 'prev' di halaman 1)
 
-        navBtn = this.render("@article>pagination>btn", { role: btnRole, href: targetHref, active: btnRole === "self" }, true) as HTMLElement
+        navBtn = this.render("@article>pagination>btn", { role: btnRole, href: targetHref, active: btnRole === "self" }) as HTMLElement
 
         // Ikat alamat URL endpoint server Apps Script langsung ke properti rahasia tombol fisik!
         if (navBtn) {

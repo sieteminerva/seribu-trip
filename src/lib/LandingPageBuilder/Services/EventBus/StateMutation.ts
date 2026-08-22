@@ -25,7 +25,7 @@ export class StateMutationEventBus {
       for (const [globalKey, record] of DOMTreeMemory.getAll().entries()) {
         const matchItem = record.records.find(r => r.element === childElement);
         if (matchItem && matchItem.relations?.key === key) {
-          matchItem.raw = updatedTarget;
+          matchItem.payload = updatedTarget;
           DataLogger(DISPLAY_LOG,
             { functionName: "⚡ [StateMutationBus | Sync]", action: `Broadcast` },
             { message: `Updated raw payload for "${globalKey}"` });

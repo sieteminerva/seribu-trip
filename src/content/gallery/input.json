@@ -1,0 +1,174 @@
+{
+  "status": "success",
+  "meta": {
+    "currentPage": 1,
+    "perPage": 5,
+    "totalItems": 25,
+    "totalPages": 5,
+    "links": {
+      "first": "https://google.com",
+      "prev": null,
+      "self": "https://google.com",
+      "next": "https://google.com",
+      "last": "https://google.com"
+    }
+  },
+  "fields": [
+    {
+      "title": "uid",
+      "type": "text",
+      "config": {
+        "skipped": true,
+        "sheet": 735357797,
+        "cell": "A1"
+      }
+    },
+    {
+      "title": "Section",
+      "type": "select",
+      "placeholder": "Select the section option",
+      "required": true,
+      "range": "SectionRange",
+      "config": {
+        "sheet": 735357797,
+        "cell": "B1",
+        "options": [
+          "builder:section",
+          "builder:masonry"
+        ]
+      }
+    },
+    {
+      "title": "Category",
+      "type": "select",
+      "placeholder": "Select the category option",
+      "required": true,
+      "range": "CategoryRange",
+      "config": {
+        "sheet": 735357797,
+        "cell": "B1",
+        "options": [
+          "builder:section",
+          "builder:masonry"
+        ]
+      }
+    },
+    {
+      "title": "Title",
+      "type": "text",
+      "placeholder": "Enter the title",
+      "required": true,
+      "config": {
+        "sheet": 735357797,
+        "cell": "C1"
+      }
+    },
+    {
+      "title": "Description",
+      "type": "textarea",
+      "placeholder": "Enter the description",
+      "required": true,
+      "config": {
+        "sheet": 735357797,
+        "cell": "D1"
+      }
+    },
+    {
+      "title": "ImageUrl",
+      "type": "file",
+      "multiple": true,
+      "config": {
+        "sheet": 2128641545,
+        "cell": "I1"
+      }
+    },
+    {
+      "title": "timestamp",
+      "type": "text",
+      "config": {
+        "skipped": true,
+        "sheet": 735357797,
+        "cell": "G1"
+      }
+    }
+  ],
+  "data": [
+    {
+      "uid": "gallery-intro-001",
+      "property": "eyebrow",
+      "text": "Galeri",
+      "node": ".column.full.txt-center$1>p.eyebrow",
+      "section": "intro",
+      "builder": "section",
+      "timestamp": ""
+    },
+    {
+      "uid": "gallery-intro-002",
+      "property": "title",
+      "text": "Momen Tak Terlupakan Bersama Kami",
+      "node": ".column.full.txt-center$1>h2.title",
+      "section": "intro",
+      "builder": "section",
+      "timestamp": ""
+    },
+    {
+      "uid": "gallery-intro-003",
+      "property": "description",
+      "text": "Lihat pengalaman liburan keluarga yang telah mempercayakan perjalanannya bersama SeribuTrip.",
+      "node": ".column.full.txt-center$1>p.description",
+      "section": "intro",
+      "builder": "section",
+      "timestamp": ""
+    },
+    {
+      "uid": "gallery-001",
+      "imageUrl": "https://placehold.co/600x800/8764b5/ffffff?text=Pantai",
+      "category": "A",
+      "title": "",
+      "description": "",
+      "section": "gallery",
+      "builder": "masonry",
+      "timestamp": ""
+    },
+    {
+      "uid": "gallery-002",
+      "imageUrl": "https://placehold.co/800x600/1e3a5f/ffffff?text=Snorkeling",
+      "category": "A",
+      "title": "",
+      "description": "",
+      "section": "gallery",
+      "builder": "masonry",
+      "timestamp": ""
+    },
+    {
+      "uid": "gallery-003",
+      "imageUrl": "https://placehold.co/600x400/8764b5/ffffff?text=Sunset",
+      "category": "B",
+      "title": "",
+      "description": "",
+      "section": "gallery",
+      "builder": "masonry",
+      "timestamp": ""
+    },
+    {
+      "uid": "gallery-004",
+      "imageUrl": "https://placehold.co/400x600/1e3a5f/ffffff?text=Keluarga",
+      "category": "C",
+      "title": "",
+      "description": "",
+      "section": "gallery",
+      "builder": "masonry",
+      "timestamp": ""
+    },
+    {
+      "uid": "gallery-005",
+      "imageUrl": "https://placehold.co/800x800/8764b5/ffffff?text=Pemandangan",
+      "category": "A",
+      "title": "",
+      "description": "",
+      "section": "gallery",
+      "builder": "masonry",
+      "timestamp": ""
+    }
+  ]
+}

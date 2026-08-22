@@ -139,23 +139,32 @@ export class FileUploader {
       .split(",")
       .map((s: string) => s.trim())
       .filter(Boolean);
+    const configAccept = Array.isArray(config.accept) && config.accept.length > 0 ? config.accept.map((s) => s.trim()).filter(Boolean) : undefined;
+    const defaultAccept = Array.isArray(this.config.accept) && this.config.accept.length > 0 ? this.config.accept.map((s) => s.trim()).filter(Boolean) : undefined;
+
+    const resolvedMaxUpload = Number(input.dataset.maxUpload) || config.maxUpload || this.config.maxUpload;
+    const resolvedAccept = configAccept ?? (domAccept.length > 0 ? domAccept : defaultAccept ?? ["image/*", ".pdf"]);
 
     // Step 4: Merge configurations: static defaults, provided config, and data attributes.
     // Data attributes take precedence over provided config, which takes precedence over static defaults.
     this._config = {
-      ...config,
       ...this.config,
-      maxUpload: Number(input.dataset.maxUpload) || this.config.maxUpload,
-      maxFileSize: Number(input.dataset.maxFileSize) * 1024 * 1024 || this.config.maxFileSize,
-      warnFileSize: Number(input.dataset.warnFileSize) * 1024 * 1024 || this.config.warnFileSize,
-      groupUnallowed: input.dataset.groupUnallowed || this.config.groupUnallowed,
-      view: config.view || input.dataset.view || this.config.view,
-      accept: domAccept.length ? domAccept : config.accept || this.config.accept || ["image/*", ".pdf"],
+      ...config,
+      maxUpload: resolvedMaxUpload,
+      maxFileSize: Number(input.dataset.maxFileSize) * 1024 * 1024 || config.maxFileSize || this.config.maxFileSize,
+      warnFileSize: Number(input.dataset.warnFileSize) * 1024 * 1024 || config.warnFileSize || this.config.warnFileSize,
+      groupUnallowed: input.dataset.groupUnallowed ?? config.groupUnallowed ?? this.config.groupUnallowed,
+      view: input.dataset.view || config.view || this.config.view,
+      accept: resolvedAccept,
       renderThumbnail:
         input.dataset.thumbnail !== undefined
           ? input.dataset.thumbnail !== "false"
           : (config.renderThumbnail ?? this.config.renderThumbnail ?? true),
     };
+
+    this._syncInputAttributes();
+
+    // console.log({ cfg: this._config, domAccept, config })
 
     // Step 5: Create a container element for displaying file previews and append it to the input's field container.
     this.viewContainer = document.createElement("div");
@@ -212,9 +221,12 @@ export class FileUploader {
     this.input.addEventListener("change", (e: Event) => {
       const target = e.target as HTMLInputElement | null;
       const files = Array.from(target?.files ?? []);
-      this.handleFiles(files as File[]);
+      // Event change sudah menjadi sumber pemrosesan, jadi jangan emit change lagi.
+      this.handleFiles(files as File[], false);
     });
   }
+
+
 
   /**
    * @private
@@ -250,9 +262,12 @@ export class FileUploader {
       e.preventDefault();
       this.container?.classList.remove("dragover");
       const files = Array.from(e.dataTransfer?.files ?? []);
+      if (!files.length || !this.input) return;
       this.handleFiles(files);
     });
   }
+
+
 
   /**
    * @private
@@ -286,12 +301,12 @@ export class FileUploader {
       this._selectedFiles = this._selectedFiles.filter((f) => f.name !== file.name);
 
       if (this._selectedFiles.length === 0) {
-        this.clearView(true); // also clears input + state
+        this.clearView(true, true); // also clears input + state and notifies input listeners
         return;
       }
-
       // Re-run handleFiles so state + UI update consistently
-      this.handleFiles([]);
+      // Perubahan berasal dari UI uploader, jadi informasikan juga listener input.
+      this.handleFiles([], true);
     });
   }
 
@@ -324,19 +339,27 @@ export class FileUploader {
    * 9. **Update Native FileList**: Attempts to update the native `input.files` property with only the `filesToUpload`.
    * 10. **Render View**: Calls `renderView` to update the UI with the processed files.
    */
-  handleFiles(newFiles: File[]) {
+  handleFiles(newFiles: File[], emitChange = true) {
     // Step 1: Define a helper function to create a unique key for each file.
     const fileKey = (file: File) => `${file.name}|${file.size}|${file.lastModified || 0}`;
+    const allowsMultiple = this.input?.multiple ?? false;
+    const maxUpload = this.config.maxUpload ?? Infinity;
     // file not selected as allowed
     // merge step (if newFiles provided)
     // Step 2: If new files are provided, merge them into _selectedFiles, avoiding duplicates.
     if (Array.isArray(newFiles) && newFiles.length > 0) {
-      const existing = new Set(this._selectedFiles.map((f) => fileKey(f)));
-      for (const f of newFiles) {
-        const k = fileKey(f);
-        if (!existing.has(k)) {
-          this._selectedFiles.push(f);
-          existing.add(k);
+      const incomingFiles = allowsMultiple && maxUpload > 1 ? newFiles : [newFiles[0]];
+
+      if (!allowsMultiple || maxUpload <= 1) {
+        this._selectedFiles = incomingFiles.filter(Boolean);
+      } else {
+        const existing = new Set(this._selectedFiles.map((f) => fileKey(f)));
+        for (const f of incomingFiles) {
+          const k = fileKey(f);
+          if (!existing.has(k)) {
+            this._selectedFiles.push(f);
+            existing.add(k);
+          }
         }
       }
     }
@@ -346,7 +369,7 @@ export class FileUploader {
     this.unAllowedFiles.length = 0;
 
     // Step 4: Determine the maximum number of files allowed for upload.
-    const max = this.config.maxUpload || Infinity;
+    const max = this.config.maxUpload ?? Infinity;
 
     // run base validation (skip maxUpload grouping here by omitting index in runValidation)
     // Step 5: Run initial validation on all selected files without considering the maxUpload limit yet.
@@ -432,9 +455,12 @@ export class FileUploader {
     // Step 14: Attempt to update the native input's FileList with only the files that are allowed for upload.
     try {
       const dt = new DataTransfer();
-      this._selectedFiles.forEach((f) => dt.items.add(f));
+      this.filesToUpload.forEach((f) => dt.items.add(f));
       if (this.input) {
         this.input.files = dt.files;
+        if (emitChange) {
+          this.input.dispatchEvent(new Event("change", { bubbles: true }));
+        }
       }
     } catch (err) {
       // fail silently if environment forbids programmatic assignment
@@ -803,7 +829,7 @@ export class FileUploader {
       const filename = document.createElement("div");
       filename.classList.add("filename");
       filename.style.color = "var(--unallowed-color)";
-      // TODO use emoji or svg content in `FileUploader.css`
+
       filename.innerHTML = `<i class="icon file"></i> ${messageText}`;
 
       const info = document.createElement("div");
@@ -976,7 +1002,7 @@ export class FileUploader {
    * 2. **State Reset**: Clears the `filesToUpload` and `unAllowedFiles` arrays.
    * 3. **Optional Input Reset**: If `clearInput` is true, it also clears the `_selectedFiles` array and resets the value of the actual file input element.
    */
-  clearView(clearInput = false) {
+  clearView(clearInput = false, emitChange = false) {
     if (this.viewContainer) {
       this.viewContainer.className = "";
       this.viewContainer.innerHTML = "";
@@ -988,6 +1014,9 @@ export class FileUploader {
       this._selectedFiles = [];
       if (this.input) {
         this.input.value = "";
+        if (emitChange) {
+          this.input.dispatchEvent(new Event("change", { bubbles: true }));
+        }
       }
     }
   }
@@ -1204,6 +1233,34 @@ export class FileUploader {
     this._configDefaults = { ...this.config, ...custom };
   }
 
+  /**
+   * @private
+   *
+   * @description
+   * Synchronizes native input attributes with the resolved uploader configuration.
+   * This keeps the browser file picker behavior aligned with the uploader logic.
+   */
+  private _syncInputAttributes() {
+    if (!this.input) return;
+
+    const accept = this._config.accept ?? [];
+    const acceptValue = accept.join(",");
+    if (acceptValue) {
+      this.input.setAttribute("accept", acceptValue);
+    } else {
+      this.input.removeAttribute("accept");
+    }
+
+    const maxUpload = this._config.maxUpload ?? Infinity;
+    if (maxUpload > 1) {
+      this.input.setAttribute("multiple", "");
+      this.input.multiple = true;
+    } else {
+      this.input.removeAttribute("multiple");
+      this.input.multiple = false;
+    }
+  }
+
   static reset(input: HTMLInputElement | HTMLFormElement | null = null) {
     const selector = this.config.input ?? 'input[type="file"][data-uploader]';
 
@@ -1315,6 +1372,109 @@ export class FileUploader {
     }
 
     return result;
+  }
+
+  /**
+   * @static
+   *
+   * @description
+   * Scans the target form context for uploaded CSV files, parses the raw data stream 
+   * entirely on the client side, and instantly packs it into a normalized `TableData` structure.
+   * This is heavily optimized to automatically casting numerical tokens and resolving 
+   * regional Excel delimiter changes (comma vs semicolon) before returning clean payload schemas.
+   *
+   * @param {string} formId - The HTML DOM element ID string for the form context.
+   * @returns {Promise<{body: any[], header: any[], footer:any}} A structured object mirroring the `TableData` specification or empty schema if no CSV found.
+   *
+   * @example
+   * const importedTable = await FileUploader.parseCSVToTable("myFormId");
+   * console.log(importedTable.body); // [ ["Product A", 150000, 10], ["Product B", 200000, 5] ]
+   *
+   * @summary
+   * 1. **Fetch Form Files**: Dispatches internal `getFiles` to retrieve the active binary state dictionary within the form.
+   * 2. **Locate Target CSV**: Extracts the first file containing a `.csv` extension across all file input entries.
+   * 3. **Stream Text Data**: Spawns a FileReader instance utilizing `readAsText` coupled with UTF-8 encoding.
+   * 4. **Auto-Detect Delimiter**: Evaluates header metrics to switch dynamically between standard commas (,) and regional semicolons (;).
+   * 5. **Sanitize & Type-Cast**: Scrubs encapsulation wrappers ("quotes") and maps pure numerical strings straight to native float integers.
+   */
+  static async parseCSVToTable(formId?: string | null): Promise<{ body: any[], header: any[], footer: any }> {
+    return new Promise<{ body: any[], header: any[], footer: any }>((resolve, reject) => {
+      const filesMap = FileUploader.getFiles(formId);
+      let targetCsvFile: File | null = null;
+
+      // 1. Iterate through grouped fields to capture the first available .csv file
+      if (filesMap && Object.keys(filesMap).length > 0) {
+        for (const [_, fileArray] of Object.entries(filesMap)) {
+          if (!fileArray || fileArray.length === 0) continue;
+
+          const found = fileArray.find(file => file.name.split('.').pop()?.toLowerCase() === 'csv');
+          if (found) {
+            targetCsvFile = found;
+            break;
+          }
+        }
+      }
+
+      // Fallback early with an empty table layout schema if no CSV matches were registered
+      if (!targetCsvFile) {
+        resolve({ header: [], body: [], footer: null });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.readAsText(targetCsvFile, "UTF-8");
+
+      reader.onload = () => {
+        const csvText = reader.result as string;
+        if (!csvText || csvText.trim() === "") {
+          resolve({ header: [], body: [], footer: null });
+          return;
+        }
+
+        // 2. Break string text stream blocks down by structural line segments (supports CRLF / LF)
+        const lines = csvText.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+        if (lines.length === 0) {
+          resolve({ header: [], body: [], footer: null });
+          return;
+        }
+
+        const firstLine = lines[0];
+
+        // 3. Dynamic Delimiter detection engine matching standard comma configurations vs European/Excel semicolon presets
+        const delimiter = (firstLine.split(';').length > firstLine.split(',').length) ? ';' : ',';
+
+        // Internal evaluation utility for stripping outer quote wrappers and converting data-types
+        const cleanCell = (cell: string): string | number => {
+          let value = cell.trim();
+          if (value.startsWith('"') && value.endsWith('"')) {
+            value = value.substring(1, value.length - 1).trim();
+          }
+
+          // Force cast plain valid digit fields into native JS number types
+          if (value !== "" && !isNaN(Number(value))) {
+            return Number(value);
+          }
+          return value;
+        };
+
+        // 4. Transform structural raw segments into pure headers and 2D arrays matrix mapping
+        const headerRow = firstLine.split(delimiter).map(cell => cleanCell(cell));
+        const bodyRows = lines.slice(1).map(line => {
+          return line.split(delimiter).map(cell => cleanCell(cell));
+        });
+
+        resolve({
+          header: headerRow,
+          body: bodyRows,
+          footer: null // Left blank intentionally for declarative execution inside TableBuilderService
+        });
+      };
+
+      reader.onerror = (error) => {
+        console.error(`[CSVParser] Critical failure while reading buffer stream from target context:`, error);
+        reject(error);
+      };
+    });
   }
 
   /**

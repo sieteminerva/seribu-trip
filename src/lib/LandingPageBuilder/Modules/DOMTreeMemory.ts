@@ -26,7 +26,7 @@ export class DOMTreeMemory {
     const globalBox = this.#nodes.get(globalStorageKey);
     if (globalBox && globalBox.records.length > 0) {
       const centralItem = globalBox.records[globalBox.records.length - 1];
-      if (centralItem) centralItem.proxy = proxy; // Kunci kedaulatan proxy hidup!
+      if (centralItem) centralItem.payload = proxy; // Kunci kedaulatan proxy hidup!
     }
 
     const storedEntries = this.#nodes.get(globalStorageKey)?.records?.length || 0;
@@ -223,7 +223,7 @@ export class DOMTreeMemory {
 
       const item = this.#nodes.get(globalStorageKey)?.records[0]
       // Fallback penyelamat: Kembalikan payload proxy singleton lama agar tidak crash!
-      return item?.proxy;
+      return item?.payload;
     }
 
 
@@ -254,8 +254,10 @@ export class DOMTreeMemory {
     const newItem: iNodeRecordItem = {
       element,
       relations: tree,
-      raw: rawObj,
-      proxy: singleProxyObj
+      // raw: rawObj,
+      // proxy: singleProxyObj
+      key: tree?.key as string,
+      payload: singleProxyObj
     };
     // GraphMetadata.attach(globalStorageKey, typeKey, tElement,  singleProxyObj);
 
@@ -432,7 +434,7 @@ export class DOMTreeMemory {
     // Jika data server Sheets berubah, bantai seluruh silsilah koloni lama dari RAM 
     // lewat fungsi .delete() bawaan agar lantai memori steril untuk proses cetak ulang!
     // ====================================================
-    if (cachedItem.raw !== incomingRaw && JSON.stringify(cachedItem.raw) !== JSON.stringify(incomingRaw)) {
+    if (cachedItem.payload !== incomingRaw && JSON.stringify(cachedItem.payload) !== JSON.stringify(incomingRaw)) {
       console.log(`🔄 [DOMTreeMemory -> Overwrite]: Data payload mutated for "${globalStorageKey}". Triggering deep silsilah deletion.`);
       this.delete(tree, "all"); // Amputasi total seketurunannya dari RAM pusat!
       return null; // Mengembalikan null agar Base Class melakukan pemicuan rendering fresh dari awal
@@ -494,7 +496,7 @@ export class DOMTreeMemory {
 
         if (builderInstance && typeof builderInstance.template === "function" && parentRecordItem.relations) {
           // Suntikkan dan siram ulang visual part yang hilang secara JIT tepat sasaran!
-          builderInstance.template(parentRecordItem.relations.key, parentRecordItem.element, parentRecordItem.proxy);
+          builderInstance.template(parentRecordItem.relations.key, parentRecordItem.element, parentRecordItem.payload);
         }
         return;
       }

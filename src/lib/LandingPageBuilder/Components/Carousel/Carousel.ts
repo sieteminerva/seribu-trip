@@ -152,7 +152,7 @@ export class CarouselBuilder extends Builder<CarouselElementType, iCarouselConfi
 
   public prepare(data: any, _config?: Required<iCarouselConfig> | undefined): HTMLElement | Record<string, any | HTMLElement> {
 
-    // console.log("[Carousel Input Check] Locked attributes payload:", secureAttributes);
+    console.log("[Carousel Input Check] Locked attributes payload:", { data });
 
     // Bersihkan state internal instance komponen secara steril
     this.unmount();
@@ -184,22 +184,22 @@ export class CarouselBuilder extends Builder<CarouselElementType, iCarouselConfi
     this.track = this.render("@carousel>track", content) as HTMLElement;
 
     this.slides = content.map((item, _index) => {
-      const slide = this.render("@carousel>track>slide", item, true) as HTMLElement;
-      const inner = this.render("@carousel>track>slide>inner", item, true) as HTMLElement;
+      const slide = this.render("@carousel>track>slide", item) as HTMLElement;
+      const inner = this.render("@carousel>track>slide>inner", item) as HTMLElement;
 
-      if (item.image) {
-        const img = this.render("@carousel>track>slide>image", item, true);
+      if (item.image || item.imageUrl) {
+        const img = this.render("@carousel>track>slide>image", item);
         if (img && inner) inner.appendChild(img);
       }
 
       if (item.title || item.description) {
-        const caption = this.render("@carousel>track>slide>caption", item, true);
+        const caption = this.render("@carousel>track>slide>caption", item);
         if (item.title) {
-          const title = this.render("@carousel>track>slide>title", item, true);
+          const title = this.render("@carousel>track>slide>title", item);
           if (title && caption) caption.appendChild(title);
         }
         if (item.description) {
-          const desc = this.render("@carousel>track>slide>desc", item, true);
+          const desc = this.render("@carousel>track>slide>desc", item);
           if (desc && caption) caption.appendChild(desc);
         }
         if (caption && inner) inner.appendChild(caption);
@@ -278,7 +278,7 @@ export class CarouselBuilder extends Builder<CarouselElementType, iCarouselConfi
 
       case "@carousel>track>slide>image": {
         const img = el as HTMLImageElement;
-        img.src = encodeURI(payload?.image || "");
+        img.src = encodeURI(payload?.image || payload?.imageUrl || "");
         img.alt = payload?.title || "carousel-slide-graphic";
         break;
       }
@@ -349,8 +349,8 @@ export class CarouselBuilder extends Builder<CarouselElementType, iCarouselConfi
     // elemen HTML manual ini otomatis ter-store secara 100% legal dan suci ke dalam #nodes privat!
     // ====================================================
     // Catatan: Jika Base Class render mengembalikan elemen baru, kita pastikan data- data-nya tetap tersinkron
-    // this.render("@container", {}, true);
-    this.render("@carousel", {}, true);
+    // this.render("@container", {});
+    this.render("@carousel", {});
 
     // 4. Detonasi sakelar interaksi hidup pergerakan dan event listeners hover secara otomatis!
     this.initialize(targetCarousel);
@@ -568,7 +568,7 @@ export class CarouselBuilder extends Builder<CarouselElementType, iCarouselConfi
     const navContainer = this.render("@carousel>navigations") as HTMLElement;
     navContainer.className = `navigations ${this.rConfig.vertical ? "vertical-dots" : "horizontal-dots"}`;
     navigableSlides.forEach((_, index) => {
-      const dot = this.render("@carousel>navigations>dot", null, true) as HTMLButtonElement;
+      const dot = this.render("@carousel>navigations>dot", null) as HTMLButtonElement;
       dot.className = "dot";
       if (index === 0) dot.classList.add("active");
       dot.onclick = () => {

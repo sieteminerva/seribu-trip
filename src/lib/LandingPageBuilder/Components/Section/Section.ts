@@ -5,6 +5,7 @@ export type SectionElementType =
   | "@section"
   | "@section>content"
   | "@section>content>image"
+  | "@section>content>eyebrow"
   | "@section>content>header"
   | "@section>content>desc"
   | "@section>content>actions"
@@ -27,6 +28,7 @@ export class SectionBuilder extends Builder<SectionElementType, iSectionConfig> 
       "@section": { tagName: "section", className: "row" },
       "@section>content": { tagName: "div", className: "column" },
       "@section>content>image": { tagName: "img", className: "img-fluid" },
+      "@section>content>eyebrow": { tagName: "div", className: "eyebrow" },
       "@section>content>header": { tagName: "h2", className: "title" },
       "@section>content>desc": { tagName: "p", className: "desc" },
       "@section>content>actions": { tagName: "div", className: "actions" },
@@ -49,41 +51,11 @@ export class SectionBuilder extends Builder<SectionElementType, iSectionConfig> 
    */
   public prepare(data: iBasicNode, _config: Partial<iSectionConfig> = {}): HTMLElement {
 
+    // console.log({ data })
     // 1. Lahirkan Cangkang Makro Terluar Seksi (@section)
     const section = this.render("@section", data);
-
-    // Normalisasi data array kolom konten dari Sheets (Mendukung Multi-Instance Kolom)
-    const contentDataRows = Array.isArray(data.content) ? data.content : [data.content];
-
-    // 2. Loop Linear Tingkat Kolon Isi Konten (N-Columns)
-    contentDataRows.forEach((columnItem: any) => {
-      // Lahirkan boks pembungkus kolom konten
-      const contentBox = this.render("@section>content", columnItem);
-
-      // Lahirkan anak-anak atomik di level memori RAM membawa data item tunggal!
-      const image = this.render("@section>content>image", columnItem);
-      const header = this.render("@section>content>header", columnItem);
-      const desc = this.render("@section>content>desc", columnItem);
-      const actions = this.render("@section>content>actions", columnItem);
-
-      // 🧙‍♂️ LOOP TINGKAT ATOM PALING DALAM: Cetak baris tombol aksi kustom (.actions>item)
-      const actionItems = Array.isArray(columnItem.actions) ? columnItem.actions : [];
-      actionItems.forEach((actionData: any) => {
-        const btnItem = this.render("@section>content>actions>item", actionData);
-        if (btnItem && actions) actions.appendChild(btnItem);
-      });
-
-      // Jahit organ tubuh secara ksatria vanilla
-      if (image && columnItem.image) contentBox?.appendChild(image);
-      if (header && columnItem.title) contentBox?.appendChild(header);
-      if (desc && columnItem.description) contentBox?.appendChild(desc);
-      if (actions && actionItems.length > 0) contentBox?.appendChild(actions);
-
-      section?.appendChild(contentBox!);
-    });
-
     // Amankan dan kembalikan elemen kontainer makro terluarnya secara standard via Map get!
-    return this.load("@section") as HTMLElement;
+    return section as HTMLElement;
   }
 
   /**
@@ -98,11 +70,61 @@ export class SectionBuilder extends Builder<SectionElementType, iSectionConfig> 
         el.id = payload.id || "";
         // Jika pembungkus luar memiliki set custom class dari Sheets, siram!
         if (payload.className) el.className = `section ${payload.className}`.trim();
+        // Normalisasi data array kolom konten dari Sheets (Mendukung Multi-Instance Kolom)
+        const rows = Array.isArray(payload.content) ? payload.content : [payload.content];
+        // 2. Loop Linear Tingkat Kolon Isi Konten (N-Columns)
+        for (const column of rows) {
+          console.log({ column })
+          // Lahirkan boks pembungkus kolom konten
+          const contentBox = this.render("@section>content", column);
+          el?.appendChild(contentBox!);
+
+        }
+
+        break;
+
+      case "@section>content":
+
+        el.className = payload.className || "column"
+
+        if (payload.content && Array.isArray(payload.content)) {
+
+          for (const col of payload.content) {
+            if (col.image || col.imageUrl) {
+              const image = this.render("@section>content>image", { image: col.imageUrl, title: col.title })!;
+              el?.appendChild(image)
+            };
+            if (col.eyebrow) {
+              const eyebrow = this.render("@section>content>eyebrow", col)!;
+              el?.appendChild(eyebrow)
+            };
+            if (col.title) {
+              const header = this.render("@section>content>header", col)!;
+              el?.appendChild(header)
+            };
+            if (col.description) {
+              const desc = this.render("@section>content>desc", col)!;
+              el?.appendChild(desc)
+            };
+            if (col.actions?.length > 0) {
+              const actions = this.render("@section>content>actions", col)!;
+              el?.appendChild(actions)
+            };
+
+          }
+        } else if (payload?.content instanceof HTMLElement) {
+          el?.appendChild(payload.content)
+        }
         break;
 
       case "@section>content>image":
         el.setAttribute("src", encodeURI(payload.image || ""));
         el.setAttribute("alt", payload.title || "section-graphic");
+        break;
+
+      case "@section>content>eyebrow":
+        // console.log({ payload })
+        el.textContent = payload.eyebrow || "";
         break;
 
       case "@section>content>header":
@@ -111,6 +133,14 @@ export class SectionBuilder extends Builder<SectionElementType, iSectionConfig> 
 
       case "@section>content>desc":
         el.textContent = payload.description || "";
+        break;
+
+      case "@section>content>actions":
+        const actionItems = Array.isArray(payload) ? payload : [];
+        actionItems.forEach((actionData: any) => {
+          const btnItem = this.render("@section>content>actions>item", actionData);
+          if (btnItem && el) el.appendChild(btnItem);
+        });
         break;
 
       case "@section>content>actions>item":

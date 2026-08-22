@@ -1,4 +1,3 @@
-
 const COLORS = {
   reset: "\x1b[0m",
   red: "\x1b[31m",
@@ -12,6 +11,7 @@ const COLORS = {
 };
 
 export function DataLogger(DEBUG_MODE: "DATA" | "INFO" | boolean = false, properties: { functionName?: string, action?: string, type?: "normal" | "table", separator?: string }, data: any | null = null) {
+
   if (DEBUG_MODE) {
     const name = `${COLORS.cyan}⪻${properties.functionName}⪼${COLORS.reset}`;
     const action = `${COLORS.yellow}[action: ${properties.action}]${COLORS.reset}`;

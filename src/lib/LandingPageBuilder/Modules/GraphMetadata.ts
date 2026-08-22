@@ -7,7 +7,7 @@ export class GraphMetadata {
   /**
    * 📌 PIPELINE WELD: Menjahit data korelasi silsilah parent-child murni di level RAM objek
    */
-  public static attach(scopeId: string, typeKey: string, element: HTMLElement, raw: any, proxy: any): iNodeRecordItem {
+  public static attach(scopeId: string, typeKey: string, element: HTMLElement, _raw: any, proxy: any): iNodeRecordItem {
     const globalStorageKey = `${scopeId}:${typeKey}`;
     const currentParentKey = GraphMetadata.activeParentScopeKey;
 
@@ -17,8 +17,10 @@ export class GraphMetadata {
         parent: (currentParentKey !== globalStorageKey) ? currentParentKey : null,
         children: []
       },
-      raw,
-      proxy
+      // raw,
+      // proxy
+      key: typeKey,
+      payload: proxy
     };
 
     // Cari instansi bapak di dalam pool memori (jika ada), lalu daftarkan token kunci si anak!
