@@ -1,6 +1,6 @@
 import type { iBuilderConfig, iBuilderRegistry } from "../../interface";
 import { Builder } from "../Base";
-// import "./Modal.css";
+import "./Modal.css";
 
 export type ModalElementType =
   | "@container"
@@ -39,7 +39,7 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
       className: "",
       title: "Notification",
       modalClass: "",
-      destroyOnClose: false,
+      destroyOnClose: true,
       selectors: defaultSelectors,
       namespace: null,
       emit: () => { },
@@ -56,7 +56,7 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
    */
   public prepare(contentPayload: any): { open: () => void; close: () => void; unmount: () => void; element: HTMLElement } {
     // 💡 POTENSI ANTI-KEMBUNG: Ambil dari live DOM jika mode reuse aktif
-    console.log(contentPayload)
+    // console.log(contentPayload)
     const existingDOMElement = document.getElementById(this.config.id);
     if (existingDOMElement && !this.config.destroyOnClose) {
       console.log(`[Universal Modal] Re-using active memory pointer for #${this.config.id}`);
@@ -69,7 +69,7 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
     }
 
     // 1. Lahirkan Cangkang Makro Terluar (Outer Overlay Backdrop)
-    const overlay = (this.load("@container") || this.render("@container", contentPayload)) as HTMLElement;
+    const overlay = this.render("@container", contentPayload) as HTMLElement;
 
     this.currentModal = overlay;
 
@@ -199,7 +199,7 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
 
   private _getControlInterfaces(_currentModal?: HTMLElement) {
     // console.log("same element:", currentModal?.isEqualNode(this.currentModal)) // ❌ hasilnya false padahal sama 
-    const overlay = this.load("@container") as HTMLElement || this.currentModal;
+    const overlay = this.currentModal;
     return {
       element: overlay as HTMLElement,
       open: () => this.open(),
@@ -212,9 +212,11 @@ export class ModalBuilder extends Builder<ModalElementType, iModalConfig> {
     const overlay = this.load("@container") as HTMLElement
     const closeBtn = this.load("@modal>closeBtn") as HTMLElement;
     if (overlay && closeBtn) {
-      // closeBtn.removeEventListener("click", this.close);
-      // overlay.removeEventListener("click", this.close);
-      // this.destroy();
+      closeBtn.removeEventListener("click", this.close);
+      overlay.removeEventListener("click", this.close);
+      const modal = document.getElementById(this.config.id)
+      modal?.remove()
+      this.destroy();
     }
   }
 }

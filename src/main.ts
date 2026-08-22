@@ -1,5 +1,5 @@
 import './style.css';
-// import './lib/LandingPageBuilder/Components/Form/Form.css';
+import './lib/LandingPageBuilder/Components/Form/Form.css';
 import "./lib/LandingPageBuilder/Styles/icon.css";
 import './overrides.css';
 
@@ -17,13 +17,13 @@ import { AccordionBuilder } from './lib/LandingPageBuilder/Components/Accordion/
 import { PricingCardBuilder } from './lib/LandingPageBuilder/Components/PricingCard/PricingCard';
 import { MasonryBuilder } from './lib/LandingPageBuilder/Components/Masonry/Masonry';
 import { SectionBuilder } from './lib/LandingPageBuilder/Components/Section/Section';
-// import { FormBuilder } from './lib/LandingPageBuilder/Components/Form/Form';
+import { FormBuilder } from './lib/LandingPageBuilder/Components/Form/Form';
 import { DefaultTheme } from './lib/LandingPageBuilder/Themes/DefaultTheme';
 import { HorizontalTheme } from './lib/LandingPageBuilder/Themes/HorizontalTheme';
 import type { iBasicNode } from './lib/LandingPageBuilder/interface';
 import { CyberpunkTheme } from './lib/LandingPageBuilder/Themes/CyberpunkTheme';
 import { FabMenuBuilder } from './lib/LandingPageBuilder/Components/FabMenu/FabMenu';
-// import { ModalBuilder } from './lib/LandingPageBuilder/Components/Modal/Modal';
+import { ModalBuilder } from './lib/LandingPageBuilder/Components/Modal/Modal';
 import { ModeSwitcherBuilder } from './lib/LandingPageBuilder/Components/ModeSwitcher/ModeSwitcher';
 import { TabBuilder } from './lib/LandingPageBuilder/Components/Tab/Tab';
 import { ProductGridBuilder } from './lib/LandingPageBuilder/Components/Product/ProductGrid';
@@ -113,28 +113,28 @@ if (app) {
   });
 
   builder.component?.register("accordion", (data: any) => new AccordionBuilder().create(data))
-    // .register("form", (data: any) => {
-    //   console.log("main.ts [form]", { data });
-    //   return new FormBuilder().create(data)
-    // })
-    // .register("modal", (el: any) => new ModalBuilder().create(el as HTMLElement) as any)
     .register("form", (data: any) => {
-      console.log({ data });
-      return {
-        path: "lib/LandingPageBuilder/Components/Form/Form.ts",
-        // stylesheet: "lib/LandingPageBuilder/Components/Form/Form.css",
-        config: data?.config,
-        schema: data?.schema !== undefined ? data.schema : (data?.content !== undefined ? data.content : data),
-      };
+      console.log("main.ts [form]", { data });
+      return new FormBuilder().create(data)
     })
-    .register("modal", (data: any) => {
-      console.log({ data });
-      return {
-        path: "lib/LandingPageBuilder/Components/Modal/Modal.ts",
-        config: data?.config,
-        schema: data?.schema !== undefined ? data.schema : (data?.content !== undefined ? data.content : data),
-      };
-    })
+    .register("modal", (el: any) => new ModalBuilder().create(el as HTMLElement) as any)
+    // .register("form", (data: any) => {
+    //   console.log({ data });
+    //   return {
+    //     path: "lib/LandingPageBuilder/Components/Form/Form.ts",
+    //     // stylesheet: "lib/LandingPageBuilder/Components/Form/Form.css",
+    //     config: data?.config,
+    //     schema: data?.schema !== undefined ? data.schema : (data?.content !== undefined ? data.content : data),
+    //   };
+    // })
+    // .register("modal", (data: any) => {
+    //   console.log({ data });
+    //   return {
+    //     path: "lib/LandingPageBuilder/Components/Modal/Modal.ts",
+    //     config: data?.config,
+    //     schema: data?.schema !== undefined ? data.schema : (data?.content !== undefined ? data.content : data),
+    //   };
+    // })
 
     .register("input", (data: any) => {
       // console.log("main.ts [form]", { data });
