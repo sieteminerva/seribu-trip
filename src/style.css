@@ -243,6 +243,33 @@ body {
   color: var(--text-muted);
 }
 
+.description.natural {
+  font-size: 1.2rem;
+}
+
+blockquote {
+  margin: 0.5em;
+}
+
+span.quote {
+  color: darkgoldenrod;
+  font-style: italic;
+}
+
+span.quote::before {
+  content: '"';
+  font-size: 1.7rem;
+  font-family: "Courier New", Courier, monospace;
+  line-height: 1;
+}
+
+span.quote::after {
+  content: '"';
+  font-size: 1.7rem;
+  font-family: "Courier New", Courier, monospace;
+  line-height: 1;
+}
+
 .img-fluid {
   width: 100%;
   display: block;

@@ -277,8 +277,13 @@ export class WizardPage implements iPageController {
           },
           {
             tagName: "p",
-            className: "description",
-            content: "Anda berada di tempat yang tepat jika saat ini mulai menyadari pentingnya website bagi eksistensi diri, merek dagang, maupun identitas usaha Anda. Kehadiran website kini telah menjadi kebutuhan dasar dalam menghadapi persaingan bisnis di era digital. Keluhan serta keresahan Anda mungkin salah satu yang terbisik sampai ke telinga kami, mendorong hati kecil kami untuk merajut tautan ini..."
+            className: "description natural",
+            content: `Anda berada di tempat yang tepat jika saat ini mulai menyadari pentingnya website bagi eksistensi diri, merek dagang, maupun identitas usaha Anda. 
+            Kehadiran website kini telah menjadi kebutuhan dasar dalam menghadapi persaingan bisnis di era digital. 
+            Saat ini mungkin anda terbentur banyak rintangan dan telah melalui berbagai proses yang rumit bahkan sebelum website pertama anda berhasil diluncurkan.\n
+            dan mungkin terbesit di benak anda sebuah pertanyaan,<blockquote> <span class="quote">Ada ga ya cara dimana saya tinggal menjabarkan website seperti apa yang akan dibuat lalu secara otomatis
+            website itu dibentuk sesuai deskripsi saya?.</span></blockquote>
+            Jika anda salah satu orang tersebut mungkin Keluhan serta keresahan Anda mungkin salah satu yang terbisik sampai ke telinga kami, mendorong hati kecil kami untuk merajut tautan ini...`
           },
         ]
       },

@@ -493,11 +493,11 @@ textarea:focus-visible {
 .inline.form,
 .form fieldset.inline-style {
   font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 20px;
-  line-height: 1.8;
+  font-size: 1.5rem;
+  line-height: 1.6;
   color: #2c3e50;
   width: 100%;
-  max-width: 800px;
+  max-width: 1000px;
   /* margin: 40px auto; */
   justify-self: center;
   padding: 20px;
