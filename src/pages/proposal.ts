@@ -59,8 +59,8 @@ export class ProposalPage {
     })
 
     const tabEl = tab.create({
-      menu: ["Proposal 1", "Proposal 2"],
-      body: [{}, {}]
+      menu: ["Proposal 1", "Proposal 2", "Porfolio"],
+      body: [{}, {}, {}]
     })
 
     // console.log(container)
@@ -78,7 +78,7 @@ export class ProposalPage {
     this.builder.events.on("elementChanged", async (payload) => {
       if (payload.builder === "tab" && payload.type === "tab:changed" && payload.data.name === "tab-proposal") {
         const index = payload.data.index;
-        const panelContent = await this.loadFile(Number(index) === 0 ? "md/presentation.md" : "md/presentation2.md")
+        const panelContent = await this.loadFile(`md/presentation${Number(index)}.md`)
         console.log("tab-proposal: changed")
         payload.element?.replaceChildren(panelContent);
       }
